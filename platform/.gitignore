@@ -16,6 +16,15 @@ build/
 *.css.map
 *.mjs.map
 
+# Compiled TypeScript files in source directories
+# Keep only .ts source files, ignore compiled .js and .d.ts
+packages/**/src/**/*.js
+packages/**/src/**/*.d.ts
+packages/**/src/**/*.d.ts.map
+!packages/**/src/**/*.config.js
+!packages/**/src/**/*.test.js
+!packages/**/src/**/*.spec.js
+
 # Environment variables
 .env
 .env.local
@@ -54,6 +63,9 @@ prisma/migrations/
 !prisma/migrations/.gitkeep
 prisma/*.db
 prisma/*.db-journal
+
+# Prisma generated client (regenerated on build)
+packages/common/src/generated/
 
 # Turbo
 .turbo/
