@@ -1,0 +1,72 @@
+# Railway Ignore File
+# Files and directories to exclude from Railway deployments
+
+# Node modules (will be installed during build)
+node_modules/
+**/node_modules/
+
+# Development files
+*.local
+.env
+.env.local
+.env.development
+.env.test
+
+# Build artifacts (will be regenerated)
+dist/
+build/
+.turbo/
+
+# Testing
+coverage/
+*.test.ts
+*.spec.ts
+__tests__/
+__mocks__/
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed at runtime)
+*.md
+!RAILWAY_DEPLOYMENT.md
+docs/
+
+# Examples
+examples/
+
+# Scripts (except production scripts)
+scripts/seed.ts
+scripts/test-*.ts
+
+# Docker development files
+docker-compose.yml
+docker-compose.dev.yml
+Dockerfile.dev
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database files (Railway provides managed DB)
+*.db
+*.sqlite
+
+# Prisma
+packages/common/prisma/migrations/

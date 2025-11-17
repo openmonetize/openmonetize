@@ -1,0 +1,16 @@
+# Business & Technical Documentation (Work in Progress / Private)
+AI_MONETIZATION_PLATFORM_BLUEPRINT.md
+BUILD_SUMMARY.md
+BUSINESS_MODEL.md
+DOCUMENTATION_INDEX.md
+TECHNICAL_IMPLEMENTATION_GUIDE.md
+TERMINOLOGY.md
+
+# Keep important public documentation
+!LICENSE
+!README.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
+
+# Platform-specific ignores are in platform/.gitignore

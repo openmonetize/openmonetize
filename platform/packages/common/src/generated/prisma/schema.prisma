@@ -1,0 +1,375 @@
+// OpenMonetize Platform - Prisma Schema
+// Complete data model for AI monetization platform
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["darwin-arm64"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CUSTOMERS & USERS
+// ============================================================================
+
+enum CustomerTier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+  CHURNED
+}
+
+model Customer {
+  id         String         @id @default(uuid())
+  name       String
+  email      String         @unique
+  apiKeyHash String         @map("api_key_hash")
+  tier       CustomerTier   @default(STARTER)
+  status     CustomerStatus @default(ACTIVE)
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  users              User[]
+  teams              Team[]
+  creditWallets      CreditWallet[]
+  creditTransactions CreditTransaction[]
+  subscriptions      Subscription[]
+  usageEvents        UsageEvent[]
+  burnTables         BurnTable[]
+  entitlements       Entitlement[]
+
+  @@index([email])
+  @@index([status])
+  @@map("customers")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  customerId     String   @map("customer_id")
+  externalUserId String   @map("external_user_id")
+  email          String?
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  customer        Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  creditWallets   CreditWallet[]
+  teamMemberships TeamMembership[]
+  entitlements    Entitlement[]
+  usageEvents     UsageEvent[]
+
+  @@unique([customerId, externalUserId])
+  @@index([customerId])
+  @@index([externalUserId])
+  @@map("users")
+}
+
+model Team {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  name       String
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  creditWallets CreditWallet[]
+  memberships   TeamMembership[]
+  usageEvents   UsageEvent[]
+
+  @@index([customerId])
+  @@map("teams")
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+}
+
+model TeamMembership {
+  id        String   @id @default(uuid())
+  teamId    String   @map("team_id")
+  userId    String   @map("user_id")
+  role      TeamRole @default(MEMBER)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_memberships")
+}
+
+// ============================================================================
+// CREDIT MANAGEMENT
+// ============================================================================
+
+model CreditWallet {
+  id              String    @id @default(uuid())
+  customerId      String    @map("customer_id")
+  userId          String?   @map("user_id")
+  teamId          String?   @map("team_id")
+  balance         BigInt    @default(0)
+  reservedBalance BigInt    @default(0) @map("reserved_balance")
+  currency        String    @default("credits")
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer     Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team         Team?               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  transactions CreditTransaction[]
+
+  @@index([customerId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("credit_wallets")
+}
+
+enum TransactionType {
+  PURCHASE
+  BURN
+  REFUND
+  EXPIRATION
+  GRANT
+}
+
+model CreditTransaction {
+  id              String          @id @default(uuid())
+  walletId        String          @map("wallet_id")
+  customerId      String          @map("customer_id")
+  transactionType TransactionType @map("transaction_type")
+  amount          BigInt
+  balanceBefore   BigInt          @map("balance_before")
+  balanceAfter    BigInt          @map("balance_after")
+  description     String?
+  metadata        Json?
+  idempotencyKey  String?         @unique @map("idempotency_key")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  wallet   CreditWallet @relation(fields: [walletId], references: [id])
+  customer Customer     @relation(fields: [customerId], references: [id])
+
+  @@index([walletId])
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([idempotencyKey])
+  @@map("credit_transactions")
+}
+
+// ============================================================================
+// PRICING & BURN TABLES
+// ============================================================================
+
+model BurnTable {
+  id         String    @id @default(uuid())
+  customerId String?   @map("customer_id")
+  name       String
+  version    Int       @default(1)
+  rules      Json
+  isActive   Boolean   @default(true) @map("is_active")
+  validFrom  DateTime  @default(now()) @map("valid_from")
+  validUntil DateTime? @map("valid_until")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([isActive])
+  @@map("burn_tables")
+}
+
+// ============================================================================
+// PROVIDER COSTS
+// ============================================================================
+
+enum ProviderName {
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+  COHERE
+  MISTRAL
+}
+
+enum CostType {
+  INPUT_TOKEN
+  OUTPUT_TOKEN
+  REQUEST
+  IMAGE
+  AUDIO
+  VIDEO
+}
+
+model ProviderCost {
+  id          String       @id @default(uuid())
+  provider    ProviderName
+  model       String
+  costType    CostType     @map("cost_type")
+  costPerUnit Decimal      @map("cost_per_unit") @db.Decimal(20, 10)
+  unitSize    Int          @default(1000) @map("unit_size")
+  currency    String       @default("USD")
+  validFrom   DateTime     @default(now()) @map("valid_from")
+  validUntil  DateTime?    @map("valid_until")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([provider])
+  @@index([model])
+  @@index([validFrom, validUntil])
+  @@map("provider_costs")
+}
+
+// ============================================================================
+// USAGE EVENTS
+// ============================================================================
+
+enum EventType {
+  TOKEN_USAGE
+  API_CALL
+  IMAGE_GENERATION
+  AUDIO_PROCESSING
+  CUSTOM
+}
+
+model UsageEvent {
+  id             String        @id @default(uuid())
+  customerId     String        @map("customer_id")
+  userId         String?       @map("user_id")
+  teamId         String?       @map("team_id")
+  eventType      EventType     @map("event_type")
+  featureId      String        @map("feature_id")
+  provider       ProviderName?
+  model          String?
+  inputTokens    BigInt?       @map("input_tokens")
+  outputTokens   BigInt?       @map("output_tokens")
+  creditsBurned  BigInt        @map("credits_burned")
+  costUsd        Decimal?      @map("cost_usd") @db.Decimal(20, 10)
+  metadata       Json?
+  idempotencyKey String?       @unique @map("idempotency_key")
+  timestamp      DateTime      @default(now())
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+  team     Team?    @relation(fields: [teamId], references: [id])
+
+  @@index([customerId, timestamp])
+  @@index([userId])
+  @@index([teamId])
+  @@index([featureId])
+  @@index([idempotencyKey])
+  @@map("usage_events")
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & PLANS
+// ============================================================================
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum BillingPeriod {
+  MONTHLY
+  ANNUAL
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  basePriceCents  BigInt?  @map("base_price_cents")
+  includedCredits BigInt?  @map("included_credits")
+  features        Json?
+  metadata        Json?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  customerId         String             @map("customer_id")
+  planId             String             @map("plan_id")
+  status             SubscriptionStatus
+  billingPeriod      BillingPeriod?     @map("billing_period")
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  metadata           Json?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plan     Plan     @relation(fields: [planId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ============================================================================
+// ENTITLEMENTS
+// ============================================================================
+
+enum LimitType {
+  HARD
+  SOFT
+  NONE
+}
+
+enum LimitPeriod {
+  DAILY
+  MONTHLY
+  TOTAL
+}
+
+model Entitlement {
+  id         String       @id @default(uuid())
+  customerId String       @map("customer_id")
+  userId     String?      @map("user_id")
+  featureId  String       @map("feature_id")
+  limitType  LimitType?   @map("limit_type")
+  limitValue BigInt?      @map("limit_value")
+  period     LimitPeriod?
+  metadata   Json?
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([featureId])
+  @@map("entitlements")
+}

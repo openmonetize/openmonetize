@@ -1,0 +1,30 @@
+{
+  "name": "@openmonetize/rating-engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@openmonetize/common": "workspace:*",
+    "fastify": "^5.6.2",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^12.0.1",
+    "pino": "^8.19.0",
+    "pino-pretty": "^10.3.1",
+    "zod": "^3.24.1",
+    "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^1.3.1",
+    "eslint": "^9.0.0"
+  }
+}

@@ -1,5 +1,79 @@
+# Dependencies
 node_modules/
-.env
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output
+
+# Build outputs
 dist/
+build/
+*.tsbuildinfo
+*.map
+*.js.map
+*.css.map
+*.mjs.map
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Docker
+docker-compose.override.yml
+
+# Prisma
+prisma/migrations/
+!prisma/migrations/.gitkeep
+prisma/*.db
+prisma/*.db-journal
+
+# Turbo
+.turbo/
+
+# Database
+*.sqlite
+*.sqlite3
+
+# Test/Development Files
+.test-api-key
+*.key
+*.pem
+*.cert
+
+# Work in Progress Documentation (keep local only)
+ENV_SETUP.md
+PROGRESS.md
+QUICK_START.md
+
+# Examples with potentially sensitive data
+examples/test-*.json
+examples/**/*.env
+examples/**/secrets.*

@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(npx prisma generate)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" npx prisma migrate:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" tsx scripts/seed.ts:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" npx tsx scripts/seed.ts)",
+      "Bash(docker logs:*)",
+      "Bash(docker inspect:*)",
+      "Bash(python3:*)",
+      "Bash(ss:*)",
+      "Bash(docker exec:*)",
+      "Bash(curl:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker ps:*)",
+      "Bash(pnpm install)",
+      "Bash(docker-compose:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm add:*)",
+      "Bash(timeout 10 pnpm dev:*)",
+      "Bash(timeout 15 pnpm dev)",
+      "Bash(chmod:*)",
+      "Bash(test:*)",
+      "Bash(pnpm prisma:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" pnpm prisma migrate:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" pnpm tsx ../../scripts/seed.ts)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" PORT=8081 NODE_ENV=development pnpm dev)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" PORT=3001 NODE_ENV=development pnpm dev)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" pnpm:*)",
+      "Bash(sha256sum)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" psql -c \"UPDATE \"\"Customer\"\" SET \"\"apiKeyHash\"\" = ''74c5d88a6d2c201c5e004dadf414979a082209ea1e77fe985cac75283cf7ecdf'' WHERE email = ''dev@acme-ai.example.com'';\")",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" PORT=3002 NODE_ENV=development pnpm dev:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" PORT=3000 NODE_ENV=development pnpm dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

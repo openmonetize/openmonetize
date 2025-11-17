@@ -1,0 +1,17 @@
+{
+  "name": "legalai-demo",
+  "version": "1.0.0",
+  "description": "Example AI SaaS company integration with OpenMonetize",
+  "private": true,
+  "scripts": {
+    "dev": "tsx index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@openmonetize/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
