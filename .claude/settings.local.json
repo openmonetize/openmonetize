@@ -33,7 +33,11 @@
       "Bash(sha256sum)",
       "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" psql -c \"UPDATE \"\"Customer\"\" SET \"\"apiKeyHash\"\" = ''74c5d88a6d2c201c5e004dadf414979a082209ea1e77fe985cac75283cf7ecdf'' WHERE email = ''dev@acme-ai.example.com'';\")",
       "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" PORT=3002 NODE_ENV=development pnpm dev:*)",
-      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" PORT=3000 NODE_ENV=development pnpm dev)"
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" PORT=3000 NODE_ENV=development pnpm dev)",
+      "Bash(git check-ignore:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
