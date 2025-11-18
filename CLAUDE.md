@@ -292,24 +292,17 @@ NODE_ENV=development
 
 ## Current Development Status
 
-**Phase**: MVP Core Services (Phase 2)
+**For detailed status, see:**
+- **[PRIORITIES.md](PRIORITIES.md)** - Current sprint tasks and blockers
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and completed milestones
+- **[QUICK_START.md](QUICK_START.md)** - Quick start guide for new developers
+- **[Implementation Roadmap](docs/architecture/roadmap.md)** - Development roadmap and future plans
 
-**Completed**:
-- ✅ Monorepo setup with Turborepo
-- ✅ Complete database schema (Prisma)
-- ✅ Docker Compose infrastructure
-- ✅ Type definitions and validation
-- ✅ Provider cost seeding
-
-**In Progress** (see PRIORITIES.md):
-- 🚧 Event ingestion endpoint
-- 🚧 Cost calculation engine
-- 🚧 API authentication middleware
-
-**Key Files to Work On**:
-- `platform/packages/ingestion-service/src/routes/ingest.ts` - Event validation and storage
-- `platform/packages/rating-engine/src/routes/cost-calculation.ts` - Credit calculation
-- `platform/packages/api-gateway/src/middleware/auth.ts` - API key authentication
+**Quick Summary** (as of November 18, 2024):
+- **Phase**: Production Readiness (MVP 100% Complete) 🎉
+- **Status**: All core services functional, comprehensive documentation complete
+- **Services Running**: api-gateway (3000), ingestion-service (8081), rating-engine (3001)
+- **Current Focus**: Community building, SDK expansion (Python, Go)
 
 ## Health Checks
 
@@ -398,8 +391,29 @@ pnpm db:generate
 
 ## Documentation
 
-- **README.md**: Platform overview and quick start
-- **NEXT_STEPS.md**: Development guide for new developers
-- **PRIORITIES.md**: Current sprint tasks and blockers
-- **PROGRESS.md**: Detailed status and metrics
-- **docs/**: Public documentation (architecture, API specs)
+### Root Documentation
+- **[README.md](README.md)**: Project introduction and overview
+- **[QUICK_START.md](QUICK_START.md)**: 5-minute setup guide
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: Contribution guidelines
+- **[SECURITY.md](SECURITY.md)**: Security policy and vulnerability reporting
+- **[CHANGELOG.md](CHANGELOG.md)**: Version history and release notes
+- **[PRIORITIES.md](PRIORITIES.md)**: Current sprint tasks and blockers
+
+### API Documentation
+- **[API Overview](docs/api/overview.md)**: Complete REST API reference
+- **[Credits API](docs/api/credits.md)**: Credit management and grants
+- **[Entitlements API](docs/api/entitlements.md)**: Feature gating and access control
+- **[Analytics API](docs/api/analytics.md)**: Usage tracking and cost reporting
+
+### Guides
+- **[Migration Guide](docs/guides/migration.md)**: Migrate from other platforms
+- **[Railway Deployment](docs/guides/deployment-railway.md)**: Deploy to Railway
+
+### Architecture
+- **[Architecture Overview](docs/architecture/overview.md)**: System design and components
+- **[Implementation Roadmap](docs/architecture/roadmap.md)**: Development roadmap
+
+### Platform Development
+- **[Platform README](platform/README.md)**: Development setup
+- **[Common Package](platform/packages/common/README.md)**: Shared utilities
+- **[SDK Package](platform/packages/sdk/README.md)**: TypeScript SDK

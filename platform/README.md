@@ -2,7 +2,7 @@
 
 **Open-source AI monetization infrastructure for the post-SaaS era**
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](../LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)](https://nodejs.org/)
 
@@ -24,8 +24,8 @@ OpenMonetize is a comprehensive, open-source platform for AI-driven consumption-
 - Generate accurate invoices
 - Optimize AI spending
 
-**📖 Read This First**: [BUSINESS_MODEL.md](../BUSINESS_MODEL.md) - Understand who pays whom
-**📖 Terminology Guide**: [TERMINOLOGY.md](../TERMINOLOGY.md) - Customer vs User vs Provider
+**📖 Read This First**: [Architecture Overview](../docs/architecture/overview.md) - Understand the system design
+**📖 Quick Start**: [5-Minute Setup Guide](../QUICK_START.md) - Get up and running quickly
 
 ### Key Features
 
