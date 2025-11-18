@@ -16,11 +16,11 @@ export const config = {
   // Microservices
   services: {
     ingestion: {
-      url: process.env.INGESTION_SERVICE_URL || 'http://localhost:3001',
+      url: process.env.INGESTION_SERVICE_URL || 'http://localhost:8081',
       timeout: 30000, // 30 seconds
     },
     rating: {
-      url: process.env.RATING_SERVICE_URL || 'http://localhost:3002',
+      url: process.env.RATING_SERVICE_URL || 'http://localhost:3001',
       timeout: 10000, // 10 seconds
     },
   },

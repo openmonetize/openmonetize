@@ -5,6 +5,19 @@ BUSINESS_MODEL.md
 DOCUMENTATION_INDEX.md
 TECHNICAL_IMPLEMENTATION_GUIDE.md
 TERMINOLOGY.md
+MVP_COMPLETION_SUMMARY.md
+NEXT_STEPS.md
+PRIORITIES.md
+PROGRESS.md
+
+# Internal business documentation (not for public repo)
+internal-docs/
+docs/MARKET_ANALYSIS.md
+docs/COMPETITIVE_ANALYSIS.md
+docs/BUSINESS_STRATEGY.md
+docs/FINANCIAL_PROJECTIONS.md
+docs/GO_TO_MARKET.md
+docs/IMPLEMENTATION_ROADMAP.md
 
 # Keep important public documentation
 !LICENSE

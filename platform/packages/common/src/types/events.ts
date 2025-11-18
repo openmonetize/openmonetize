@@ -1,27 +1,16 @@
 // Event Types for Usage Tracking
 
-export enum EventType {
-  TOKEN_USAGE = 'TOKEN_USAGE',
-  API_CALL = 'API_CALL',
-  IMAGE_GENERATION = 'IMAGE_GENERATION',
-  AUDIO_PROCESSING = 'AUDIO_PROCESSING',
-  CUSTOM = 'CUSTOM'
-}
+import { EventType, ProviderName } from '../generated/prisma';
 
-export enum ProviderName {
-  OPENAI = 'OPENAI',
-  ANTHROPIC = 'ANTHROPIC',
-  GOOGLE = 'GOOGLE',
-  COHERE = 'COHERE',
-  MISTRAL = 'MISTRAL'
-}
+// Re-export for convenience
+export { EventType, ProviderName };
 
 export interface TokenUsageEvent {
   event_id: string;
   customer_id: string;
   user_id?: string;
   team_id?: string;
-  event_type: EventType.TOKEN_USAGE;
+  event_type: EventType;
   feature_id: string;
   provider: ProviderName;
   model: string;
@@ -37,7 +26,7 @@ export interface ImageGenerationEvent {
   customer_id: string;
   user_id?: string;
   team_id?: string;
-  event_type: EventType.IMAGE_GENERATION;
+  event_type: EventType;
   feature_id: string;
   provider: ProviderName;
   model: string;
@@ -53,7 +42,7 @@ export interface CustomEvent {
   customer_id: string;
   user_id?: string;
   team_id?: string;
-  event_type: EventType.CUSTOM;
+  event_type: EventType;
   feature_id: string;
   timestamp: Date;
   metadata: Record<string, unknown>;

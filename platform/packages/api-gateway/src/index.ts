@@ -12,10 +12,12 @@ import Redis from 'ioredis';
 
 // Import routes
 import { healthRoutes } from './routes/health';
+import { customersRoutes } from './routes/customers';
 import { ingestionRoutes } from './routes/ingestion';
 import { ratingRoutes } from './routes/rating';
 import { creditsRoutes } from './routes/credits';
 import { entitlementsRoutes } from './routes/entitlements';
+import { analyticsRoutes } from './routes/analytics';
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
@@ -49,9 +51,15 @@ async function start() {
     redis,
     keyGenerator: (request) => {
       // Rate limit by API key (customer ID)
+      // Try Authorization: Bearer header first
       const authHeader = request.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         return authHeader.substring(7);
+      }
+      // Try X-API-Key header
+      const apiKeyHeader = request.headers['x-api-key'];
+      if (typeof apiKeyHeader === 'string') {
+        return apiKeyHeader;
       }
       // Fallback to IP address
       return request.ip;
@@ -112,8 +120,10 @@ async function start() {
 
   // Register routes (order matters for proxies)
   await app.register(healthRoutes); // No prefix - health routes
+  await app.register(customersRoutes); // Customer management (registration is public)
   await app.register(creditsRoutes); // Direct routes
   await app.register(entitlementsRoutes); // Direct routes
+  await app.register(analyticsRoutes); // Direct routes
   await app.register(ingestionRoutes); // Proxy routes (must be after direct routes)
   await app.register(ratingRoutes); // Proxy routes (must be after direct routes)
 

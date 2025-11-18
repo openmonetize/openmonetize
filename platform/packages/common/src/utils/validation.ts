@@ -1,14 +1,14 @@
 // Validation Utilities
 
-import { ZodError } from 'zod';
+import { ZodError, type ZodIssue } from 'zod';
 
 /**
  * Format Zod validation errors into user-friendly messages
  */
-export function formatZodError(error: ZodError): Record<string, string> {
+export function formatZodError(error: ZodError<unknown>): Record<string, string> {
   const formatted: Record<string, string> = {};
 
-  error.errors.forEach((err) => {
+  error.issues.forEach((err: ZodIssue) => {
     const path = err.path.join('.');
     formatted[path] = err.message;
   });

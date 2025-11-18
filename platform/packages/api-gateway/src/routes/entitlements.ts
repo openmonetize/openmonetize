@@ -97,7 +97,6 @@ export async function entitlementsRoutes(app: FastifyInstance) {
           where: {
             customerId,
             featureId,
-            isEnabled: true,
           },
         });
 
@@ -122,7 +121,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
         const wallet = await db.creditWallet.findFirst({
           where: {
             userId,
-            deletedAt: null,
+            customerId,
           },
         });
 
@@ -166,32 +165,53 @@ export async function entitlementsRoutes(app: FastifyInstance) {
         let estimatedCostUsd = 0;
 
         if (action.type === 'token_usage' && action.provider && action.model) {
-          // Get provider costs
-          const providerCost = await db.providerCost.findFirst({
-            where: {
-              provider: action.provider,
-              model: action.model,
-              effectiveDate: {
-                lte: new Date(),
+          // Get provider costs for input and output tokens
+          const [inputCost, outputCost] = await Promise.all([
+            db.providerCost.findFirst({
+              where: {
+                provider: action.provider as any,
+                model: action.model,
+                costType: 'INPUT_TOKEN',
+                validFrom: { lte: new Date() },
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: new Date() } },
+                ],
               },
-            },
-            orderBy: {
-              effectiveDate: 'desc',
-            },
-          });
+              orderBy: { validFrom: 'desc' },
+            }),
+            db.providerCost.findFirst({
+              where: {
+                provider: action.provider as any,
+                model: action.model,
+                costType: 'OUTPUT_TOKEN',
+                validFrom: { lte: new Date() },
+                OR: [
+                  { validUntil: null },
+                  { validUntil: { gte: new Date() } },
+                ],
+              },
+              orderBy: { validFrom: 'desc' },
+            }),
+          ]);
 
-          if (providerCost) {
-            const inputCost = ((action.estimated_input_tokens || 0) / providerCost.unitSize) * providerCost.inputCostPerUnit;
-            const outputCost = ((action.estimated_output_tokens || 0) / providerCost.unitSize) * providerCost.outputCostPerUnit;
-            estimatedCostUsd = inputCost + outputCost;
+          if (inputCost || outputCost) {
+            const inputCostUsd = inputCost
+              ? ((action.estimated_input_tokens || 0) / inputCost.unitSize) * Number(inputCost.costPerUnit)
+              : 0;
+            const outputCostUsd = outputCost
+              ? ((action.estimated_output_tokens || 0) / outputCost.unitSize) * Number(outputCost.costPerUnit)
+              : 0;
 
-            // Apply burn table markup (simplified - use 2x markup)
-            estimatedCostCredits = Math.ceil(estimatedCostUsd * 2);
+            estimatedCostUsd = inputCostUsd + outputCostUsd;
+
+            // Apply burn table markup (default: 1000 credits per USD)
+            estimatedCostCredits = Math.ceil(estimatedCostUsd * 1000);
           }
         }
 
         // 5. Check available balance
-        const available = wallet.balance - wallet.reserved;
+        const available = Number(wallet.balance) - Number(wallet.reservedBalance);
 
         // 6. Apply limit type logic
         let allowed = true;
@@ -242,6 +262,250 @@ export async function entitlementsRoutes(app: FastifyInstance) {
         return reply.status(500).send({
           error: 'Internal Server Error',
           message: 'Failed to check entitlement',
+        });
+      }
+    }
+  );
+
+  // Create new entitlement
+  app.post(
+    '/v1/entitlements',
+    {
+      schema: {
+        tags: ['Entitlements'],
+        description: 'Create a new entitlement for a customer or user',
+        body: {
+          type: 'object',
+          properties: {
+            customerId: { type: 'string', format: 'uuid' },
+            userId: { type: 'string', format: 'uuid' },
+            featureId: { type: 'string' },
+            limitType: { type: 'string', enum: ['HARD', 'SOFT', 'NONE'] },
+            limitValue: { type: 'number', nullable: true },
+            period: { type: 'string', enum: ['DAILY', 'MONTHLY', 'TOTAL'], nullable: true },
+            metadata: { type: 'object' },
+          },
+          required: ['customerId', 'featureId', 'limitType'],
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              data: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  featureId: { type: 'string' },
+                  limitType: { type: 'string' },
+                  limitValue: { type: 'number', nullable: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request: any, reply) => {
+      try {
+        const { customerId, userId, featureId, limitType, limitValue, period, metadata } = request.body;
+
+        // Verify customer access
+        if (customerId !== request.customer!.id) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Access denied to this customer',
+          });
+        }
+
+        // Create entitlement
+        const entitlement = await db.entitlement.create({
+          data: {
+            customerId,
+            userId: userId || null,
+            featureId,
+            limitType,
+            limitValue: limitValue !== undefined ? BigInt(limitValue) : null,
+            period: period || null,
+            metadata: metadata || null,
+          },
+        });
+
+        logger.info({ entitlementId: entitlement.id, featureId }, 'Entitlement created');
+
+        return reply.status(201).send({
+          data: {
+            id: entitlement.id,
+            featureId: entitlement.featureId,
+            limitType: entitlement.limitType,
+            limitValue: entitlement.limitValue ? Number(entitlement.limitValue) : null,
+          },
+        });
+      } catch (error: any) {
+        logger.error({ err: error }, 'Error creating entitlement');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to create entitlement',
+        });
+      }
+    }
+  );
+
+  // Update entitlement
+  app.put<{ Params: { id: string } }>(
+    '/v1/entitlements/:id',
+    {
+      schema: {
+        tags: ['Entitlements'],
+        description: 'Update an existing entitlement',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+          required: ['id'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            limitType: { type: 'string', enum: ['HARD', 'SOFT', 'NONE'] },
+            limitValue: { type: 'number', nullable: true },
+            period: { type: 'string', enum: ['DAILY', 'MONTHLY', 'TOTAL'], nullable: true },
+            metadata: { type: 'object' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              data: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  featureId: { type: 'string' },
+                  limitType: { type: 'string' },
+                  limitValue: { type: 'number', nullable: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request: any, reply) => {
+      try {
+        const { id } = request.params;
+        const { limitType, limitValue, period, metadata } = request.body;
+
+        // Get existing entitlement to verify ownership
+        const existing = await db.entitlement.findUnique({
+          where: { id },
+        });
+
+        if (!existing) {
+          return reply.status(404).send({
+            error: 'Not Found',
+            message: 'Entitlement not found',
+          });
+        }
+
+        // Verify customer access
+        if (existing.customerId !== request.customer!.id) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Access denied to this entitlement',
+          });
+        }
+
+        // Update entitlement
+        const updated = await db.entitlement.update({
+          where: { id },
+          data: {
+            ...(limitType && { limitType }),
+            ...(limitValue !== undefined && { limitValue: limitValue !== null ? BigInt(limitValue) : null }),
+            ...(period && { period }),
+            ...(metadata && { metadata }),
+          },
+        });
+
+        logger.info({ entitlementId: id, featureId: updated.featureId }, 'Entitlement updated');
+
+        return reply.send({
+          data: {
+            id: updated.id,
+            featureId: updated.featureId,
+            limitType: updated.limitType,
+            limitValue: updated.limitValue ? Number(updated.limitValue) : null,
+          },
+        });
+      } catch (error) {
+        logger.error({ err: error }, 'Error updating entitlement');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to update entitlement',
+        });
+      }
+    }
+  );
+
+  // Delete entitlement
+  app.delete<{ Params: { id: string } }>(
+    '/v1/entitlements/:id',
+    {
+      schema: {
+        tags: ['Entitlements'],
+        description: 'Delete an entitlement',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+          required: ['id'],
+        },
+        response: {
+          204: {
+            type: 'null',
+            description: 'Entitlement deleted successfully',
+          },
+        },
+      },
+    },
+    async (request: any, reply) => {
+      try {
+        const { id } = request.params;
+
+        // Get existing entitlement to verify ownership
+        const existing = await db.entitlement.findUnique({
+          where: { id },
+        });
+
+        if (!existing) {
+          return reply.status(404).send({
+            error: 'Not Found',
+            message: 'Entitlement not found',
+          });
+        }
+
+        // Verify customer access
+        if (existing.customerId !== request.customer!.id) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Access denied to this entitlement',
+          });
+        }
+
+        // Delete entitlement
+        await db.entitlement.delete({
+          where: { id },
+        });
+
+        logger.info({ entitlementId: id, featureId: existing.featureId }, 'Entitlement deleted');
+
+        return reply.status(204).send();
+      } catch (error) {
+        logger.error({ err: error }, 'Error deleting entitlement');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to delete entitlement',
         });
       }
     }
@@ -300,9 +564,10 @@ export async function entitlementsRoutes(app: FastifyInstance) {
           },
           select: {
             featureId: true,
-            isEnabled: true,
             limitType: true,
             limitValue: true,
+            period: true,
+            metadata: true,
           },
         });
 

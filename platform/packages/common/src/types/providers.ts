@@ -1,15 +1,9 @@
 // LLM Provider Types and Pricing
 
-import { ProviderName } from './events';
+import { ProviderName, CostType } from '../generated/prisma';
 
-export enum CostType {
-  INPUT_TOKEN = 'INPUT_TOKEN',
-  OUTPUT_TOKEN = 'OUTPUT_TOKEN',
-  REQUEST = 'REQUEST',
-  IMAGE = 'IMAGE',
-  AUDIO = 'AUDIO',
-  VIDEO = 'VIDEO'
-}
+// Re-export for convenience
+export { ProviderName, CostType };
 
 export interface ProviderPricing {
   provider: ProviderName;

@@ -1,27 +1,9 @@
 // Entitlement and Feature Access Types
 
-export enum LimitType {
-  HARD = 'HARD',
-  SOFT = 'SOFT',
-  NONE = 'NONE'
-}
+import { LimitType, LimitPeriod } from '../generated/prisma';
 
-export enum LimitPeriod {
-  DAILY = 'DAILY',
-  MONTHLY = 'MONTHLY',
-  TOTAL = 'TOTAL'
-}
-
-export interface Entitlement {
-  id: string;
-  customer_id: string;
-  user_id?: string;
-  feature_id: string;
-  limit_type?: LimitType;
-  limit_value?: number;
-  period?: LimitPeriod;
-  metadata?: Record<string, unknown>;
-}
+// Re-export for convenience
+export { LimitType, LimitPeriod };
 
 export interface EntitlementCheckRequest {
   customer_id: string;

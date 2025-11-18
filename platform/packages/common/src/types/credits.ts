@@ -1,12 +1,6 @@
 // Credit System Types
 
-export enum TransactionType {
-  PURCHASE = 'PURCHASE',
-  BURN = 'BURN',
-  REFUND = 'REFUND',
-  EXPIRATION = 'EXPIRATION',
-  GRANT = 'GRANT'
-}
+import { TransactionType } from '../generated/prisma';
 
 export interface CreditBalance {
   wallet_id: string;
@@ -19,7 +13,7 @@ export interface CreditBalance {
   expires_at?: Date;
 }
 
-export interface CreditTransaction {
+export interface CreditTransactionResponse {
   transaction_id: string;
   wallet_id: string;
   customer_id: string;
@@ -68,7 +62,7 @@ export interface BurnTableRule {
   };
 }
 
-export interface BurnTable {
+export interface BurnTableConfig {
   id: string;
   customer_id?: string;
   name: string;

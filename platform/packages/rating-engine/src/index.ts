@@ -18,9 +18,7 @@ const db = getPrismaClient();
 
 async function start() {
   const app = Fastify({
-    logger: {
-      level: 'info'
-    },
+    logger: true,
     requestIdLogLabel: 'reqId',
     disableRequestLogging: false,
     requestIdHeader: 'x-request-id'

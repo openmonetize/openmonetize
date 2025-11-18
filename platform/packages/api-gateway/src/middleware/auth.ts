@@ -18,16 +18,30 @@ export async function authenticate(
   reply: FastifyReply
 ): Promise<void> {
   try {
-    // Extract API key from Authorization header
+    // Extract API key from Authorization header or X-API-Key header
+    let apiKey: string | undefined;
+
+    // Try Authorization: Bearer header first
     const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+
+    // Fall back to X-API-Key header
+    if (!apiKey) {
+      const apiKeyHeader = request.headers['x-api-key'];
+      if (typeof apiKeyHeader === 'string') {
+        apiKey = apiKeyHeader;
+      }
+    }
+
+    if (!apiKey) {
       return reply.status(401).send({
         error: 'Unauthorized',
-        message: 'Missing or invalid Authorization header',
+        message: 'Missing API key. Provide via Authorization: Bearer or X-API-Key header',
       });
     }
 
-    const apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
     const apiKeyHash = hashApiKey(apiKey);
 
     // Look up customer by API key hash
