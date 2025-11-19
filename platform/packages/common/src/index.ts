@@ -6,3 +6,4 @@ export * from './types';
 export * from './schemas';
 export * from './utils';
 export * from './database';
+export * from './services/audit-logger';

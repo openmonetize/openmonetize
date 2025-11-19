@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "dotenv -e .env -- turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
@@ -13,7 +13,8 @@
     "db:generate": "pnpm --filter @openmonetize/common db:generate",
     "db:seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "start:all": "pnpm -r --parallel start"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

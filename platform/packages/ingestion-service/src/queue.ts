@@ -5,6 +5,7 @@ import { processEvent } from './services/event-processor';
 import { logger } from './logger';
 
 let eventQueue: Queue;
+let dlqQueue: Queue;
 let eventWorker: Worker;
 let queueEvents: QueueEvents;
 
@@ -31,6 +32,15 @@ export async function initializeQueue(): Promise<void> {
         removeOnFail: {
           count: 5000 // Keep last 5000 failed jobs for debugging
         }
+      }
+    });
+
+    // Create DLQ for dead letters
+    dlqQueue = new Queue('events-dlq', {
+      connection: redisConnection,
+      defaultJobOptions: {
+        removeOnComplete: false, // Keep until manually handled
+        removeOnFail: false
       }
     });
 
@@ -64,7 +74,7 @@ export async function initializeQueue(): Promise<void> {
       );
     });
 
-    eventWorker.on('failed', (job, err) => {
+    eventWorker.on('failed', async (job, err) => {
       logger.error(
         {
           jobId: job?.id,
@@ -74,6 +84,27 @@ export async function initializeQueue(): Promise<void> {
         },
         'Event processing failed'
       );
+
+      // Move to DLQ if retries exhausted
+      if (job && job.attemptsMade >= (job.opts.attempts || 3)) {
+        try {
+          logger.warn(
+            { jobId: job.id, eventId: job.data.event_id },
+            'Job exhausted retries, moving to DLQ'
+          );
+          
+          await dlqQueue.add(job.name, {
+            ...job.data,
+            _original_error: err.message,
+            _failed_at: new Date().toISOString(),
+            _original_job_id: job.id
+          }, {
+            jobId: `dlq-${job.id}` // Preserve ID lineage
+          });
+        } catch (dlqError) {
+          logger.error({ error: dlqError, originalJobId: job.id }, 'Failed to move job to DLQ');
+        }
+      }
     });
 
     eventWorker.on('error', (err) => {
@@ -102,6 +133,13 @@ export function getQueue(): Queue {
   return eventQueue;
 }
 
+export function getDLQ(): Queue {
+  if (!dlqQueue) {
+    throw new Error('DLQ not initialized. Call initializeQueue() first.');
+  }
+  return dlqQueue;
+}
+
 export function getWorker(): Worker {
   if (!eventWorker) {
     throw new Error('Worker not initialized. Call initializeQueue() first.');
@@ -128,6 +166,11 @@ export async function closeQueue(): Promise<void> {
       logger.info('Queue closed');
     }
 
+    if (dlqQueue) {
+      await dlqQueue.close();
+      logger.info('DLQ closed');
+    }
+
     await redisConnection.quit();
     logger.info('Redis connection closed');
   } catch (error) {
@@ -137,7 +180,7 @@ export async function closeQueue(): Promise<void> {
 }
 
 export async function getQueueMetrics() {
-  if (!eventQueue) {
+  if (!eventQueue || !dlqQueue) {
     return null;
   }
 
@@ -149,12 +192,15 @@ export async function getQueueMetrics() {
     eventQueue.getDelayedCount()
   ]);
 
+  const dlqCount = await dlqQueue.getWaitingCount();
+
   return {
     waiting,
     active,
     completed,
     failed,
     delayed,
+    dlq: dlqCount,
     total: waiting + active + completed + failed + delayed
   };
 }

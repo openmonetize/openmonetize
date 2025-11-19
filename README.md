@@ -1,6 +1,8 @@
 # OpenMonetize
 
-> Open-source AI monetization platform for consumption-based billing
+> **Open Source Pricing & Billing Infrastructure for AI.**
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fopenmonetize%2Fopenmonetize)
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
@@ -27,24 +29,7 @@ OpenMonetize is a production-ready platform for AI SaaS companies to track usage
 Get OpenMonetize running locally in 5 minutes:
 
 ```bash
-# Clone the repository
-git clone https://github.com/openmonetize/openmonetize.git
-cd openmonetize/platform
-
-# Install dependencies (requires pnpm 8+)
-pnpm install
-
-# Start infrastructure (PostgreSQL, Redis)
-docker compose up -d
-
-# Run database migrations
-pnpm db:migrate
-
-# Seed initial data
-pnpm db:seed
-
-# Start all services
-pnpm dev
+git clone https://github.com/openmonetize/openmonetize.git && cd openmonetize/platform && docker compose up -d
 ```
 
 Services will be available at:
@@ -62,24 +47,18 @@ Services will be available at:
 - **[Architecture Overview](docs/architecture/overview.md)** - System design and components
 - **[Deployment Guide](docs/guides/deployment-railway.md)** - Production deployment on Railway
 - **[SDK Documentation](docs/api/)** - TypeScript SDK usage and examples
+- **[The Architecture of Intelligence Monetization](docs/architecture/INTELLIGENCE_MONETIZATION.md)** - Strategic framework and manifesto
 
 ## 🏛️ Architecture
 
 OpenMonetize is a microservices architecture built with TypeScript, Fastify, and PostgreSQL:
 
-```
-┌─────────────────┐
-│   API Gateway   │  Authentication, rate limiting, routing
-│   Port 3000     │
-└────────┬────────┘
-         │
-    ┌────┴────┬────────────┐
-    │         │            │
-┌───▼────┐ ┌──▼─────┐ ┌───▼────────┐
-│Ingestion│ │Rating  │ │PostgreSQL  │
-│Service  │ │Engine  │ │   + Redis  │
-│Port 8081│ │Port3001│ └────────────┘
-└─────────┘ └────────┘
+```mermaid
+graph LR
+    App[Your App] --> Proxy[OpenMonetize Proxy]
+    Proxy --> LLM[LLM Provider\n(OpenAI/Anthropic)]
+    Proxy -.-> Billing[Billing Engine]
+    Billing --> DB[(Database)]
 ```
 
 **Core Services:**

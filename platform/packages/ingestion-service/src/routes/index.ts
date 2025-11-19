@@ -1,9 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { ingestEvents } from './ingest';
+import { getDLQItems, replayDLQ } from './dlq';
 
 export async function registerRoutes(server: FastifyInstance) {
   // Event ingestion endpoint
   server.post('/v1/events/ingest', ingestEvents);
+
+  // DLQ Management
+  server.get('/v1/events/dlq', getDLQItems);
+  server.post('/v1/events/dlq/replay', replayDLQ);
 
   // API version info
   server.get('/v1/info', async () => {
@@ -13,7 +18,8 @@ export async function registerRoutes(server: FastifyInstance) {
       endpoints: {
         health: '/health',
         ready: '/ready',
-        ingest: '/v1/events/ingest'
+        ingest: '/v1/events/ingest',
+        dlq: '/v1/events/dlq'
       }
     };
   });

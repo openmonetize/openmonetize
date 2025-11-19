@@ -12,6 +12,14 @@ export interface OpenMonetizeConfig {
   timeout?: number;
   /** Enable debug logging (default: false) */
   debug?: boolean;
+  /** Enable automatic batching (default: true) */
+  autoFlush?: boolean;
+  /** Flush interval in milliseconds (default: 500) */
+  flushInterval?: number;
+  /** Maximum batch size before flushing (default: 100) */
+  maxBatchSize?: number;
+  /** Maximum number of retries for failed requests (default: 3) */
+  maxRetries?: number;
 }
 
 /**

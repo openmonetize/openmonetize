@@ -48,23 +48,15 @@ export async function withOpenAITracking<T extends {
   const response = await fn();
 
   if (response.usage) {
-    // Track usage asynchronously (don't block response)
-    client.ingestEvents({
-      events: [{
-        event_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        customer_id: context.customerId,
-        user_id: context.userId,
-        event_type: 'TOKEN_USAGE',
-        feature_id: context.featureId,
-        provider: 'OPENAI',
-        model: response.model,
-        input_tokens: response.usage.prompt_tokens,
-        output_tokens: response.usage.completion_tokens,
-        timestamp: new Date().toISOString(),
-        metadata: context.metadata,
-      }],
-    }).catch(error => {
-      console.error('[OpenMonetize] Failed to track usage:', error);
+    // Track usage (automatically batched)
+    client.trackTokenUsage({
+      user_id: context.userId,
+      feature_id: context.featureId,
+      provider: 'OPENAI',
+      model: response.model,
+      input_tokens: response.usage.prompt_tokens,
+      output_tokens: response.usage.completion_tokens,
+      metadata: context.metadata,
     });
   }
 
@@ -115,23 +107,15 @@ export async function withAnthropicTracking<T extends {
 ): Promise<T> {
   const response = await fn();
 
-  // Track usage asynchronously
-  client.ingestEvents({
-    events: [{
-      event_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      customer_id: context.customerId,
-      user_id: context.userId,
-      event_type: 'TOKEN_USAGE',
-      feature_id: context.featureId,
-      provider: 'ANTHROPIC',
-      model: response.model,
-      input_tokens: response.usage.input_tokens,
-      output_tokens: response.usage.output_tokens,
-      timestamp: new Date().toISOString(),
-      metadata: context.metadata,
-    }],
-  }).catch(error => {
-    console.error('[OpenMonetize] Failed to track usage:', error);
+  // Track usage (automatically batched)
+  client.trackTokenUsage({
+    user_id: context.userId,
+    feature_id: context.featureId,
+    provider: 'ANTHROPIC',
+    model: response.model,
+    input_tokens: response.usage.input_tokens,
+    output_tokens: response.usage.output_tokens,
+    metadata: context.metadata,
   });
 
   return response;
@@ -173,23 +157,15 @@ export async function trackUsage<T>(
 ): Promise<T> {
   const response = await fn();
 
-  // Track usage asynchronously
-  client.ingestEvents({
-    events: [{
-      event_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      customer_id: tracking.customerId,
-      user_id: tracking.userId,
-      event_type: 'TOKEN_USAGE',
-      feature_id: tracking.featureId,
-      provider: tracking.provider,
-      model: tracking.model,
-      input_tokens: tracking.inputTokens,
-      output_tokens: tracking.outputTokens,
-      timestamp: new Date().toISOString(),
-      metadata: tracking.metadata,
-    }],
-  }).catch(error => {
-    console.error('[OpenMonetize] Failed to track usage:', error);
+  // Track usage (automatically batched)
+  client.trackTokenUsage({
+    user_id: tracking.userId,
+    feature_id: tracking.featureId,
+    provider: tracking.provider as any,
+    model: tracking.model,
+    input_tokens: tracking.inputTokens,
+    output_tokens: tracking.outputTokens,
+    metadata: tracking.metadata,
   });
 
   return response;

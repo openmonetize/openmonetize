@@ -14,6 +14,7 @@ import type {
   UsageAnalyticsRequest,
   UsageAnalyticsResponse,
   ApiErrorResponse,
+  UsageEvent,
 } from './types';
 import { OpenMonetizeError } from './types';
 
@@ -28,8 +29,8 @@ import { OpenMonetizeError } from './types';
  *   apiKey: process.env.OPENMONETIZE_API_KEY!
  * });
  *
- * // Track token usage
- * await client.trackTokenUsage({
+ * // Track token usage (automatically batched)
+ * client.trackTokenUsage({
  *   user_id: 'law-firm-a',
  *   feature_id: 'legal-research',
  *   provider: 'OPENAI',
@@ -46,25 +47,46 @@ export class OpenMonetize {
   private readonly debug: boolean;
   private readonly customerId: string | null = null;
 
+  // Batching configuration
+  private readonly autoFlush: boolean;
+  private readonly flushInterval: number;
+  private readonly maxBatchSize: number;
+  private readonly maxRetries: number;
+
+  // Internal state
+  private eventBuffer: UsageEvent[] = [];
+  private flushTimer: NodeJS.Timeout | null = null;
+  private isFlushing = false;
+
   constructor(config: OpenMonetizeConfig) {
     this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl || 'https://api.openmonetize.io';
     this.timeout = config.timeout || 30000;
     this.debug = config.debug || false;
+    
+    this.autoFlush = config.autoFlush ?? true;
+    this.flushInterval = config.flushInterval || 500;
+    this.maxBatchSize = config.maxBatchSize || 100;
+    this.maxRetries = config.maxRetries || 3;
 
-    // Extract customer ID from API key if needed (for validation)
     if (this.debug) {
-      console.log('[OpenMonetize] Initialized with base URL:', this.baseUrl);
+      console.log('[OpenMonetize] Initialized with config:', {
+        baseUrl: this.baseUrl,
+        autoFlush: this.autoFlush,
+        flushInterval: this.flushInterval,
+        maxBatchSize: this.maxBatchSize
+      });
     }
   }
 
   /**
-   * Make HTTP request to OpenMonetize API
+   * Make HTTP request to OpenMonetize API with retries
    */
   private async request<T>(
     method: string,
     path: string,
-    body?: unknown
+    body?: unknown,
+    attempt = 1
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const controller = new AbortController();
@@ -72,7 +94,7 @@ export class OpenMonetize {
 
     try {
       if (this.debug) {
-        console.log(`[OpenMonetize] ${method} ${path}`, body);
+        console.log(`[OpenMonetize] ${method} ${path} (Attempt ${attempt})`, body);
       }
 
       const response = await fetch(url, {
@@ -88,9 +110,22 @@ export class OpenMonetize {
 
       clearTimeout(timeoutId);
 
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return {} as T;
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
+        // Retry on 5xx errors or 429
+        if (attempt < this.maxRetries && (response.status >= 500 || response.status === 429)) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          if (this.debug) console.log(`[OpenMonetize] Request failed, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.request<T>(method, path, body, attempt + 1);
+        }
+
         const errorData = data as ApiErrorResponse;
         throw new OpenMonetizeError(
           errorData.message || 'API request failed',
@@ -99,13 +134,17 @@ export class OpenMonetize {
         );
       }
 
-      if (this.debug) {
-        console.log(`[OpenMonetize] Response:`, data);
-      }
-
       return data as T;
     } catch (error) {
       clearTimeout(timeoutId);
+
+      // Retry on network errors
+      if (attempt < this.maxRetries && (error instanceof TypeError || (error as any).name === 'AbortError')) {
+         const delay = Math.pow(2, attempt) * 1000;
+         if (this.debug) console.log(`[OpenMonetize] Network error, retrying in ${delay}ms...`);
+         await new Promise(resolve => setTimeout(resolve, delay));
+         return this.request<T>(method, path, body, attempt + 1);
+      }
 
       if (error instanceof OpenMonetizeError) {
         throw error;
@@ -123,7 +162,70 @@ export class OpenMonetize {
   }
 
   /**
-   * Ingest usage events in batch
+   * Add event to buffer and schedule flush
+   */
+  private enqueueEvent(event: UsageEvent): void {
+    this.eventBuffer.push(event);
+
+    if (this.autoFlush) {
+      if (this.eventBuffer.length >= this.maxBatchSize) {
+        this.flush().catch(err => {
+          if (this.debug) console.error('[OpenMonetize] Failed to flush batch:', err);
+        });
+      } else if (!this.flushTimer) {
+        this.flushTimer = setTimeout(() => {
+          this.flush().catch(err => {
+            if (this.debug) console.error('[OpenMonetize] Failed to flush batch:', err);
+          });
+        }, this.flushInterval);
+        // Unref timer so it doesn't block process exit
+        if (this.flushTimer.unref) {
+          this.flushTimer.unref();
+        }
+      }
+    }
+  }
+
+  /**
+   * Flush pending events to API
+   */
+  async flush(): Promise<void> {
+    if (this.eventBuffer.length === 0 || this.isFlushing) {
+      return;
+    }
+
+    this.isFlushing = true;
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+
+    const batch = [...this.eventBuffer];
+    this.eventBuffer = [];
+
+    try {
+      await this.ingestEvents({ events: batch });
+      if (this.debug) {
+        console.log(`[OpenMonetize] Flushed ${batch.length} events`);
+      }
+    } catch (error) {
+      // On failure, put events back at the front of the queue?
+      // Or drop them? For now, we log error to avoid infinite loops
+      console.error('[OpenMonetize] Failed to flush events:', error);
+      // Optionally re-queue: this.eventBuffer.unshift(...batch);
+    } finally {
+      this.isFlushing = false;
+      
+      // If more events came in while flushing, schedule another flush
+      if (this.eventBuffer.length > 0 && this.autoFlush) {
+         this.flushTimer = setTimeout(() => this.flush(), this.flushInterval);
+         if (this.flushTimer.unref) this.flushTimer.unref();
+      }
+    }
+  }
+
+  /**
+   * Ingest usage events directly (bypasses buffer if called directly, but used by flush)
    */
   async ingestEvents(request: IngestEventsRequest): Promise<IngestEventsResponse> {
     return this.request<IngestEventsResponse>(
@@ -134,21 +236,12 @@ export class OpenMonetize {
   }
 
   /**
-   * Track token usage (helper method)
-   *
-   * @example
-   * ```typescript
-   * await client.trackTokenUsage({
-   *   user_id: 'user-123',
-   *   feature_id: 'chat',
-   *   provider: 'OPENAI',
-   *   model: 'gpt-4',
-   *   input_tokens: 1000,
-   *   output_tokens: 500
-   * });
-   * ```
+   * Track token usage
+   * 
+   * This method is now non-blocking by default (queues event).
+   * To force immediate send, call flush() afterwards or configure autoFlush: false.
    */
-  async trackTokenUsage(params: {
+  trackTokenUsage(params: {
     user_id: string;
     feature_id: string;
     provider: 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL';
@@ -156,27 +249,25 @@ export class OpenMonetize {
     input_tokens: number;
     output_tokens: number;
     metadata?: Record<string, unknown>;
-  }): Promise<IngestEventsResponse> {
+  }): void {
     // Generate event ID
     const event_id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Get customer ID from context or require it
     const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
 
-    return this.ingestEvents({
-      events: [{
-        event_id,
-        customer_id,
-        user_id: params.user_id,
-        event_type: 'TOKEN_USAGE',
-        feature_id: params.feature_id,
-        provider: params.provider,
-        model: params.model,
-        input_tokens: params.input_tokens,
-        output_tokens: params.output_tokens,
-        timestamp: new Date().toISOString(),
-        metadata: params.metadata,
-      }],
+    this.enqueueEvent({
+      event_id,
+      customer_id,
+      user_id: params.user_id,
+      event_type: 'TOKEN_USAGE',
+      feature_id: params.feature_id,
+      provider: params.provider,
+      model: params.model,
+      input_tokens: params.input_tokens,
+      output_tokens: params.output_tokens,
+      timestamp: new Date().toISOString(),
+      metadata: params.metadata,
     });
   }
 
@@ -236,26 +327,6 @@ export class OpenMonetize {
 
   /**
    * Check if user is entitled to perform an action
-   *
-   * @example
-   * ```typescript
-   * const entitlement = await client.checkEntitlement({
-   *   customerId: 'company-123',
-   *   user_id: 'user-456',
-   *   feature_id: 'ai-chat',
-   *   action: {
-   *     type: 'token_usage',
-   *     provider: 'openai',
-   *     model: 'gpt-4',
-   *     estimated_input_tokens: 1000,
-   *     estimated_output_tokens: 500
-   *   }
-   * });
-   *
-   * if (!entitlement.allowed) {
-   *   console.log('Access denied:', entitlement.reason);
-   * }
-   * ```
    */
   async checkEntitlement(
     customerId: string,

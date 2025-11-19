@@ -47,6 +47,7 @@ model Customer {
   usageEvents      UsageEvent[]
   burnTables       BurnTable[]
   entitlements     Entitlement[]
+  auditLogs        AuditLog[]
 
   @@index([email])
   @@index([status])
@@ -372,4 +373,30 @@ model Entitlement {
   @@index([customerId])
   @@index([featureId])
   @@map("entitlements")
+}
+
+// ============================================================================
+// AUDIT LOGS
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  customerId  String   @map("customer_id")
+  userId      String?  @map("user_id") // Actor who performed the action
+  action      String   // e.g., "CREDIT_PURCHASE", "PLAN_UPDATE"
+  entityType  String   @map("entity_type") // e.g., "CreditWallet"
+  entityId    String   @map("entity_id")
+  oldValue    Json?    @map("old_value")
+  newValue    Json?    @map("new_value")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customer    Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

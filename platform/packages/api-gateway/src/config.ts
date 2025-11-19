@@ -42,4 +42,11 @@ export const config = {
     description: 'Open-source AI monetization infrastructure',
     version: '1.0.0',
   },
+
+  // Demo Mode
+  demo: {
+    enabled: process.env.DEMO_MODE === 'true',
+    tenantId: process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111',
+    apiKey: process.env.DEMO_API_KEY || 'om_live_demo123',
+  },
 } as const;
