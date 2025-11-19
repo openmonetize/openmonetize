@@ -115,6 +115,86 @@ export async function calculateCost(event: any): Promise<CostResult> {
       };
     }
 
+    // For IMAGE_GENERATION events
+    if (event.event_type === 'IMAGE_GENERATION' && event.provider && event.model) {
+      // Fetch image generation cost from database
+      const imageCost = await db.providerCost.findFirst({
+        where: {
+          provider: event.provider,
+          model: event.model,
+          costType: 'IMAGE',
+          validFrom: { lte: new Date() },
+          OR: [
+            { validUntil: null },
+            { validUntil: { gte: new Date() } }
+          ]
+        }
+      });
+
+      if (!imageCost) {
+        logger.warn({
+          provider: event.provider,
+          model: event.model,
+          eventType: 'IMAGE_GENERATION'
+        }, 'Image generation cost not found, using default');
+        
+        // Default: $0.04 per image (DALL-E 3 standard pricing)
+        const defaultImageCost = 0.04;
+        const imageCount = Number(event.image_count) || 1;
+        const totalUsd = defaultImageCost * imageCount;
+        const creditsPerDollar = 1000;
+        const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
+
+        return {
+          credits,
+          usd: new Decimal(totalUsd)
+        };
+      }
+
+      const imageCount = Number(event.image_count) || 1;
+      const totalUsd = (imageCount / Number(imageCost.unitSize)) * Number(imageCost.costPerUnit);
+      const creditsPerDollar = 1000;
+      const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
+
+      logger.debug({
+        eventId: event.event_id,
+        provider: event.provider,
+        model: event.model,
+        imageCount,
+        totalUsd,
+        credits: credits.toString()
+      }, 'Image generation cost calculated');
+
+      return {
+        credits,
+        usd: new Decimal(totalUsd)
+      };
+    }
+
+    // For CUSTOM events with quantity-based pricing
+    if (event.event_type === 'CUSTOM' && event.unit_type && event.quantity) {
+      // For custom events, use a simple per-unit pricing
+      // Default: 1 credit per unit (e.g., 1 credit per page, per API call, etc.)
+      const defaultCreditsPerUnit = 10; // 10 credits per unit (0.01 cents)
+      const quantity = Number(event.quantity) || 1;
+      const credits = BigInt(quantity * defaultCreditsPerUnit);
+      const creditsPerDollar = 1000;
+      const totalUsd = Number(credits) / creditsPerDollar;
+
+      logger.debug({
+        eventId: event.event_id,
+        unitType: event.unit_type,
+        quantity,
+        creditsPerUnit: defaultCreditsPerUnit,
+        credits: credits.toString()
+      }, 'Custom event cost calculated');
+
+      return {
+        credits,
+        usd: new Decimal(totalUsd)
+      };
+    }
+
     // For other event types (API_CALL, FEATURE_ACCESS), return zero cost
     // These might have fixed costs defined in entitlements
     return {

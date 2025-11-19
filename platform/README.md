@@ -157,6 +157,33 @@ async function handleAIRequest(lawFirmId, prompt) {
 
   return response;
 }
+
+// Example: Tracking Image Generation
+await openmonetize.trackCustomEvent({
+  event_id: 'evt_img_123',
+  customer_id: 'legalai-company',
+  user_id: 'law-firm-a',
+  event_type: 'IMAGE_GENERATION',
+  feature_id: 'logo-creator',
+  provider: 'OPENAI',
+  model: 'dall-e-3',
+  image_count: 1,
+  image_size: '1024x1024',
+  quality: 'hd',
+  timestamp: new Date()
+});
+
+// Example: Tracking Custom Units
+await openmonetize.trackCustomEvent({
+  event_id: 'evt_custom_123',
+  customer_id: 'legalai-company',
+  user_id: 'law-firm-a',
+  event_type: 'CUSTOM',
+  feature_id: 'pdf-processing',
+  unit_type: 'pages',
+  quantity: 5,
+  timestamp: new Date()
+});
 ```
 
 ### 2. Real-Time Entitlement Checks

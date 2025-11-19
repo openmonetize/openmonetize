@@ -71,6 +71,18 @@ export async function analyticsRoutes(app: FastifyInstance) {
                       },
                     },
                   },
+                  byEventType: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        eventType: { type: 'string' },
+                        eventCount: { type: 'number' },
+                        creditsBurned: { type: 'string' },
+                        costUsd: { type: 'string' },
+                      },
+                    },
+                  },
                   timeline: {
                     type: 'array',
                     items: {
@@ -93,8 +105,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
       try {
         const { customerId, startDate, endDate, groupBy } = request.query;
 
+        // Use authenticated customer's ID if customerId not provided
+        const targetCustomerId = customerId || request.customer!.id;
+
         // Verify customer access
-        if (customerId !== request.customer!.id) {
+        if (targetCustomerId !== request.customer!.id) {
           return reply.status(403).send({
             error: 'Forbidden',
             message: 'Access denied to this customer',
@@ -108,7 +123,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         // Get usage events
         const events = await db.usageEvent.findMany({
           where: {
-            customerId,
+            customerId: targetCustomerId,
             timestamp: {
               gte: start,
               lte: end,
@@ -116,6 +131,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
           },
           select: {
             featureId: true,
+            eventType: true,
             provider: true,
             model: true,
             inputTokens: true,
@@ -181,6 +197,25 @@ export async function analyticsRoutes(app: FastifyInstance) {
           };
         });
 
+        // Group by event type
+        const eventTypeMap = new Map<string, { count: number; credits: bigint; cost: number }>();
+        events.forEach((event) => {
+          const key = String(event.eventType || 'UNKNOWN');
+          const existing = eventTypeMap.get(key) || { count: 0, credits: BigInt(0), cost: 0 };
+          eventTypeMap.set(key, {
+            count: existing.count + 1,
+            credits: existing.credits + (event.creditsBurned || BigInt(0)),
+            cost: existing.cost + Number(event.costUsd || 0),
+          });
+        });
+
+        const byEventType = Array.from(eventTypeMap.entries()).map(([eventType, stats]) => ({
+          eventType,
+          eventCount: stats.count,
+          creditsBurned: stats.credits.toString(),
+          costUsd: stats.cost.toFixed(4),
+        }));
+
         // Create timeline (daily aggregation)
         const timelineMap = new Map<string, { events: number; credits: bigint }>();
         events.forEach((event) => {
@@ -205,6 +240,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
             summary,
             byFeature,
             byProvider,
+            byEventType,
             timeline,
           },
         });
