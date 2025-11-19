@@ -272,6 +272,32 @@ export class OpenMonetize {
   }
 
   /**
+   * Track custom usage event (outcome-based metering)
+   */
+  trackCustomEvent(params: {
+    user_id: string;
+    feature_id: string;
+    unit_type: string;
+    quantity: number;
+    metadata?: Record<string, unknown>;
+  }): void {
+    const event_id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
+
+    this.enqueueEvent({
+      event_id,
+      customer_id,
+      user_id: params.user_id,
+      event_type: 'CUSTOM',
+      feature_id: params.feature_id,
+      unit_type: params.unit_type,
+      quantity: params.quantity,
+      timestamp: new Date().toISOString(),
+      metadata: params.metadata,
+    });
+  }
+
+  /**
    * Get credit balance for a user
    */
   async getCreditBalance(

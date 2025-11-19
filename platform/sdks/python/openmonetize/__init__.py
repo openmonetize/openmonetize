@@ -23,6 +23,7 @@ __all__ = [
     "CustomersApi",
     "DemoApi",
     "EntitlementsApi",
+    "EventsApi",
     "HealthApi",
     "DefaultApi",
     "ApiResponse",
@@ -83,6 +84,9 @@ __all__ = [
     "V1EntitlementsPost201ResponseData",
     "V1EntitlementsPostRequest",
     "V1InfoGet200Response",
+    "CustomEvent",
+    "ImageGenerationEvent",
+    "TokenUsageEvent",
 ]
 
 # import apis into sdk package
@@ -91,6 +95,7 @@ from openmonetize.api.credits_api import CreditsApi as CreditsApi
 from openmonetize.api.customers_api import CustomersApi as CustomersApi
 from openmonetize.api.demo_api import DemoApi as DemoApi
 from openmonetize.api.entitlements_api import EntitlementsApi as EntitlementsApi
+from openmonetize.api.events_api import EventsApi as EventsApi
 from openmonetize.api.health_api import HealthApi as HealthApi
 from openmonetize.api.default_api import DefaultApi as DefaultApi
 
@@ -155,4 +160,7 @@ from openmonetize.models.v1_entitlements_post201_response import V1EntitlementsP
 from openmonetize.models.v1_entitlements_post201_response_data import V1EntitlementsPost201ResponseData as V1EntitlementsPost201ResponseData
 from openmonetize.models.v1_entitlements_post_request import V1EntitlementsPostRequest as V1EntitlementsPostRequest
 from openmonetize.models.v1_info_get200_response import V1InfoGet200Response as V1InfoGet200Response
+from openmonetize.models.custom_event import CustomEvent as CustomEvent
+from openmonetize.models.image_generation_event import ImageGenerationEvent as ImageGenerationEvent
+from openmonetize.models.token_usage_event import TokenUsageEvent as TokenUsageEvent
 

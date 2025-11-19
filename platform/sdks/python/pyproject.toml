@@ -1,6 +1,6 @@
 [project]
 name = "openmonetize"
-version = "0.1.0"
+dynamic = ["version"]
 description = "OpenMonetize API"
 authors = [
   {name = "OpenAPI Generator Community",email = "team@openapitools.org"},
@@ -19,6 +19,9 @@ dependencies = [
 [project.urls]
 Repository = "https://github.com/GIT_USER_ID/GIT_REPO_ID"
 
+[tool.setuptools.dynamic]
+version = {attr = "openmonetize.__version__"}
+
 [tool.poetry]
 requires-poetry = ">=2.0"
 
@@ -32,7 +35,7 @@ mypy = ">= 1.5"
 
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.pylint.'MESSAGES CONTROL']

@@ -1,0 +1,36 @@
+name: License Check
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  license-check:
+    name: Check License Headers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install addlicense
+        run: go install github.com/google/addlicense@v1.0.0
+
+      - name: Check License Headers
+        run: |
+          # Run check from the platform directory where the script expects to be run relative to
+          # Actually the script is in platform/scripts/check-licenses.sh
+          # But we should run it from the root of the repo or platform?
+          # The script does `addlicense ... .` so it checks the current directory.
+          # If we want to check the whole repo, we should run from root.
+          # But the script is now in platform/scripts.
+          
+          # Let's adjust the script execution.
+          # If we run from root:
+          chmod +x platform/scripts/check-licenses.sh
+          ./platform/scripts/check-licenses.sh

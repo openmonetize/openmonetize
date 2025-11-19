@@ -14,7 +14,9 @@
     "db:seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "start:all": "pnpm -r --parallel start"
+    "start:all": "pnpm -r --parallel start",
+    "license:check": "./scripts/check-licenses.sh",
+    "license:fix": "./scripts/check-licenses.sh fix"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

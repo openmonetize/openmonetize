@@ -61,5 +61,7 @@ from openmonetize.models.v1_entitlements_id_put_request import V1EntitlementsIdP
 from openmonetize.models.v1_entitlements_post201_response import V1EntitlementsPost201Response
 from openmonetize.models.v1_entitlements_post201_response_data import V1EntitlementsPost201ResponseData
 from openmonetize.models.v1_entitlements_post_request import V1EntitlementsPostRequest
-from openmonetize.models.v1_info_get200_response import V1InfoGet200Response
-
+from openmonetize.models.v1_info_get200_response import V1InfoGet200Response as V1InfoGet200Response
+from openmonetize.models.custom_event import CustomEvent as CustomEvent
+from openmonetize.models.image_generation_event import ImageGenerationEvent as ImageGenerationEvent
+from openmonetize.models.token_usage_event import TokenUsageEvent as TokenUsageEvent

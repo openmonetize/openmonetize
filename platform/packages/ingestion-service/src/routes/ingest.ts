@@ -11,12 +11,19 @@ const eventSchema = z.object({
   customer_id: z.string(),
   user_id: z.string().optional(),
   team_id: z.string().optional(),
-  event_type: z.enum(['TOKEN_USAGE', 'API_CALL', 'FEATURE_ACCESS']),
+  event_type: z.enum(['TOKEN_USAGE', 'API_CALL', 'FEATURE_ACCESS', 'IMAGE_GENERATION', 'CUSTOM']),
   feature_id: z.string(),
   provider: z.enum(['OPENAI', 'ANTHROPIC', 'GOOGLE', 'COHERE', 'MISTRAL']).optional(),
   model: z.string().optional(),
   input_tokens: z.number().int().nonnegative().optional(),
   output_tokens: z.number().int().nonnegative().optional(),
+  // Image generation fields
+  image_count: z.number().int().positive().optional(),
+  image_size: z.string().optional(),
+  quality: z.string().optional(),
+  // Custom event fields
+  unit_type: z.string().optional(),
+  quantity: z.number().positive().optional(),
   timestamp: z.string().datetime().or(z.date()),
   metadata: z.record(z.unknown()).optional(),
   idempotency_key: z.string().optional()

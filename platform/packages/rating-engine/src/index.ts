@@ -13,6 +13,7 @@ import { burnTableRoutes } from './routes/burn-tables';
 import { costCalculationRoutes } from './routes/cost-calculation';
 import { analyticsRoutes } from './routes/analytics';
 import { healthRoutes } from './routes/health';
+import { creditsRoutes } from './routes/credits';
 
 const db = getPrismaClient();
 
@@ -39,6 +40,7 @@ async function start() {
   await app.register(burnTableRoutes, { prefix: '/v1/burn-tables' });
   await app.register(costCalculationRoutes, { prefix: '/v1/rating' });
   await app.register(analyticsRoutes, { prefix: '/v1/analytics' });
+  await app.register(creditsRoutes, { prefix: '/v1/credits' });
 
   // Graceful shutdown
   const signals = ['SIGINT', 'SIGTERM'];

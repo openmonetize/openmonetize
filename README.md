@@ -56,7 +56,7 @@ OpenMonetize is a microservices architecture built with TypeScript, Fastify, and
 ```mermaid
 graph LR
     App[Your App] --> Proxy[OpenMonetize Proxy]
-    Proxy --> LLM[LLM Provider\n(OpenAI/Anthropic)]
+    Proxy --> LLM[LLM Provider<br/>(OpenAI/Anthropic)]
     Proxy -.-> Billing[Billing Engine]
     Billing --> DB[(Database)]
 ```

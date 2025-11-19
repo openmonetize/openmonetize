@@ -1,0 +1,38 @@
+name: Publish Node.js SDK
+on:
+  release:
+    types: [published]
+
+jobs:
+  npm-publish:
+    name: Upload release to NPM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: |
+          cd platform/packages/sdk
+          npm install
+
+      - name: Build package
+        run: |
+          cd platform/packages/sdk
+          npm run build
+
+      - name: Publish to NPM
+        run: |
+          cd platform/packages/sdk
+          npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

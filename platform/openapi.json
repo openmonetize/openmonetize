@@ -14,7 +14,189 @@
         "description": "API key authentication (Format: Bearer <your-api-key>)"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "UsageEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TokenUsageEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ImageGenerationEvent"
+          },
+          {
+            "$ref": "#/components/schemas/CustomEvent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "event_type",
+          "mapping": {
+            "TOKEN_USAGE": "#/components/schemas/TokenUsageEvent",
+            "IMAGE_GENERATION": "#/components/schemas/ImageGenerationEvent",
+            "CUSTOM": "#/components/schemas/CustomEvent"
+          }
+        }
+      },
+      "TokenUsageEvent": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "TOKEN_USAGE"
+            ]
+          },
+          "feature_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "OPENAI",
+              "ANTHROPIC",
+              "GOOGLE",
+              "COHERE",
+              "MISTRAL"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "event_id",
+          "customer_id",
+          "event_type",
+          "feature_id",
+          "timestamp"
+        ]
+      },
+      "ImageGenerationEvent": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "IMAGE_GENERATION"
+            ]
+          },
+          "feature_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "image_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "image_size": {
+            "type": "string"
+          },
+          "quality": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "event_id",
+          "customer_id",
+          "event_type",
+          "feature_id",
+          "timestamp"
+        ]
+      },
+      "CustomEvent": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "CUSTOM"
+            ]
+          },
+          "feature_id": {
+            "type": "string"
+          },
+          "unit_type": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "event_id",
+          "customer_id",
+          "event_type",
+          "feature_id",
+          "unit_type",
+          "quantity",
+          "timestamp"
+        ]
+      }
+    }
   },
   "paths": {
     "/health": {

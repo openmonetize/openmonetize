@@ -1,6 +1,9 @@
 {
   "name": "@openmonetize/sdk",
-  "version": "0.1.0",
+  "version": "0.0.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Official TypeScript SDK for OpenMonetize - AI usage tracking and billing",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
