@@ -1,6 +1,8 @@
 # OpenMonetize
 
-> **Open Source Pricing & Billing Infrastructure for AI.**
+**The "Smart Meter" for AI Consumption.**
+
+Open Source Pricing & Billing Infrastructure to track tokens, manage credits, and bill for actual usage.
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fopenmonetize%2Fopenmonetize)
 
@@ -10,204 +12,170 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-red)](https://redis.io/)
 
-OpenMonetize is a production-ready platform for AI SaaS companies to track usage, calculate costs, manage credits, and bill customers based on actual AI consumption (tokens, API calls, compute time).
+---
 
-**Think "smart meter for AI consumption."**
+## ⚡ The 30-Second Demo
 
-## 🎯 Key Features
+Don't just read about it. Here is how you integrate OpenMonetize into your AI app in 3 steps.
 
-- **Real-time Usage Tracking** - Track AI consumption (tokens, API calls) with sub-second latency
-- **Flexible Credit System** - Multi-currency wallet system with reservations and balance management
-- **Cost Attribution** - Accurate cost calculation using configurable burn tables and provider pricing
-- **Multi-tenant by Design** - Built-in tenant isolation with secure API key authentication
-- **Entitlement Management** - Feature gating and usage limits per customer tier
-- **High-throughput Ingestion** - Handle 10K+ events/sec with idempotent processing
-- **Production-ready** - Comprehensive test coverage, observability, and deployment guides
+### 1. The Setup
+
+You wrap your LLM calls (OpenAI, Anthropic, etc.) with our lightweight SDK.
+
+```typescript
+import { OpenMonetize } from '@openmonetize/sdk';
+
+const om = new OpenMonetize({ apiKey: process.env.OM_API_KEY });
+```
+
+### 2. The Usage (Input)
+
+When a user makes a request, you track the consumption. We handle the math, the concurrency, and the debits.
+
+```typescript
+// Inside your API route
+const response = await openai.chat.completions.create({
+  model: "gpt-4",
+  messages: [{ role: "user", content: "Hello world" }],
+});
+
+// 🔥 This is the magic line
+await om.track({
+  userId: "user_123",
+  feature: "gpt-4-completion", // Maps to your burn table (e.g., $0.03/1k tokens)
+  usage: {
+    inputTokens: response.usage.prompt_tokens,
+    outputTokens: response.usage.completion_tokens
+  }
+});
+```
+
+### 3. The Result (Output)
+
+The user's wallet is instantly updated. You can query this to gate features or show balances.
+
+```json
+// await om.wallets.get("user_123");
+
+{
+  "userId": "user_123",
+  "balance": 450.25,
+  "currency": "CREDITS",
+  "status": "ACTIVE",
+  "lastTransaction": {
+    "amount": -1.50,
+    "reason": "gpt-4-completion",
+    "timestamp": "2025-11-19T10:00:00Z"
+  }
+}
+```
+
+---
 
 ## 🚀 Quick Start
 
-Get OpenMonetize running locally in 5 minutes:
+Get the entire platform (API, Ingestion, Engine, DB) running locally.
 
 ```bash
-git clone https://github.com/openmonetize/openmonetize.git && cd openmonetize/platform && docker compose up -d
+git clone https://github.com/openmonetize/openmonetize.git
+cd openmonetize/platform
+docker compose up -d
 ```
 
-Services will be available at:
-- **API Gateway**: http://localhost:3000
-- **Ingestion Service**: http://localhost:8081
-- **Rating Engine**: http://localhost:3001
+**That's it.** Your infrastructure is ready:
 
-📖 **[Complete Setup Guide](QUICK_START.md)** | 🏗️ **[Platform Documentation](platform/README.md)**
+- **Ingestion API**: http://localhost:8081 (Send events here)
+- **Dashboard API**: http://localhost:3000 (Manage users here)
 
-## 📚 Documentation
+<details>
+<summary><strong>🛠️ View Advanced Configuration</strong></summary>
 
-- **[Quick Start Guide](QUICK_START.md)** - Get up and running in 5 minutes
-- **[API Reference](docs/api/)** - Complete REST API documentation
-- **[Migration Guide](docs/guides/migration.md)** - Migrate from other platforms
-- **[Architecture Overview](docs/architecture/overview.md)** - System design and components
-- **[Deployment Guide](docs/guides/deployment-railway.md)** - Production deployment on Railway
-- **[SDK Documentation](docs/api/)** - TypeScript SDK usage and examples
-- **[The Architecture of Intelligence Monetization](docs/architecture/INTELLIGENCE_MONETIZATION.md)** - Strategic framework and manifesto
+If you need to configure specific burn tables or change database ports:
 
-## 🏛️ Architecture
+1. Edit `platform/.env`
+2. Modify `packages/rating-engine/config/burntable.json`
+3. Restart containers with `docker compose restart`
 
-OpenMonetize is a microservices architecture built with TypeScript, Fastify, and PostgreSQL:
+See [Complete Setup Guide](QUICK_START.md) for details.
+
+</details>
+
+---
+
+## 🏛️ How it Works
+
+OpenMonetize sits between your **Application** and your **Database**, acting as the financial ledger for AI events.
 
 ```mermaid
 graph LR
-    App[Your App] --> Proxy[OpenMonetize Proxy]
-    Proxy --> LLM[LLM Provider<br/>(OpenAI/Anthropic)]
-    Proxy -.-> Billing[Billing Engine]
-    Billing --> DB[(Database)]
+    User((User)) --> App[Your AI App]
+    
+    subgraph "Your Infrastructure"
+    App --> |1. Request| OpenAI[OpenAI/LLM]
+    App --> |2. Track Usage| Ingest[OM Ingestion]
+    end
+    
+    subgraph "OpenMonetize Platform"
+    Ingest --> Queue[Event Queue]
+    Queue --> Rating[Rating Engine]
+    Rating --> |3. Deduct Credits| DB[(Postgres)]
+    end
 ```
 
-**Core Services:**
-- **API Gateway** - Authentication, routing, rate limiting
-- **Ingestion Service** - High-throughput event processing
-- **Rating Engine** - Cost calculation and burn tables
+1. **Ingest**: Takes high-volume tracking events (idempotent, fast).
+2. **Rate**: Calculates cost based on your "Burn Table" (e.g., specific pricing for GPT-4 vs Claude).
+3. **Bill**: Atomically updates the user's credit wallet in the database.
 
-**Technology Stack:**
-- TypeScript 5.9+ with Node.js 20+
-- Fastify (40K+ req/sec performance)
-- PostgreSQL 15 with Prisma ORM
-- Redis 7 for caching and rate limiting
-- Turborepo monorepo orchestration
+---
 
-## 🎓 Key Concepts
+## 🎯 Why use this?
 
-### Business Model
+Building billing for AI is harder than standard SaaS because costs are **variable** (tokens), not **fixed** (seats).
 
-OpenMonetize helps **AI SaaS companies** (customers) track and bill their **end-users** for AI consumption:
+| Feature | Standard Stripe/Billing | OpenMonetize |
+|---------|------------------------|--------------|
+| **Unit of Measure** | Monthly Seats | Tokens, Seconds, API Calls |
+| **Latency** | Slow (Webhooks) | Real-time (<50ms) |
+| **Pre-paid Credits** | Hard to implement | Native Support |
+| **Cost Control** | N/A | Auto-stop when balance is 0 |
 
-- **Customer**: Your SaaS company using OpenMonetize
-- **User**: Your customer's end-users consuming AI services
-- **Provider**: AI service providers (OpenAI, Anthropic, etc.)
+---
 
-### Credit System
+## 📚 Documentation & Resources
 
-The credit system is the financial core of OpenMonetize:
+- **[Integration Guide](docs/api/)** - Best practices for wrapping OpenAI/LangChain.
+- **[API Reference](docs/api/)** - Endpoints for creating wallets and adding credits.
+- **[The "Burn Table"](docs/architecture/INTELLIGENCE_MONETIZATION.md)** - How to configure pricing for different AI models.
+- **[Architecture Deep Dive](docs/architecture/overview.md)** - For contributors and system designers.
 
-1. **BurnTable** - Configurable pricing (e.g., 1.5 credits per 1K tokens for GPT-4)
-2. **UsageEvent** - Records consumption (tokens, API calls)
-3. **CreditTransaction** - Atomic credit deductions
-4. **CreditWallet** - Balance management with multi-currency support
+---
 
-### Multi-tenancy
+## 🛠️ Development Structure
 
-All data is isolated by customer with:
-- Secure API key authentication (`X-API-Key: om_live_xxxx`)
-- Row-level tenant isolation
-- Indexed foreign keys for performance
+We use a **Monorepo** structure managed by Turborepo.
 
-## 🛠️ Development
+| Service | Port | Description |
+|---------|------|-------------|
+| `ingestion-service` | 8081 | High-throughput event receiver (Fastify) |
+| `rating-engine` | 3001 | Calculates costs & updates balances |
+| `api-gateway` | 3000 | Auth & Management APIs |
+| `sdk` | N/A | The TypeScript client you use in your app |
 
 ```bash
-# Start all services in development mode
+# Run the full dev environment
+pnpm install
 pnpm dev
-
-# Run tests
-pnpm test
-
-# Run tests for specific package
-pnpm --filter @openmonetize/rating-engine test
-
-# Lint code
-pnpm lint
-
-# Build all packages
-pnpm build
-
-# Database operations (from packages/common)
-cd packages/common
-npx prisma generate        # Generate Prisma client
-npx prisma migrate dev     # Create migration
-npx prisma studio          # Visual database editor
 ```
 
-**Monorepo Structure:**
-```
-platform/packages/
-├── common/              # Shared: Prisma client, types, validation
-├── api-gateway/         # Port 3000: Authentication, routing
-├── ingestion-service/   # Port 8081: Event ingestion
-├── rating-engine/       # Port 3001: Cost calculation
-└── sdk/                 # TypeScript client library
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see:
-
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines
-- **[Security Policy](SECURITY.md)** - Report vulnerabilities
-- **[Changelog](CHANGELOG.md)** - Version history
-
-## 📊 Project Status
-
-**Phase**: Production Readiness (MVP Complete)
-
-- ✅ Core services functional and tested
-- ✅ Database schema finalized
-- ✅ API endpoints documented
-- ✅ SDK available for TypeScript
-- ✅ Deployment guides for Railway/Docker
-- 🚧 Python/Go SDKs (planned)
-- 🚧 Kubernetes deployment (planned)
-
-**[Current Priorities](PRIORITIES.md)** | **[Development Roadmap](docs/architecture/roadmap.md)**
+---
 
 ## 📄 License
 
-OpenMonetize uses dual licensing to balance openness with business sustainability:
+**Server (AGPLv3)**: Free to host yourself. If you modify the platform code and host it as a service, you must open-source your changes.
 
-### Server & Infrastructure: AGPLv3
+**SDKs (MIT)**: 100% free to use in your proprietary applications without restriction.
 
-The OpenMonetize platform (API Gateway, Ingestion Service, Rating Engine, and all backend services) is licensed under the **[GNU Affero General Public License v3.0 (AGPLv3)](LICENSE)**.
-
-✅ **You are free to:**
-- Host OpenMonetize yourself for internal use
-- Modify the source code for your needs
-- Use it in production without licensing fees
-
-⚠️ **Requirements:**
-- If you modify and deploy OpenMonetize as a network service, you must open-source your modifications under AGPLv3
-- This ensures the community benefits from improvements
-
-### SDKs & Client Libraries: MIT
-
-The OpenMonetize SDKs (`@openmonetize/sdk` and future Python/Go SDKs) are licensed under the **[MIT License](platform/packages/sdk/LICENSE)**.
-
-✅ **You can safely:**
-- Install our SDKs into your proprietary applications
-- Distribute applications using our SDKs without legal risk
-- No copyleft obligations for your application code
-
-### Why Dual Licensing?
-
-This model follows successful Commercial Open Source (COSS) companies like Sentry, Lago, and GitLab:
-
-1. **AGPLv3 backend** - Protects our core platform while allowing self-hosting
-2. **MIT SDKs** - Zero friction for developers integrating OpenMonetize
-3. **Clear separation** - Your application code remains fully proprietary
-
-**Questions?** See our [LICENSE](LICENSE) file or contact legal@openmonetize.com
-
-## 🔗 Links
-
-- **Documentation**: [docs/](docs/)
-- **API Reference**: [docs/api/](docs/api/)
-- **Platform Setup**: [platform/README.md](platform/README.md)
-- **Quick Start**: [QUICK_START.md](QUICK_START.md)
-- **Issues**: [GitHub Issues](https://github.com/openmonetize/openmonetize/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/openmonetize/openmonetize/discussions)
-
-## 💬 Community & Support
-
-- 📧 **Email**: support@openmonetize.com
-- 💬 **Discord**: [Join our community](https://discord.gg/openmonetize) (coming soon)
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/openmonetize/openmonetize/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/openmonetize/openmonetize/discussions)
+[Full License Details](LICENSE) | [Commercial Support](mailto:legal@openmonetize.com)
 
 ---
 

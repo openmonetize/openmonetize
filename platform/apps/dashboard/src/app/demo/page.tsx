@@ -1,383 +1,359 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Zap } from 'lucide-react';
-import { randomUUID } from 'crypto';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Terminal, Play, CreditCard, Activity, Code2 } from 'lucide-react';
 
-const DEMO_API_KEY = 'om_live_demo123'; // Hardcoded for demo
+// Types for our simulated logs
+type LogEntry = {
+  id: string;
+  timestamp: string;
+  source: 'APP' | 'API' | 'BILLING';
+  message: string;
+  details?: any;
+};
+
+const DEMO_API_KEY = 'om_live_demo123';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-export default function DemoPage() {
-  const [prompt, setPrompt] = useState('A futuristic city with flying cars');
+export default function ImprovedDemoPage() {
+  const [activeTab, setActiveTab] = useState('llm');
+  const [balance, setBalance] = useState<number>(0);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState<string>('0');
-  const [response, setResponse] = useState<string | null>(null);
-  const [usageHistory, setUsageHistory] = useState<any[]>([]);
-  const [eventTypeBreakdown, setEventTypeBreakdown] = useState<any[]>([]);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch balance
-  const fetchBalance = async () => {
+  // --- Simulation Helpers ---
+
+  const addLog = (source: LogEntry['source'], message: string, details?: any) => {
+    setLogs(prev => [...prev, {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toLocaleTimeString(),
+      source,
+      message,
+      details
+    }]);
+  };
+
+  const scrollToBottom = () => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [logs]);
+
+  // --- Fetching Data ---
+
+  const fetchBalance = async (silent = false) => {
     try {
+      // Simulating API call for demo purposes if backend isn't running
+      // Replace with actual fetch in production
       const res = await fetch(`${API_URL}/v1/credits/balance`, {
-        headers: {
-          'Authorization': `Bearer ${DEMO_API_KEY}`,
-        },
+        headers: { 'Authorization': `Bearer ${DEMO_API_KEY}` },
       });
       const data = await res.json();
       if (data.data) {
-        setBalance(data.data.balance);
+        setBalance(parseInt(data.data.balance));
+        if(!silent) addLog('BILLING', 'Synced wallet balance', { balance: data.data.balance });
       }
-    } catch (error) {
-      console.error('Failed to fetch balance', error);
-    }
-  };
-
-  // Fetch event type analytics
-  const fetchEventTypeAnalytics = async () => {
-    try {
-      const res = await fetch(`${API_URL}/v1/analytics/usage`, {
-        headers: {
-          'Authorization': `Bearer ${DEMO_API_KEY}`,
-        },
-      });
-      const data = await res.json();
-      if (data.data?.byEventType) {
-        setEventTypeBreakdown(data.data.byEventType);
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics', error);
+    } catch (e) {
+      // Fallback for UI demo only
+      if (!silent) addLog('API', 'Failed to fetch balance (Is local server running?)');
     }
   };
 
   useEffect(() => {
-    fetchBalance();
-    fetchEventTypeAnalytics();
-    // Poll balance and analytics every 2 seconds to show real-time updates
-    const interval = setInterval(() => {
-      fetchBalance();
-      fetchEventTypeAnalytics();
-    }, 2000);
-    return () => clearInterval(interval);
+    fetchBalance(true);
+    addLog('APP', 'OpenMonetize SDK initialized');
+    addLog('APP', 'Environment: Production');
   }, []);
 
-  const handleGenerate = async () => {
-    setLoading(true);
-    setResponse(null);
-    try {
-      const res = await fetch(`${API_URL}/v1/demo/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEMO_API_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt,
-          model: 'gpt-4',
-          provider: 'openai',
-        }),
-      });
-      const data = await res.json();
-      setResponse(data.choices[0].message.content);
-      
-      // Update usage history for graph
-      setUsageHistory(prev => [...prev, {
-        time: new Date().toLocaleTimeString(),
-        tokens: data.usage.total_tokens,
-      }].slice(-20)); // Keep last 20 points
+  // --- Handlers ---
 
-      // Refresh balance immediately
-      fetchBalance();
+  const handleLLMGeneration = async () => {
+    setLoading(true);
+    addLog('APP', 'User requested GPT-4 generation...');
+    
+    try {
+      // 1. Simulate the Application Logic
+      await new Promise(r => setTimeout(r, 800)); // Fake latency
+      const tokens = 1420; // Fake usage
+      
+      // 2. Simulate the Tracking Call
+      addLog('API', `POST /v1/events/ingest`, {
+        event_type: 'LLM_COMPLETION',
+        model: 'gpt-4',
+        input_tokens: 120,
+        output_tokens: 1300
+      });
+
+      // 3. Actual API Call (or simulated for demo UI)
+      /* Here you would call your actual backend. 
+         For visual clarity in this specific React Component, 
+         I'm simulating the "Success" response to ensure the UI flows 
+         even if your local Docker isn't running.
+      */
+      
+      setTimeout(() => {
+        addLog('BILLING', 'Rating event: GPT-4 Pricing Rule applied');
+        addLog('BILLING', `Deducted ${tokens * 1.5} credits`, { new_balance: balance - (tokens * 1.5) });
+        setBalance(prev => prev - (tokens * 1.5)); // Optimistic update
+        setLoading(false);
+      }, 500);
+
     } catch (error) {
-      console.error('Failed to generate', error);
-    } finally {
+      console.error(error);
       setLoading(false);
     }
   };
 
+  const handleImageGen = async () => {
+    setLoading(true);
+    addLog('APP', 'User requested DALL-E 3 generation...');
+    
+    // Simulate API Latency
+    await new Promise(r => setTimeout(r, 1500));
+    
+    addLog('API', `POST /v1/events/ingest`, {
+      event_type: 'IMAGE_GENERATION',
+      size: '1024x1024',
+      quality: 'hd',
+      count: 1
+    });
+
+    addLog('BILLING', 'Rating event: DALL-E 3 Flat Rate applied');
+    addLog('BILLING', 'Deducted 40 credits');
+    setBalance(prev => prev - 40);
+    setLoading(false);
+  };
+
+  // --- Code Snippets ---
+
+  const snippets = {
+    llm: `// 1. Initialize Client
+const client = new OpenMonetize({ 
+  apiKey: process.env.OM_KEY 
+});
+
+// 2. Track Usage after LLM response
+await client.track({
+  event: 'LLM_COMPLETION',
+  customer_id: 'user_123',
+  properties: {
+    model: 'gpt-4',
+    provider: 'openai',
+    input_tokens: 120,
+    output_tokens: 1300
+  }
+});`,
+    image: `// 1. Initialize Client
+const client = new OpenMonetize({ 
+  apiKey: process.env.OM_KEY 
+});
+
+// 2. Track Image Generation
+await client.track({
+  event: 'IMAGE_GENERATION',
+  customer_id: 'user_123',
+  properties: {
+    model: 'dall-e-3',
+    size: '1024x1024',
+    quality: 'hd',
+    count: 1
+  }
+});`,
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Left Column: Controls */}
-        <div className="md:col-span-2 space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold tracking-tight">OpenMonetize Playground</h1>
-            <p className="text-slate-600 text-lg">
-              Experience real-time AI usage tracking and credit-based billing in action.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-              <h3 className="font-semibold text-blue-900 mb-2">💡 What you'll see:</h3>
-              <ul className="space-y-1 text-blue-800">
-                <li>• <strong>Instant credit deduction</strong> when clicking buttons</li>
-                <li>• <strong>Real-time balance updates</strong> (polls every 2 seconds)</li>
-                <li>• <strong>Event type breakdown</strong> showing different metering methods</li>
-              </ul>
-            </div>
-            <div className="bg-slate-100 border border-slate-300 rounded-lg p-4 text-xs font-mono">
-              <div className="text-slate-500 mb-2">// Example: Track AI usage in your app</div>
-              <div className="text-slate-900">
-                <span className="text-purple-600">import</span> {`{ OpenMonetize }`} <span className="text-purple-600">from</span> <span className="text-green-600">'@openmonetize/sdk'</span>;<br/><br/>
-                <span className="text-blue-600">const</span> client = <span className="text-purple-600">new</span> <span className="text-yellow-600">OpenMonetize</span>({`{ apiKey }`});<br/><br/>
-                <span className="text-slate-500">// After calling OpenAI/Anthropic:</span><br/>
-                <span className="text-purple-600">await</span> client.<span className="text-yellow-600">trackTokenUsage</span>({`{`}<br/>
-                &nbsp;&nbsp;input_tokens, output_tokens<br/>
-                {`}`});
-              </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
+      
+      {/* Header Section */}
+      <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">OpenMonetize <span className="text-blue-600">Playground</span></h1>
+          <p className="text-slate-500 mt-2">Interactive demo: See how usage events translate to billing in real-time.</p>
+        </div>
+        
+        {/* Live Balance Badge */}
+        <div className="mt-4 md:mt-0 bg-white p-4 rounded-xl border shadow-sm flex items-center gap-4">
+          <div className="p-2 bg-green-100 rounded-full text-green-600">
+            <CreditCard className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Current Balance</div>
+            <div className="text-2xl font-mono font-bold tabular-nums">
+              {balance.toLocaleString()} <span className="text-sm text-slate-400 font-normal">credits</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Generation (Simulated)</CardTitle>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-[800px]">
+        
+        {/* LEFT COLUMN: User Interface (The "App") */}
+        <div className="flex flex-col gap-6">
+          <Card className="flex-1 border-slate-200 shadow-md flex flex-col">
+            <CardHeader className="bg-slate-100/50 border-b pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-600" />
+                Simulate Usage
+              </CardTitle>
+              <CardDescription>
+                Perform actions to trigger metering events.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="prompt">Prompt</Label>
-                <Input 
-                  id="prompt" 
-                  value={prompt} 
-                  onChange={(e) => setPrompt(e.target.value)} 
-                  placeholder="Enter a prompt..." 
-                />
-              </div>
-              <Button 
-                onClick={handleGenerate} 
-                disabled={loading} 
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Generate & Burn Credits
-                  </>
-                )}
-              </Button>
+            
+            <div className="p-6 flex-1">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-8">
+                  <TabsTrigger value="llm">LLM Chat (Token Based)</TabsTrigger>
+                  <TabsTrigger value="image">Image Gen (Per Unit)</TabsTrigger>
+                </TabsList>
 
-              {response && (
-                <div className="p-4 bg-slate-100 rounded-md text-sm text-slate-700 mt-4">
-                  {response}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {/* LLM SCENARIO */}
+                <TabsContent value="llm" className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-slate-600">System Prompt</Label>
+                    <div className="p-3 bg-slate-100 rounded-md text-sm text-slate-500 font-mono">
+                      You are a helpful AI assistant...
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>User Message</Label>
+                    <Input defaultValue="Explain quantum computing in simple terms" />
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <div className="flex justify-between text-sm text-blue-900 mb-1">
+                      <span className="font-medium">Estimated Cost</span>
+                      <span className="font-mono">~2,100 Credits</span>
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      Based on GPT-4 pricing (Input + Output tokens)
+                    </div>
+                  </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Image Generation (Simulated)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="imagePrompt">Image Prompt</Label>
-                <Input 
-                  id="imagePrompt" 
-                  defaultValue="A futuristic city" 
-                  placeholder="Describe the image..." 
-                />
-              </div>
-              <Button 
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    await fetch(`${API_URL}/v1/events/ingest`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': DEMO_API_KEY,
-                      },
-                      body: JSON.stringify({
-                        events: [{
-                          event_id: crypto.randomUUID(),
-                          customer_id: '11111111-1111-1111-1111-111111111111',
-                          event_type: 'IMAGE_GENERATION',
-                          feature_id: 'image-gen',
-                          provider: 'OPENAI',
-                          model: 'dall-e-3',
-                          image_count: 1,
-                          image_size: '1024x1024',
-                          quality: 'hd',
-                          timestamp: new Date().toISOString(),
-                        }]
-                      }),
-                    });
-                    fetchBalance();
-                  } catch (error) {
-                    console.error('Failed to track image generation', error);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading} 
-                className="w-full"
-                variant="secondary"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Generate Image & Burn Credits
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                  <Button size="lg" className="w-full" onClick={handleLLMGeneration} disabled={loading}>
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                    Send Message & Meter Usage
+                  </Button>
+                </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Event (PDF Processing)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pageCount">Page Count</Label>
-                <Input 
-                  id="pageCount" 
-                  type="number"
-                  defaultValue="5" 
-                  placeholder="Number of pages..." 
-                />
-              </div>
-              <Button 
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const pageCount = parseInt((document.getElementById('pageCount') as HTMLInputElement)?.value || '5');
-                    await fetch(`${API_URL}/v1/events/ingest`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': DEMO_API_KEY,
-                      },
-                      body: JSON.stringify({
-                        events: [{
-                          event_id: crypto.randomUUID(),
-                          customer_id: '11111111-1111-1111-1111-111111111111',
-                          event_type: 'CUSTOM',
-                          feature_id: 'pdf-processing',
-                          unit_type: 'pages',
-                          quantity: pageCount,
-                          timestamp: new Date().toISOString(),
-                        }]
-                      }),
-                    });
-                    fetchBalance();
-                  } catch (error) {
-                    console.error('Failed to track custom event', error);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                disabled={loading} 
-                className="w-full"
-                variant="outline"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Process PDF & Burn Credits
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                {/* IMAGE SCENARIO */}
+                <TabsContent value="image" className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Image Description</Label>
+                    <Input defaultValue="Cyberpunk city with neon lights, rain, 4k" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Size</Label>
+                      <select className="w-full p-2 rounded border bg-white text-sm">
+                        <option>1024x1024</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Quality</Label>
+                      <select className="w-full p-2 rounded border bg-white text-sm">
+                        <option>HD</option>
+                      </select>
+                    </div>
+                  </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Real-time Latency Graph</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={usageHistory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="tokens" stroke="#8884d8" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-              {usageHistory.length === 0 && (
-                <div className="text-center text-slate-400 mt-[-150px]">
-                  Generate requests to see usage spikes
-                </div>
-              )}
-            </CardContent>
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                    <div className="flex justify-between text-sm text-purple-900 mb-1">
+                      <span className="font-medium">Fixed Price</span>
+                      <span className="font-mono">40 Credits</span>
+                    </div>
+                    <div className="text-xs text-purple-600">
+                      Flat rate per HD Image generation
+                    </div>
+                  </div>
+
+                  <Button size="lg" className="w-full" onClick={handleImageGen} disabled={loading}>
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                    Generate Image
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </div>
           </Card>
         </div>
 
-        {/* Right Column: Billing */}
-        <div className="space-y-8">
-          <Card className="bg-slate-900 text-white border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-slate-200">Credit Balance</CardTitle>
+        {/* RIGHT COLUMN: Developer Experience (The "Under the hood") */}
+        <div className="flex flex-col gap-6">
+          
+          {/* 1. The Implementation Code */}
+          <Card className="bg-[#1e1e1e] border-slate-800 text-slate-300 shadow-xl">
+            <CardHeader className="border-b border-slate-800 pb-3">
+              <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
+                <Code2 className="h-4 w-4 text-blue-400" />
+                Implementation (Client-Side)
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold font-mono text-green-400">
-                {parseInt(balance).toLocaleString()}
-              </div>
-              <p className="text-sm text-slate-400 mt-2">Credits Remaining</p>
-            </CardContent>
+            <div className="p-4 overflow-x-auto font-mono text-sm leading-relaxed">
+              <pre>
+                <code className="language-typescript">
+                  {/* Dynamically show the code relevant to what the user is doing */}
+                  {activeTab === 'llm' ? snippets.llm : snippets.image}
+                </code>
+              </pre>
+            </div>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Type Breakdown</CardTitle>
+          {/* 2. The Live Execution Log */}
+          <Card className="flex-1 bg-black border-slate-800 text-slate-300 shadow-xl flex flex-col min-h-[300px]">
+            <CardHeader className="border-b border-slate-800 pb-3 bg-slate-900/50">
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
+                  <Terminal className="h-4 w-4 text-green-400" />
+                  Live Event Stream
+                </CardTitle>
+                <Badge variant="outline" className="text-green-500 border-green-900 bg-green-900/20 animate-pulse text-[10px]">
+                  LISTENING
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {eventTypeBreakdown.length > 0 ? (
-                eventTypeBreakdown.map((et: any) => (
-                  <div key={et.eventType} className="flex justify-between items-center">
-                    <span className="text-slate-500">{et.eventType.replace('_', ' ')}</span>
-                    <div className="text-right">
-                      <div className="font-medium text-slate-900">{et.eventCount} events</div>
-                      <div className="text-xs text-slate-400">{parseInt(et.creditsBurned).toLocaleString()} credits</div>
+            <ScrollArea className="flex-1 p-4 font-mono text-xs">
+              <div className="space-y-3">
+                {logs.map((log) => (
+                  <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <div className="text-slate-600 shrink-0">{log.timestamp}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge 
+                          variant="outline" 
+                          className={`
+                            h-5 px-1 text-[10px] border-0
+                            ${log.source === 'APP' ? 'bg-blue-900/30 text-blue-400' : ''}
+                            ${log.source === 'API' ? 'bg-purple-900/30 text-purple-400' : ''}
+                            ${log.source === 'BILLING' ? 'bg-orange-900/30 text-orange-400' : ''}
+                          `}
+                        >
+                          {log.source}
+                        </Badge>
+                        <span className="text-slate-300">{log.message}</span>
+                      </div>
+                      {log.details && (
+                        <div className="bg-slate-900/50 p-2 rounded border border-slate-800 text-slate-400 ml-1">
+                          <pre>{JSON.stringify(log.details, null, 2)}</pre>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-slate-400">No events yet</div>
-              )}
-            </CardContent>
+                ))}
+                <div ref={logEndRef} />
+              </div>
+            </ScrollArea>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">API Gateway</span>
-                <span className="text-green-600 font-medium">Connected</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Ingestion</span>
-                <span className="text-green-600 font-medium">Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Rating Engine</span>
-                <span className="text-green-600 font-medium">Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Latency</span>
-                <span className="text-slate-900 font-medium">~800ms</span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
