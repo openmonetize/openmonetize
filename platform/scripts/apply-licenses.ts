@@ -1,5 +1,4 @@
 import fs from 'fs';
-
 import { glob } from 'glob';
 
 const AGPL_HEADER = `/*
@@ -43,6 +42,27 @@ const MIT_HEADER = `/*
  */
 `;
 
+const MIT_HEADER_PY = `# Copyright (C) 2025 OpenMonetize
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+`;
+
 const BACKEND_PACKAGES = [
   'packages/api-gateway/src',
   'packages/ingestion-service/src',
@@ -54,28 +74,28 @@ const SDK_PACKAGES = [
   'packages/sdk/src',
 ];
 
-async function processFiles(directories: string[], header: string, checkOnly: boolean) {
+const PYTHON_SDK_PACKAGES = [
+  'sdks/python',
+];
+
+async function processFiles(directories: string[], header: string, checkOnly: boolean, extensions: string[]) {
   let hasErrors = false;
 
   for (const dir of directories) {
-    const files = await glob(`${dir}/**/*.{ts,tsx}`, { ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'] });
+    const pattern = `${dir}/**/*.{${extensions.join(',')}}`;
+    const files = await glob(pattern, { ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__pycache__/**', '**/*.pyc'] });
     
     for (const file of files) {
       const content = fs.readFileSync(file, 'utf-8');
       if (content.includes('Copyright (C)')) {
-        // Header likely exists, check if it matches (simplified check)
         if (!content.includes('OpenMonetize')) {
-             // Different copyright?
-             // For now, assume if Copyright is there, it's handled or we shouldn't touch it blindly.
-             // But we want to enforce OUR header.
-             // Let's check if it starts with our specific header.
              const trimmedContent = content.trimStart();
              const trimmedHeader = header.trim();
              if (trimmedContent.startsWith(trimmedHeader.substring(0, 50))) {
-                 continue; // Already has our header
+                 continue;
              }
         } else {
-            continue; // Already has OpenMonetize copyright
+            continue;
         }
       }
 
@@ -96,10 +116,11 @@ async function main() {
   
   console.log(`Running license ${checkOnly ? 'check' : 'fix'}...`);
 
-  const backendErrors = await processFiles(BACKEND_PACKAGES, AGPL_HEADER, checkOnly);
-  const sdkErrors = await processFiles(SDK_PACKAGES, MIT_HEADER, checkOnly);
+  const backendErrors = await processFiles(BACKEND_PACKAGES, AGPL_HEADER, checkOnly, ['ts', 'tsx']);
+  const sdkErrors = await processFiles(SDK_PACKAGES, MIT_HEADER, checkOnly, ['ts', 'tsx']);
+  const pythonErrors = await processFiles(PYTHON_SDK_PACKAGES, MIT_HEADER_PY, checkOnly, ['py']);
 
-  if (checkOnly && (backendErrors || sdkErrors)) {
+  if (checkOnly && (backendErrors || sdkErrors || pythonErrors)) {
     console.error('License check failed. Run with no arguments to fix.');
     process.exit(1);
   }
