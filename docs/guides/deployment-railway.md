@@ -19,7 +19,13 @@ The platform consists of 5 services:
 
 ## Deployment Steps
 
-### Option A: Railway Dashboard (Recommended for First Deployment)
+### Option A: One-Click Deploy (Recommended)
+
+The easiest way to deploy OpenMonetize is using our Railway template. This will provision all services (PostgreSQL, Redis, API Gateway, Ingestion Service, Rating Engine) automatically.
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fopenmonetize%2Fopenmonetize&referralCode=2UryDH)
+
+### Option B: Railway Dashboard (Manual)
 
 #### 1. Create a New Project
 
@@ -137,7 +143,7 @@ Or create a one-time job with start command:
 npm run db:seed
 ```
 
-### Option B: Railway CLI (For Advanced Users)
+### Option C: Railway CLI (For Advanced Users)
 
 #### 1. Install Railway CLI
 
