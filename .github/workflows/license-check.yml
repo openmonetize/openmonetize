@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: platform
-        run: npm install -g tsx
+        run: npm install
 
       - name: Check License Headers
         working-directory: platform
