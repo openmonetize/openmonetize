@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: platform
-        run: npm install
+        run: npm install glob
 
       - name: Check License Headers
         working-directory: platform
