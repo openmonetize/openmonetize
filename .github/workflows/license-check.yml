@@ -13,24 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          go-version: '1.21'
+          node-version: '20'
 
-      - name: Install addlicense
-        run: go install github.com/google/addlicense@v1.0.0
+      - name: Install dependencies
+        working-directory: platform
+        run: npm install -g tsx
 
       - name: Check License Headers
-        run: |
-          # Run check from the platform directory where the script expects to be run relative to
-          # Actually the script is in platform/scripts/check-licenses.sh
-          # But we should run it from the root of the repo or platform?
-          # The script does `addlicense ... .` so it checks the current directory.
-          # If we want to check the whole repo, we should run from root.
-          # But the script is now in platform/scripts.
-          
-          # Let's adjust the script execution.
-          # If we run from root:
-          chmod +x platform/scripts/check-licenses.sh
-          ./platform/scripts/check-licenses.sh
+        working-directory: platform
+        run: npx tsx scripts/apply-licenses.ts --check
