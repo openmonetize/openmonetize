@@ -78,25 +78,19 @@ const PYTHON_SDK_PACKAGES = [
   'sdks/python',
 ];
 
-async function processFiles(directories: string[], header: string, checkOnly: boolean, extensions: string[]) {
+async function processFiles(directories: string[], header: string, checkOnly: boolean, extensions: string[], ignorePatterns: string[] = []) {
   let hasErrors = false;
 
   for (const dir of directories) {
     const pattern = `${dir}/**/*.{${extensions.join(',')}}`;
-    const files = await glob(pattern, { ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__pycache__/**', '**/*.pyc'] });
+    const files = await glob(pattern, { ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__pycache__/**', '**/*.pyc', ...ignorePatterns] });
     
     for (const file of files) {
       const content = fs.readFileSync(file, 'utf-8');
-      if (content.includes('Copyright (C)')) {
-        if (!content.includes('OpenMonetize')) {
-             const trimmedContent = content.trimStart();
-             const trimmedHeader = header.trim();
-             if (trimmedContent.startsWith(trimmedHeader.substring(0, 50))) {
-                 continue;
-             }
-        } else {
-            continue;
-        }
+      
+      // Check if file already has our copyright header
+      if (content.includes('Copyright (C) 2025 OpenMonetize')) {
+        continue; // Already has our header
       }
 
       if (checkOnly) {
@@ -104,7 +98,14 @@ async function processFiles(directories: string[], header: string, checkOnly: bo
         hasErrors = true;
       } else {
         console.log(`Adding license header to ${file}`);
-        fs.writeFileSync(file, header + '\n' + content);
+        // For Python files, insert after the coding declaration if present
+        if (extensions.includes('py') && content.startsWith('# coding:')) {
+          const lines = content.split('\n');
+          const newContent = [lines[0], '', header.trimEnd(), '', ...lines.slice(1)].join('\n');
+          fs.writeFileSync(file, newContent);
+        } else {
+          fs.writeFileSync(file, header + '\n' + content);
+        }
       }
     }
   }
@@ -118,7 +119,7 @@ async function main() {
 
   const backendErrors = await processFiles(BACKEND_PACKAGES, AGPL_HEADER, checkOnly, ['ts', 'tsx']);
   const sdkErrors = await processFiles(SDK_PACKAGES, MIT_HEADER, checkOnly, ['ts', 'tsx']);
-  const pythonErrors = await processFiles(PYTHON_SDK_PACKAGES, MIT_HEADER_PY, checkOnly, ['py']);
+  const pythonErrors = await processFiles(PYTHON_SDK_PACKAGES, MIT_HEADER_PY, checkOnly, ['py'], ['**/test/**']);
 
   if (checkOnly && (backendErrors || sdkErrors || pythonErrors)) {
     console.error('License check failed. Run with no arguments to fix.');
@@ -129,3 +130,4 @@ async function main() {
 }
 
 main().catch(console.error);
+
