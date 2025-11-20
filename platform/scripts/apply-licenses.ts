@@ -75,6 +75,8 @@ const ROOT_LEVEL_EXCLUDES = [
   '**/pnpm-workspace.yaml',
   '**/*.config.ts',
   '**/check-licenses.sh',
+  '**/test-*.sh',
+  '**/verify.ts',
 ];
 
 const SDK_PACKAGES = [
