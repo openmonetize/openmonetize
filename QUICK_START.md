@@ -1,7 +1,7 @@
 # 🚀 OpenMonetize - Quick Start Guide
 
 **MVP Status**: 95% Complete ✅
-**Last Updated**: November 18, 2024
+**Last Updated**: November 20, 2025
 
 Get the complete OpenMonetize platform running in 5 minutes!
 
@@ -431,12 +431,6 @@ pnpm build
 - [API Specification](docs/API_SPECIFICATION.md)
 - [Technical Architecture](docs/TECHNICAL_ARCHITECTURE.md)
 
-### Project Tracking
-- [Progress Report](PROGRESS.md) - Detailed status (95% complete)
-- [Current Priorities](PRIORITIES.md) - This week's focus
-- [Next Steps](NEXT_STEPS.md) - Development guide
-- [MVP Summary](MVP_COMPLETION_SUMMARY.md) - Achievement summary
-
 ---
 
 ## 🎉 Success!
@@ -465,12 +459,11 @@ Now that the MVP is running, you can:
 ## 📞 Need Help?
 
 Check the documentation:
-- [NEXT_STEPS.md](NEXT_STEPS.md) - Development guide
-- [PROGRESS.md](PROGRESS.md) - Current status
 - [Technical docs](docs/) - Complete API reference
+- [CHANGELOG.md](../CHANGELOG.md) - Version history and updates
 
 ---
 
-**Generated**: November 18, 2024
-**Version**: MVP 0.95.0
+**Generated**: November 20, 2025
+**Version**: MVP 1.0.1
 **Status**: Production-ready core features ✅

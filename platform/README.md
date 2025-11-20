@@ -393,10 +393,11 @@ See [`k8s/README.md`](k8s/README.md) for detailed Kubernetes documentation.
 
 ## Documentation
 
-- [Blueprint](../AI_MONETIZATION_PLATFORM_BLUEPRINT.md) - Strategic vision
-- [Technical Guide](../TECHNICAL_IMPLEMENTATION_GUIDE.md) - Implementation details
-- [Progress](PROGRESS.md) - Build status and roadmap
-- [Common Package](packages/common/README.md) - Shared code documentation
+- **[Quick Start Guide](../QUICK_START.md)** - 5-minute setup guide
+- **[API Documentation](../docs/api/)** - Complete API reference
+- **[Architecture Deep Dive](../docs/architecture/overview.md)** - System design
+- **[Deployment Guide](../docs/guides/deployment-railway.md)** - Railway deployment
+- **[CHANGELOG.md](../CHANGELOG.md)** - Version history
 
 ## Contributing
 
@@ -431,15 +432,17 @@ Apache 2.0 - See [LICENSE](../LICENSE) for details.
 - [x] Docker Compose environment
 - [x] Provider cost seeding
 
-### Phase 2: Core Services (In Progress)
-- [ ] Event ingestion service
-- [ ] Rating engine
-- [ ] API gateway
-- [ ] TypeScript SDK
+### Phase 2: Core Services (Complete ✅)
+- [x] Event ingestion service
+- [x] Rating engine
+- [x] API gateway
+- [x] TypeScript SDK
+- [x] Demo mode implementation
+- [x] License management system
 
-### Phase 3: Advanced Features
-- [ ] AI cost optimization engine
-- [ ] Multi-provider routing
+### Phase 3: SDK Expansion (In Progress)
+- [/] Python SDK
+- [ ] Go SDK
 - [ ] Analytics dashboard
 - [ ] Admin UI
 
@@ -459,4 +462,4 @@ Built with inspiration from:
 
 ---
 
-**Status**: Phase 1 Complete | **Version**: 0.1.0 | **Last Updated**: 2025-01-17
+**Status**: v1.0.1 Released | **Last Updated**: 2024-11-20

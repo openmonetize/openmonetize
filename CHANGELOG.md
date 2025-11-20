@@ -8,11 +8,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Python SDK for OpenMonetize
 - Go SDK for OpenMonetize
 - Kubernetes deployment guide
 - Grafana dashboard templates
 - WebSocket support for real-time events
+- Python SDK completion and publication
+
+## [1.0.1] - 2024-11-20 - Post-Release Improvements
+
+### Added
+
+- **Pre-flight Checklist Automation**: Created `setup.sh` script for one-command project setup
+  - Automated Docker Compose startup
+  - Dependency installation via pnpm
+  - Database generation, migration, and seeding
+  - All-in-one quick start experience
+- **Demo Mode**: Interactive demo environment for testing without real customers
+  - Demo customer and credit wallet seeding via `db:seed`
+  - `DEMO_MODE` environment variable for development
+  - Pre-configured demo API keys for testing
+- **Python SDK Foundation**: Initial structure for Python SDK development
+  - Test file scaffolding in `platform/sdks/python/test/`
+  - Package structure preparation
+  - Development environment setup
+
+### Improved
+
+- **README.md Revamp**: Enhanced developer experience with "Show, Don't Tell" approach
+  - Added "30-Second Demo" code walkthrough
+  - Visual input/output examples showing wallet updates
+  - Collapsible sections for advanced configuration
+  - Improved visual hierarchy with better use of headers and formatting
+  - Mermaid diagram showing system architecture
+  - Comparison table vs. traditional billing systems
+
+### Fixed
+
+- **License Check Script**: Resolved license header validation issues
+  - Excluded Python SDK test files from license requirements
+  - Excluded configuration files (`pnpm-workspace.yaml`, `prisma.config.ts`)
+  - Added AGPL headers to essential backend scripts
+  - License check now passes cleanly
+- **Demo Credit Deduction**: Fixed event processing in demo mode
+  - Corrected ingestion service event processing flow
+  - Fixed BullMQ worker queue integration
+  - Credits now deduct properly on `generate` API calls
+- **Dashboard Analytics**: Fixed UUID validation errors
+  - Corrected `customerId` query parameter validation
+  - Fixed "must match format uuid" error in analytics endpoint
+  - Dashboard now displays analytics correctly
+
+### Documentation
+
+- Updated `QUICK_START.md` to reference `setup.sh` script
+- Removed references to non-existent tracking files (PROGRESS.md, PRIORITIES.md, etc.)
+- Added demo mode setup instructions
+- Clarified local development workflow
 
 ## [1.0.0] - 2024-11-18 - MVP Complete 🎉
 
