@@ -68,6 +68,13 @@ const BACKEND_PACKAGES = [
   'packages/ingestion-service/src',
   'packages/rating-engine/src',
   'packages/common/src',
+  'scripts',
+];
+
+const ROOT_LEVEL_EXCLUDES = [
+  '**/pnpm-workspace.yaml',
+  '**/*.config.ts',
+  '**/check-licenses.sh',
 ];
 
 const SDK_PACKAGES = [
@@ -83,7 +90,8 @@ async function processFiles(directories: string[], header: string, checkOnly: bo
 
   for (const dir of directories) {
     const pattern = `${dir}/**/*.{${extensions.join(',')}}`;
-    const files = await glob(pattern, { ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__pycache__/**', '**/*.pyc', ...ignorePatterns] });
+    const defaultIgnores = ['**/node_modules/**', '**/dist/**', '**/*.d.ts', '**/__pycache__/**', '**/*.pyc'];
+    const files = await glob(pattern, { ignore: [...defaultIgnores, ...ignorePatterns] });
     
     for (const file of files) {
       const content = fs.readFileSync(file, 'utf-8');
@@ -117,7 +125,7 @@ async function main() {
   
   console.log(`Running license ${checkOnly ? 'check' : 'fix'}...`);
 
-  const backendErrors = await processFiles(BACKEND_PACKAGES, AGPL_HEADER, checkOnly, ['ts', 'tsx']);
+  const backendErrors = await processFiles(BACKEND_PACKAGES, AGPL_HEADER, checkOnly, ['ts', 'tsx'], ROOT_LEVEL_EXCLUDES);
   const sdkErrors = await processFiles(SDK_PACKAGES, MIT_HEADER, checkOnly, ['ts', 'tsx']);
   const pythonErrors = await processFiles(PYTHON_SDK_PACKAGES, MIT_HEADER_PY, checkOnly, ['py'], ['**/test/**']);
 
