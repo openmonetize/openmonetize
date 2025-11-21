@@ -76,6 +76,7 @@ const ROOT_LEVEL_EXCLUDES = [
   '**/check-licenses.sh',
   '**/test-*.sh',
   '**/verify.ts',
+  // Exclude scripts from license check
   'scripts/**',
   '**/scripts/**',
 ];
