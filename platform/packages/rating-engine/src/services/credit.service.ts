@@ -26,7 +26,7 @@ export class CreditService {
    * Throws an error if insufficient funds.
    */
   async deductCredits(customerId: string, amount: number, description?: string, metadata?: any) {
-    return db.$transaction(async (tx) => {
+    return db.$transaction(async (tx: any) => {
       // 1. Get wallet (lock it for update if possible, but Prisma doesn't support explicit locking easily without raw query)
       // For now, we rely on optimistic concurrency or just standard transaction isolation
       const wallet = await tx.creditWallet.findFirst({

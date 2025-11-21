@@ -65,12 +65,26 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
       });
 
       // Group by provider and model
-      const breakdown = usageEvents.reduce((acc: any, event) => {
-        const key = `${event.provider}/${event.model}`;
+      // Group by provider and model
+      interface BreakdownData {
+        provider: string;
+        model: string;
+        totalInputTokens: number;
+        totalOutputTokens: number;
+        totalCreditsBurned: number;
+        totalCostUsd: number;
+        eventCount: number;
+      }
+
+      const breakdown = usageEvents.reduce((acc: Record<string, BreakdownData>, event) => {
+        const provider = event.provider || 'unknown';
+        const model = event.model || 'unknown';
+        const key = `${provider}/${model}`;
+        
         if (!acc[key]) {
           acc[key] = {
-            provider: event.provider,
-            model: event.model,
+            provider,
+            model,
             totalInputTokens: 0,
             totalOutputTokens: 0,
             totalCreditsBurned: 0,
@@ -79,20 +93,23 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
           };
         }
 
-        acc[key].totalInputTokens += Number(event.inputTokens || 0);
-        acc[key].totalOutputTokens += Number(event.outputTokens || 0);
-        acc[key].totalCreditsBurned += Number(event.creditsBurned);
-        acc[key].totalCostUsd += Number(event.costUsd || 0);
-        acc[key].eventCount += 1;
+        const entry = acc[key];
+        if (entry) {
+          entry.totalInputTokens += Number(event.inputTokens || 0);
+          entry.totalOutputTokens += Number(event.outputTokens || 0);
+          entry.totalCreditsBurned += Number(event.creditsBurned);
+          entry.totalCostUsd += Number(event.costUsd || 0);
+          entry.eventCount += 1;
+        }
 
         return acc;
-      }, {});
+      }, {} as Record<string, BreakdownData>);
 
-      const data = Object.values(breakdown).sort((a: any, b: any) => b.totalCostUsd - a.totalCostUsd);
+      const data = Object.values(breakdown).sort((a, b) => b.totalCostUsd - a.totalCostUsd);
 
       // Calculate totals
       const totals = data.reduce(
-        (acc: any, item: any) => ({
+        (acc, item) => ({
           totalInputTokens: acc.totalInputTokens + item.totalInputTokens,
           totalOutputTokens: acc.totalOutputTokens + item.totalOutputTokens,
           totalCreditsBurned: acc.totalCreditsBurned + item.totalCreditsBurned,
@@ -204,14 +221,17 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
           };
         }
 
-        acc[key].totalInputTokens += Number(event.inputTokens || 0);
-        acc[key].totalOutputTokens += Number(event.outputTokens || 0);
-        acc[key].totalCreditsBurned += Number(event.creditsBurned);
-        acc[key].totalCostUsd += Number(event.costUsd || 0);
-        acc[key].eventCount += 1;
+        const entry = acc[key];
+        if (entry) {
+          entry.totalInputTokens += Number(event.inputTokens || 0);
+          entry.totalOutputTokens += Number(event.outputTokens || 0);
+          entry.totalCreditsBurned += Number(event.creditsBurned);
+          entry.totalCostUsd += Number(event.costUsd || 0);
+          entry.eventCount += 1;
+        }
 
         return acc;
-      }, {});
+      }, {} as Record<string, TrendData>);
 
       const data = Object.values(trends).sort((a, b) => a.period.localeCompare(b.period));
 

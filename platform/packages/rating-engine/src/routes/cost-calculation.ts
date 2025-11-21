@@ -129,8 +129,20 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
         orderBy: [{ provider: 'asc' }, { model: 'asc' }, { costType: 'asc' }]
       });
 
+      interface PricingInfo {
+        costPerUnit: number;
+        unitSize: number;
+        currency: string;
+      }
+
+      interface GroupedPricing {
+        provider: string;
+        model: string;
+        pricing: Record<string, PricingInfo>;
+      }
+
       // Group by provider and model
-      const grouped = providers.reduce((acc, cost) => {
+      const grouped = providers.reduce((acc: Record<string, GroupedPricing>, cost) => {
         const key = `${cost.provider}:${cost.model}`;
         if (!acc[key]) {
           acc[key] = {
@@ -154,7 +166,7 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
         };
 
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, GroupedPricing>);
 
       const data = Object.values(grouped);
 

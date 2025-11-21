@@ -156,7 +156,7 @@ export class BurnTableService {
       const nextVersion = (latestVersion?.version || 0) + 1;
 
       // If this is being set as active, deactivate previous versions
-      const updates = await db.$transaction(async (tx) => {
+      const updates = await db.$transaction(async (tx: any) => {
         // Deactivate previous active burn tables for this customer
         await tx.burnTable.updateMany({
           where: {
