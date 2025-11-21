@@ -4,7 +4,7 @@
 
 Open Source Pricing & Billing Infrastructure to track tokens, manage credits, and bill for actual usage.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fopenmonetize%2Fopenmonetize&referralCode=YOUR_REFERRAL_CODE&utm_source=github_readme&utm_medium=button&utm_campaign=launch_v1)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fopenmonetize%2Fopenmonetize&referralCode=2UryDH&utm_source=github_readme&utm_medium=button&utm_campaign=launch_v1)
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
