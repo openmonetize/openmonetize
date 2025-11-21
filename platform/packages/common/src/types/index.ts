@@ -27,7 +27,7 @@ export {
   LimitPeriod,
   CustomerTier,
   CustomerStatus
-} from '../generated/prisma';
+} from '@prisma/client';
 
 export * from './events';
 export * from './api';

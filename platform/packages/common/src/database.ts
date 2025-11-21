@@ -17,7 +17,7 @@
 
 // Database Client and Connection Management
 
-import { PrismaClient } from './generated/prisma';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Global Prisma Client instance (singleton pattern)
@@ -115,5 +115,5 @@ export async function withTenant<T>(
 }
 
 // Export the Prisma Client type for use in other packages
-export type { PrismaClient } from './generated/prisma';
-export * from './generated/prisma';
+export type { PrismaClient } from '@prisma/client';
+export * from '@prisma/client';
