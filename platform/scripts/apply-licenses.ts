@@ -68,7 +68,6 @@ const BACKEND_PACKAGES = [
   'packages/ingestion-service/src',
   'packages/rating-engine/src',
   'packages/common/src',
-  'scripts',
 ];
 
 const ROOT_LEVEL_EXCLUDES = [
@@ -77,6 +76,9 @@ const ROOT_LEVEL_EXCLUDES = [
   '**/check-licenses.sh',
   '**/test-*.sh',
   '**/verify.ts',
+  // Exclude scripts from license check
+  'scripts/**',
+  '**/scripts/**',
 ];
 
 const SDK_PACKAGES = [
