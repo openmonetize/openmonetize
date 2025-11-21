@@ -31,7 +31,9 @@
         "DATABASE_URL": "${{postgres.DATABASE_URL}}",
         "REDIS_URL": "${{redis.REDIS_URL}}",
         "INGESTION_SERVICE_URL": "http://${{ingestion-service.HOST}}:${{ingestion-service.PORT}}",
-        "RATING_ENGINE_URL": "http://${{rating-engine.HOST}}:${{rating-engine.PORT}}"
+        "RATING_ENGINE_URL": "http://${{rating-engine.HOST}}:${{rating-engine.PORT}}",
+        "RATE_LIMIT_MAX": "60",
+        "RATE_LIMIT_WINDOW": "1 minute"
       }
     },
     "ingestion-service": {
@@ -68,7 +70,9 @@
         "NODE_ENV": "production",
         "PORT": "3002",
         "HOST": "0.0.0.0",
-        "DATABASE_URL": "${{postgres.DATABASE_URL}}"
+        "DATABASE_URL": "${{postgres.DATABASE_URL}}",
+        "OPENAI_API_KEY": "",
+        "ANTHROPIC_API_KEY": ""
       }
     }
   }

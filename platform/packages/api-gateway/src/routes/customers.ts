@@ -181,6 +181,27 @@ export async function customersRoutes(app: FastifyInstance) {
               },
             },
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
         },
       },
     },
@@ -194,16 +215,18 @@ export async function customersRoutes(app: FastifyInstance) {
           });
         }
 
-        const customer = await db.customer.findUnique({
-          where: { id: request.customer.id },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            tier: true,
-            status: true,
-            createdAt: true,
-          },
+        const customer = await withTenant(request.customer.id, async (tx) => {
+          return await tx.customer.findUnique({
+            where: { id: request.customer.id },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              tier: true,
+              status: true,
+              createdAt: true,
+            },
+          });
         });
 
         if (!customer) {

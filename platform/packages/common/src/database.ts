@@ -99,6 +99,21 @@ export async function withTransaction<T>(
   throw lastError || new Error('Transaction failed after max retries');
 }
 
+/**
+ * Execute a transaction with RLS context
+ */
+export async function withTenant<T>(
+  tenantId: string,
+  fn: (tx: PrismaClient) => Promise<T>
+): Promise<T> {
+  const client = getPrismaClient();
+  return await client.$transaction(async (tx) => {
+    // Set the current tenant in the local session
+    await tx.$executeRaw`SELECT set_config('app.current_tenant', ${tenantId}, true)`;
+    return await fn(tx as PrismaClient);
+  });
+}
+
 // Export the Prisma Client type for use in other packages
 export type { PrismaClient } from './generated/prisma';
 export * from './generated/prisma';
