@@ -2,7 +2,7 @@
   "name": "@openmonetize/rating-engine",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "scripts": {
     "dev": "PORT=3001 tsx watch src/index.ts",
     "build": "tsc",

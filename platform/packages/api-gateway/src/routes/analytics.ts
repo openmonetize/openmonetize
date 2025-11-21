@@ -166,15 +166,15 @@ export async function analyticsRoutes(app: FastifyInstance) {
         // Calculate summary
         const summary = {
           totalEvents: events.length,
-          totalInputTokens: events.reduce((sum, e) => sum + Number(e.inputTokens || 0), 0).toString(),
-          totalOutputTokens: events.reduce((sum, e) => sum + Number(e.outputTokens || 0), 0).toString(),
-          totalCreditsBurned: events.reduce((sum, e) => sum + Number(e.creditsBurned || 0), 0).toString(),
-          totalCostUsd: events.reduce((sum, e) => sum + Number(e.costUsd || 0), 0).toFixed(4),
+          totalInputTokens: events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.inputTokens || 0), 0).toString(),
+          totalOutputTokens: events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.outputTokens || 0), 0).toString(),
+          totalCreditsBurned: events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.creditsBurned || 0), 0).toString(),
+          totalCostUsd: events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.costUsd || 0), 0).toFixed(4),
         };
 
         // Group by feature
         const featureMap = new Map<string, { count: number; credits: bigint; cost: number }>();
-        events.forEach((event) => {
+        events.forEach((event: typeof events[number]) => {
           const existing = featureMap.get(event.featureId) || { count: 0, credits: BigInt(0), cost: 0 };
           featureMap.set(event.featureId, {
             count: existing.count + 1,
@@ -357,8 +357,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
         });
 
         // Calculate totals (assuming 1000 credits = 1 USD revenue)
-        const totalProviderCost = events.reduce((sum, e) => sum + Number(e.costUsd || 0), 0);
-        const totalRevenue = events.reduce((sum, e) => sum + Number(e.creditsBurned || 0) / 1000, 0);
+        const totalProviderCost = events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.costUsd || 0), 0);
+        const totalRevenue = events.reduce((sum: number, e: typeof events[number]) => sum + Number(e.creditsBurned || 0) / 1000, 0);
         const totalMargin = totalRevenue - totalProviderCost;
         const marginPercent = totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
 
@@ -532,8 +532,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
         ]);
 
         // Calculate burn rates
-        const burned7Days = transactions7Days.reduce((sum, tx) => sum + Number(tx.amount), 0);
-        const burned30Days = transactions30Days.reduce((sum, tx) => sum + Number(tx.amount), 0);
+        const burned7Days = transactions7Days.reduce((sum: number, tx: typeof transactions7Days[number]) => sum + Number(tx.amount), 0);
+        const burned30Days = transactions30Days.reduce((sum: number, tx: typeof transactions30Days[number]) => sum + Number(tx.amount), 0);
 
         const avgPerDay7 = burned7Days / 7;
         const avgPerDay30 = burned30Days / 30;
