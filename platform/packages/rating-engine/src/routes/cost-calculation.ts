@@ -53,7 +53,13 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
   // Calculate cost for a single operation
   app.post('/calculate', async (request, reply) => {
     try {
-      const body = calculateCostSchema.parse(request.body);
+      const body = calculateCostSchema.parse(request.body) as {
+        customerId: string;
+        provider: ProviderName;
+        model: string;
+        inputTokens: number;
+        outputTokens: number;
+      };
 
       const result = await costCalculatorService.calculateCost(body);
 
@@ -88,7 +94,15 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
   // Bulk cost calculation
   app.post('/calculate/bulk', async (request, reply) => {
     try {
-      const body = bulkCalculateSchema.parse(request.body);
+      const body = bulkCalculateSchema.parse(request.body) as {
+        customerId: string;
+        calculations: Array<{
+          provider: ProviderName;
+          model: string;
+          inputTokens: number;
+          outputTokens: number;
+        }>;
+      };
 
       const results = await costCalculatorService.calculateBulk(
         body.customerId,
@@ -142,7 +156,7 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Group by provider and model
-      const grouped = providers.reduce((acc: Record<string, GroupedPricing>, cost) => {
+      const grouped = providers.reduce((acc: Record<string, GroupedPricing>, cost: typeof providers[number]) => {
         const key = `${cost.provider}:${cost.model}`;
         if (!acc[key]) {
           acc[key] = {

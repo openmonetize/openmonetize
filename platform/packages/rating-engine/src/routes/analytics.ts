@@ -76,7 +76,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
         eventCount: number;
       }
 
-      const breakdown = usageEvents.reduce((acc: Record<string, BreakdownData>, event) => {
+      const breakdown = usageEvents.reduce((acc: Record<string, BreakdownData>, event: typeof usageEvents[number]) => {
         const provider = event.provider || 'unknown';
         const model = event.model || 'unknown';
         const key = `${provider}/${model}`;
@@ -105,11 +105,11 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
         return acc;
       }, {} as Record<string, BreakdownData>);
 
-      const data = Object.values(breakdown).sort((a, b) => b.totalCostUsd - a.totalCostUsd);
+      const data = Object.values(breakdown).sort((a: BreakdownData, b: BreakdownData) => b.totalCostUsd - a.totalCostUsd);
 
       // Calculate totals
       const totals = data.reduce(
-        (acc, item) => ({
+        (acc: { totalInputTokens: number; totalOutputTokens: number; totalCreditsBurned: number; totalCostUsd: number; totalEvents: number }, item: BreakdownData) => ({
           totalInputTokens: acc.totalInputTokens + item.totalInputTokens,
           totalOutputTokens: acc.totalOutputTokens + item.totalOutputTokens,
           totalCreditsBurned: acc.totalCreditsBurned + item.totalCreditsBurned,
@@ -208,7 +208,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
         eventCount: number;
       }
 
-      const trends = usageEvents.reduce((acc: Record<string, TrendData>, event) => {
+      const trends = usageEvents.reduce((acc: Record<string, TrendData>, event: typeof usageEvents[number]) => {
         const key = groupByFn(new Date(event.timestamp));
         if (!acc[key]) {
           acc[key] = {
@@ -233,7 +233,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
         return acc;
       }, {} as Record<string, TrendData>);
 
-      const data = Object.values(trends).sort((a, b) => a.period.localeCompare(b.period));
+      const data = Object.values(trends).sort((a: TrendData, b: TrendData) => a.period.localeCompare(b.period));
 
       return {
         data,
@@ -304,7 +304,7 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Calculate average daily burn rate
-      const totalBurn = historicalEvents.reduce((sum, event) => sum + Number(event.creditsBurned), 0);
+      const totalBurn = historicalEvents.reduce((sum: number, event: typeof historicalEvents[number]) => sum + Number(event.creditsBurned), 0);
       const averageDailyBurn = Math.ceil(totalBurn / 30);
 
       // Generate forecast
