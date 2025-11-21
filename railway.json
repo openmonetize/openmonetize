@@ -21,10 +21,14 @@
       "build": {
         "builder": "NIXPACKS",
         "root": "platform",
-        "buildCommand": "pnpm install && pnpm build --filter=api-gateway..."
+        "buildCommand": "pnpm install && pnpm build --filter=api-gateway...",
+        "watchPatterns": [
+          "packages/api-gateway/**",
+          "packages/common/**"
+        ]
       },
       "deploy": {
-        "startCommand": "node packages/api-gateway/dist/index.js",
+        "startCommand": "npm run start:api",
         "restartPolicyType": "ON_FAILURE"
       },
       "variables": {
@@ -44,10 +48,14 @@
       "build": {
         "builder": "NIXPACKS",
         "root": "platform",
-        "buildCommand": "pnpm install && pnpm build --filter=ingestion-service..."
+        "buildCommand": "pnpm install && pnpm build --filter=ingestion-service...",
+        "watchPatterns": [
+          "packages/ingestion-service/**",
+          "packages/common/**"
+        ]
       },
       "deploy": {
-        "startCommand": "node packages/ingestion-service/dist/index.js",
+        "startCommand": "npm run start:ingestion",
         "restartPolicyType": "ON_FAILURE"
       },
       "variables": {
@@ -67,10 +75,14 @@
       "build": {
         "builder": "NIXPACKS",
         "root": "platform",
-        "buildCommand": "pnpm install && pnpm build --filter=rating-engine..."
+        "buildCommand": "pnpm install && pnpm build --filter=rating-engine...",
+        "watchPatterns": [
+          "packages/rating-engine/**",
+          "packages/common/**"
+        ]
       },
       "deploy": {
-        "startCommand": "node packages/rating-engine/dist/index.js",
+        "startCommand": "npm run start:rating",
         "restartPolicyType": "ON_FAILURE"
       },
       "variables": {

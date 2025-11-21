@@ -15,6 +15,9 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "start:all": "pnpm -r --parallel start",
+    "start:ingestion": "node packages/ingestion-service/dist/index.js",
+    "start:rating": "node packages/rating-engine/dist/index.js",
+    "start:api": "node packages/api-gateway/dist/index.js",
     "license:check": "tsx scripts/apply-licenses.ts --check",
     "license:fix": "tsx scripts/apply-licenses.ts"
   },
