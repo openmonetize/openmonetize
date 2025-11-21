@@ -6,7 +6,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "db:generate": "dotenv -e ../../.env -- prisma generate",
