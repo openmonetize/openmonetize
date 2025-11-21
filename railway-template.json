@@ -28,8 +28,7 @@
         ]
       },
       "deploy": {
-        "startCommand": "npm run start:api",
-        "restartPolicyType": "ON_FAILURE"
+        "startCommand": "npm run start:api"
       },
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
@@ -55,8 +54,7 @@
         ]
       },
       "deploy": {
-        "startCommand": "npm run start:ingestion",
-        "restartPolicyType": "ON_FAILURE"
+        "startCommand": "npm run start:ingestion"
       },
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
@@ -82,8 +80,7 @@
         ]
       },
       "deploy": {
-        "startCommand": "npm run start:rating",
-        "restartPolicyType": "ON_FAILURE"
+        "startCommand": "npm run start:rating"
       },
       "variables": {
         "NIXPACKS_PROVIDERS": "node",

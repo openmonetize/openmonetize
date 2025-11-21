@@ -63,7 +63,3 @@ DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 path = "/health"
 port = 3002
 
-# Deployment configuration
-[deploy]
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 10
