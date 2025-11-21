@@ -69,10 +69,28 @@ export const CommonResponses = {
  * @returns Complete response schema object
  *
  * @example
+ * // For 200 responses
  * const schema = {
  *   response: withCommonResponses({
  *     200: { type: 'object', properties: { data: { type: 'string' } } }
  *   }, [403, 404, 500])
+ * }
+ *
+ * @example
+ * // For 201 responses
+ * const schema = {
+ *   response: withCommonResponses({
+ *     201: { type: 'object', properties: { data: { type: 'string' } } }
+ *   }, [403, 500])
+ * }
+ *
+ * @example
+ * // For health checks with multiple success codes
+ * const schema = {
+ *   response: withCommonResponses({
+ *     200: { type: 'object', properties: { status: { type: 'string' } } },
+ *     503: { type: 'object', properties: { status: { type: 'string' }, checks: { type: 'object' } } }
+ *   })
  * }
  */
 export function withCommonResponses(

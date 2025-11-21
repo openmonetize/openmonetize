@@ -24,7 +24,7 @@ const db = getPrismaClient();
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
   // Basic health check
-  app.get('/health', async (request, reply) => {
+  app.get('/health', async () => {
     return {
       status: 'ok',
       timestamp: new Date().toISOString()
@@ -32,7 +32,7 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Readiness check with database
-  app.get('/ready', async (request, reply) => {
+  app.get('/ready', async (_request, reply) => {
     try {
       await db.$queryRaw`SELECT 1`;
 
@@ -56,7 +56,7 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Service info
-  app.get('/v1/info', async (request, reply) => {
+  app.get('/v1/info', async () => {
     return {
       service: 'rating-engine',
       version: '0.1.0',

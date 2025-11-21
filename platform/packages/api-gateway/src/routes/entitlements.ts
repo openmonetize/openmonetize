@@ -21,6 +21,7 @@ import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
 import { z } from 'zod';
+import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
@@ -304,7 +305,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
           },
           required: ['customerId', 'featureId', 'limitType'],
         },
-        response: {
+        response: withCommonResponses({
           201: {
             type: 'object',
             properties: {
@@ -319,7 +320,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 500]),
       },
     },
     async (request: any, reply) => {

@@ -21,6 +21,7 @@ import { getPrismaClient, generateApiKey, hashApiKey } from '@openmonetize/commo
 import { logger } from '../logger';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth';
+import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
@@ -52,7 +53,7 @@ export async function customersRoutes(app: FastifyInstance) {
           },
           required: ['name', 'email'],
         },
-        response: {
+        response: withCommonResponses({
           201: {
             type: 'object',
             properties: {
@@ -72,21 +73,7 @@ export async function customersRoutes(app: FastifyInstance) {
               },
             },
           },
-          400: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          409: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-        },
+        }, [400, 409, 500]),
       },
     },
     async (request, reply) => {
@@ -164,7 +151,7 @@ export async function customersRoutes(app: FastifyInstance) {
         tags: ['Customers'],
         description: 'Get current customer profile',
         security: [{ bearerAuth: [] }],
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -181,28 +168,7 @@ export async function customersRoutes(app: FastifyInstance) {
               },
             },
           },
-          401: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-        },
+        }, [401, 404, 500]),
       },
     },
     async (request: any, reply) => {
@@ -215,18 +181,16 @@ export async function customersRoutes(app: FastifyInstance) {
           });
         }
 
-        const customer = await withTenant(request.customer.id, async (tx) => {
-          return await tx.customer.findUnique({
-            where: { id: request.customer.id },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              tier: true,
-              status: true,
-              createdAt: true,
-            },
-          });
+        const customer = await db.customer.findUnique({
+          where: { id: request.customer.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            tier: true,
+            status: true,
+            createdAt: true,
+          },
         });
 
         if (!customer) {

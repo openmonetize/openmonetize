@@ -51,7 +51,7 @@ const updateBurnTableSchema = z.object({
 
 export const burnTableRoutes: FastifyPluginAsync = async (app) => {
   // List all burn tables
-  app.get('/', async (request, reply) => {
+  app.get('/', async (request) => {
     const { customerId, isActive } = request.query as {
       customerId?: string;
       isActive?: string;

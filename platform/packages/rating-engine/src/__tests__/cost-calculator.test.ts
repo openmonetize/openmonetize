@@ -194,10 +194,12 @@ describe('CostCalculatorService', () => {
       ]);
 
       expect(results).toHaveLength(2);
-      expect(results[0].credits).toBeGreaterThan(0);
-      expect(results[1].credits).toBeGreaterThan(0);
+      expect(results[0]).toBeDefined();
+      expect(results[1]).toBeDefined();
+      expect(results[0]!.credits).toBeGreaterThan(0);
+      expect(results[1]!.credits).toBeGreaterThan(0);
       // Second calculation should have roughly 2x the credits of first
-      expect(results[1].credits).toBeGreaterThanOrEqual(results[0].credits);
+      expect(results[1]!.credits).toBeGreaterThanOrEqual(results[0]!.credits);
     });
   });
 });

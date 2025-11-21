@@ -120,7 +120,7 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Get all provider pricing
-  app.get('/pricing', async (request, reply) => {
+  app.get('/pricing', async (_request, reply) => {
     try {
       const providers = await db.providerCost.findMany({
         where: {

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { getPrismaClient, TransactionType } from '@openmonetize/common';
+import { getPrismaClient } from '@openmonetize/common';
 import { logger } from '../logger';
 
 const db = getPrismaClient();

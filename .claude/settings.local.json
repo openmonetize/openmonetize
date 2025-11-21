@@ -21,7 +21,10 @@
       "Bash(docker ps:*)",
       "Bash(INGESTION_SERVICE_PORT=8082 DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" pnpm dev:*)",
       "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" pnpm dev:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(pnpm --filter @openmonetize/rating-engine build)",
+      "Bash(npx prisma generate:*)",
+      "Bash(pnpm build)"
     ],
     "deny": [],
     "ask": []

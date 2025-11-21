@@ -42,5 +42,11 @@
     }
   },
   "include": ["packages/*/src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "**/node_modules", "**/dist"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/node_modules",
+    "**/dist",
+    "**/generated/**"
+  ]
 }

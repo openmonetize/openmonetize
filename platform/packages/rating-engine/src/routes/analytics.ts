@@ -79,10 +79,10 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
           };
         }
 
-        acc[key].totalInputTokens += event.inputTokens || 0;
-        acc[key].totalOutputTokens += event.outputTokens || 0;
+        acc[key].totalInputTokens += Number(event.inputTokens || 0);
+        acc[key].totalOutputTokens += Number(event.outputTokens || 0);
         acc[key].totalCreditsBurned += Number(event.creditsBurned);
-        acc[key].totalCostUsd += Number(event.costUsd);
+        acc[key].totalCostUsd += Number(event.costUsd || 0);
         acc[key].eventCount += 1;
 
         return acc;
@@ -169,20 +169,29 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
       });
 
       // Group by time period
-      const groupByFn = (date: Date) => {
+      const groupByFn = (date: Date): string => {
         switch (query.groupBy) {
           case 'week':
             const weekStart = new Date(date);
             weekStart.setDate(date.getDate() - date.getDay());
-            return weekStart.toISOString().split('T')[0];
+            return weekStart.toISOString().split('T')[0] ?? '';
           case 'month':
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
           default: // day
-            return date.toISOString().split('T')[0];
+            return date.toISOString().split('T')[0] ?? '';
         }
       };
 
-      const trends = usageEvents.reduce((acc: any, event) => {
+      interface TrendData {
+        period: string;
+        totalInputTokens: number;
+        totalOutputTokens: number;
+        totalCreditsBurned: number;
+        totalCostUsd: number;
+        eventCount: number;
+      }
+
+      const trends = usageEvents.reduce((acc: Record<string, TrendData>, event) => {
         const key = groupByFn(new Date(event.timestamp));
         if (!acc[key]) {
           acc[key] = {
@@ -195,16 +204,16 @@ export const analyticsRoutes: FastifyPluginAsync = async (app) => {
           };
         }
 
-        acc[key].totalInputTokens += event.inputTokens || 0;
-        acc[key].totalOutputTokens += event.outputTokens || 0;
+        acc[key].totalInputTokens += Number(event.inputTokens || 0);
+        acc[key].totalOutputTokens += Number(event.outputTokens || 0);
         acc[key].totalCreditsBurned += Number(event.creditsBurned);
-        acc[key].totalCostUsd += Number(event.costUsd);
+        acc[key].totalCostUsd += Number(event.costUsd || 0);
         acc[key].eventCount += 1;
 
         return acc;
       }, {});
 
-      const data = Object.values(trends).sort((a: any, b: any) => a.period.localeCompare(b.period));
+      const data = Object.values(trends).sort((a, b) => a.period.localeCompare(b.period));
 
       return {
         data,

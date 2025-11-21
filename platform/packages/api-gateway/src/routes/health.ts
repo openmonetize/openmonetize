@@ -20,6 +20,7 @@ import { FastifyInstance } from 'fastify';
 import { getPrismaClient } from '@openmonetize/common';
 import { logger } from '../logger';
 import { config } from '../config';
+import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
@@ -39,7 +40,7 @@ export async function healthRoutes(app: FastifyInstance) {
         },
       },
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     return reply.send({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -51,7 +52,7 @@ export async function healthRoutes(app: FastifyInstance) {
     schema: {
       tags: ['Health'],
       description: 'Readiness check including database connectivity',
-      response: {
+      response: withCommonResponses({
         200: {
           type: 'object',
           properties: {
@@ -60,9 +61,18 @@ export async function healthRoutes(app: FastifyInstance) {
             timestamp: { type: 'string' },
           },
         },
-      },
+        503: {
+          description: 'Service Unavailable - One or more dependencies are down',
+          type: 'object',
+          properties: {
+            status: { type: 'string' },
+            checks: { type: 'object' },
+            timestamp: { type: 'string' },
+          },
+        },
+      }, []),
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const checks: Record<string, boolean> = {};
 
     // Check database
@@ -122,7 +132,7 @@ export async function healthRoutes(app: FastifyInstance) {
         },
       },
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     return reply.send({
       service: 'api-gateway',
       version: '0.1.0',
