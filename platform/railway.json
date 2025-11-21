@@ -11,7 +11,5 @@
       "turbo.json"
     ]
   },
-  "deploy": {
-    "startCommand": "pnpm start:all"
-  }
+  "deploy": {}
 }
