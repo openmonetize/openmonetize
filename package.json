@@ -1,0 +1,13 @@
+{
+    "name": "openmonetize-root",
+    "private": true,
+    "description": "Root of OpenMonetize repository",
+    "scripts": {
+        "postinstall": "cd platform && pnpm install",
+        "build": "cd platform && pnpm build"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "packageManager": "pnpm@9.0.0"
+}
