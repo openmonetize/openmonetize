@@ -18,9 +18,10 @@
 // Credit management routes
 import { FastifyInstance } from 'fastify';
 import { getPrismaClient } from '@openmonetize/common';
-import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
 import { z } from 'zod';
+import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
@@ -50,7 +51,7 @@ export async function creditsRoutes(app: FastifyInstance) {
         tags: ['Credits'],
         description: 'Get credit balance for the authenticated customer',
         security: [{ bearerAuth: [] }],
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -65,14 +66,7 @@ export async function creditsRoutes(app: FastifyInstance) {
               },
             },
           },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-        },
+        }, [401, 404, 500]),
       },
     },
     async (request: any, reply) => {
@@ -142,7 +136,7 @@ export async function creditsRoutes(app: FastifyInstance) {
           },
           required: ['customerId', 'userId'],
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -157,7 +151,7 @@ export async function creditsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 404, 500]),
       },
     },
     async (request, reply) => {
@@ -229,7 +223,7 @@ export async function creditsRoutes(app: FastifyInstance) {
           },
           required: ['customerId', 'userId', 'amount', 'purchasePrice'],
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -242,7 +236,7 @@ export async function creditsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 500]),
       },
     },
     async (request, reply) => {
@@ -344,7 +338,7 @@ export async function creditsRoutes(app: FastifyInstance) {
           },
           required: ['customerId', 'amount'],
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -359,29 +353,7 @@ export async function creditsRoutes(app: FastifyInstance) {
               },
             },
           },
-          403: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-          409: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-              existingTransaction: { type: 'object' },
-            },
-          },
-          500: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' },
-            },
-          },
-        },
+        }, [403, 409, 500]),
       },
     },
     async (request: any, reply) => {
@@ -565,7 +537,7 @@ export async function creditsRoutes(app: FastifyInstance) {
             offset: { type: 'integer', minimum: 0, default: 0 },
           },
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -594,7 +566,7 @@ export async function creditsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 500]),
       },
     },
     async (request, reply) => {
@@ -614,8 +586,10 @@ export async function creditsRoutes(app: FastifyInstance) {
         const [transactions, total] = await Promise.all([
           db.creditTransaction.findMany({
             where: {
-              userId,
               customerId,
+              wallet: {
+                userId,
+              },
             },
             select: {
               id: true,
@@ -632,8 +606,10 @@ export async function creditsRoutes(app: FastifyInstance) {
           }),
           db.creditTransaction.count({
             where: {
-              userId,
               customerId,
+              wallet: {
+                userId,
+              },
             },
           }),
         ]);

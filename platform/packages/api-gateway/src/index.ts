@@ -224,10 +224,11 @@ X-API-Key: YOUR_API_KEY
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {
-    logger.error({ err: error, reqId: request.id }, 'Request error');
+    const err = error as any;
+    logger.error({ err, reqId: request.id }, 'Request error');
 
     // Handle rate limit errors
-    if (error.statusCode === 429) {
+    if (err.statusCode === 429) {
       return reply.status(429).send({
         error: 'Too Many Requests',
         message: 'Rate limit exceeded. Please try again later.',
@@ -235,18 +236,18 @@ X-API-Key: YOUR_API_KEY
     }
 
     // Handle Fastify validation errors
-    if (error.validation) {
+    if (err.validation) {
       return reply.status(400).send({
         error: 'Validation Error',
-        message: error.message,
-        details: error.validation,
+        message: err.message,
+        details: err.validation,
       });
     }
 
     // Generic error
-    return reply.status(error.statusCode || 500).send({
-      error: error.name || 'Internal Server Error',
-      message: error.message || 'An unexpected error occurred',
+    return reply.status(err.statusCode || 500).send({
+      error: err.name || 'Internal Server Error',
+      message: err.message || 'An unexpected error occurred',
     });
   });
 

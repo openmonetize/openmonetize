@@ -24,6 +24,7 @@ packages/**/src/**/*.d.ts.map
 !packages/**/src/**/*.config.js
 !packages/**/src/**/*.test.js
 !packages/**/src/**/*.spec.js
+!packages/api-gateway/src/types/*.d.ts
 
 # Environment variables
 .env

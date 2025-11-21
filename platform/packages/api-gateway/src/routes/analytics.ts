@@ -20,7 +20,7 @@ import { FastifyInstance } from 'fastify';
 import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
-import { z } from 'zod';
+import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
@@ -46,7 +46,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
             groupBy: { type: 'string', enum: ['day', 'week', 'month'] },
           },
         },
-        response: {
+
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -115,12 +116,12 @@ export async function analyticsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 500]),
       },
     },
     async (request: any, reply) => {
       try {
-        const { customerId, startDate, endDate, groupBy } = request.query;
+        const { customerId, startDate, endDate } = request.query;
 
         // Use authenticated customer's ID if customerId not provided
         const targetCustomerId = customerId || request.customer!.id;
@@ -134,8 +135,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
 
         // Date range defaults
-        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-        const end = endDate ? new Date(endDate) : new Date();
+        const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+        const end = endDate ? new Date(endDate as string) : new Date();
 
         // Get usage events
         const events = await db.usageEvent.findMany({
@@ -236,7 +237,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         // Create timeline (daily aggregation)
         const timelineMap = new Map<string, { events: number; credits: bigint }>();
         events.forEach((event) => {
-          const dateKey = event.timestamp.toISOString().split('T')[0]; // YYYY-MM-DD
+          const dateKey = event.timestamp.toISOString().split('T')[0] as string; // YYYY-MM-DD
           const existing = timelineMap.get(dateKey) || { events: 0, credits: BigInt(0) };
           timelineMap.set(dateKey, {
             events: existing.events + 1,
@@ -286,7 +287,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
             endDate: { type: 'string', format: 'date-time' },
           },
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -319,7 +320,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 500]),
       },
     },
     async (request: any, reply) => {
@@ -335,8 +336,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
 
         // Date range defaults
-        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate) : new Date();
+        const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const end = endDate ? new Date(endDate as string) : new Date();
 
         // Get usage events with costs
         const events = await db.usageEvent.findMany({
@@ -421,7 +422,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
             userId: { type: 'string', format: 'uuid' },
           },
         },
-        response: {
+        response: withCommonResponses({
           200: {
             type: 'object',
             properties: {
@@ -465,7 +466,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
               },
             },
           },
-        },
+        }, [403, 404, 500]),
       },
     },
     async (request: any, reply) => {
