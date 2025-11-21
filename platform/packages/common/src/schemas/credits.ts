@@ -18,7 +18,7 @@
 // Zod Validation Schemas for Credits
 
 import { z } from 'zod';
-import { TransactionType } from '../generated/prisma';
+import { TransactionType } from '@prisma/client';
 
 export const transactionTypeSchema = z.nativeEnum(TransactionType);
 

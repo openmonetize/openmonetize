@@ -17,7 +17,7 @@
 
 // Entitlement and Feature Access Types
 
-import { LimitType, LimitPeriod } from '../generated/prisma';
+import { LimitType, LimitPeriod } from '@prisma/client';
 
 // Re-export for convenience
 export { LimitType, LimitPeriod };

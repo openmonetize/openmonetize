@@ -18,7 +18,7 @@
 // Zod Validation Schemas for Events
 
 import { z } from 'zod';
-import { EventType, ProviderName } from '../generated/prisma';
+import { EventType, ProviderName } from '@prisma/client';
 
 export const providerNameSchema = z.nativeEnum(ProviderName);
 export const eventTypeSchema = z.nativeEnum(EventType);

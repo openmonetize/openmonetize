@@ -18,7 +18,7 @@
 // OpenMonetize Common Package
 // Shared types, utilities, and database client
 
-export * from './generated/prisma';
+export * from '@prisma/client';
 export * from './types';
 export * from './schemas';
 export * from './utils';

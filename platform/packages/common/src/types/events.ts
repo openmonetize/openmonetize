@@ -17,7 +17,7 @@
 
 // Event Types for Usage Tracking
 
-import { EventType, ProviderName } from '../generated/prisma';
+import { EventType, ProviderName } from '@prisma/client';
 
 // Re-export for convenience
 export { EventType, ProviderName };
