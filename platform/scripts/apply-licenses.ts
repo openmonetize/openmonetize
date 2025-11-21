@@ -77,6 +77,7 @@ const ROOT_LEVEL_EXCLUDES = [
   '**/test-*.sh',
   '**/verify.ts',
   'scripts/**',
+  '**/scripts/**',
 ];
 
 const SDK_PACKAGES = [
