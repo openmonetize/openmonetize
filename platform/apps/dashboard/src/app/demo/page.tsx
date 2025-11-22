@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, Play, CreditCard, Activity, Code2 } from 'lucide-react';
+import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User } from 'lucide-react';
+import { SignUpForm } from '@/components/auth/SignUpForm';
 
 // Types for our simulated logs
 type LogEntry = {
@@ -19,7 +20,6 @@ type LogEntry = {
   details?: any;
 };
 
-const DEMO_API_KEY = 'om_live_demo123';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function ImprovedDemoPage() {
@@ -28,6 +28,11 @@ export default function ImprovedDemoPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Auth State
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // --- Simulation Helpers ---
 
@@ -49,35 +54,73 @@ export default function ImprovedDemoPage() {
     scrollToBottom();
   }, [logs]);
 
+  // --- Auth & Init ---
+
+  useEffect(() => {
+    // Check local storage for existing session
+    const storedKey = localStorage.getItem('om_api_key');
+    const storedName = localStorage.getItem('om_customer_name');
+    
+    if (storedKey) {
+      setApiKey(storedKey);
+      setCustomerName(storedName || 'Developer');
+      addLog('APP', `Welcome back, ${storedName || 'Developer'}`);
+    }
+    setAuthChecked(true);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('om_api_key');
+    localStorage.removeItem('om_customer_name');
+    setApiKey(null);
+    setCustomerName(null);
+    setLogs([]);
+    setBalance(0);
+  };
+
+  const handleLoginSuccess = (key: string, name: string) => {
+    setApiKey(key);
+    setCustomerName(name);
+    addLog('APP', 'Session started with new API Key');
+  };
+
   // --- Fetching Data ---
 
   const fetchBalance = async (silent = false) => {
+    if (!apiKey) return;
+
     try {
-      // Simulating API call for demo purposes if backend isn't running
-      // Replace with actual fetch in production
       const res = await fetch(`${API_URL}/v1/credits/balance`, {
-        headers: { 'Authorization': `Bearer ${DEMO_API_KEY}` },
+        headers: { 'Authorization': `Bearer ${apiKey}` },
       });
+      
+      if (res.status === 401) {
+        if (!silent) addLog('API', 'Authentication failed (Invalid Key)');
+        return;
+      }
+
       const data = await res.json();
       if (data.data) {
         setBalance(parseInt(data.data.balance));
         if(!silent) addLog('BILLING', 'Synced wallet balance', { balance: data.data.balance });
       }
     } catch (e) {
-      // Fallback for UI demo only
       if (!silent) addLog('API', 'Failed to fetch balance (Is local server running?)');
     }
   };
 
   useEffect(() => {
-    fetchBalance(true);
-    addLog('APP', 'OpenMonetize SDK initialized');
-    addLog('APP', 'Environment: Production');
-  }, []);
+    if (apiKey) {
+      fetchBalance(true);
+      addLog('APP', 'OpenMonetize SDK initialized');
+      addLog('APP', 'Environment: Production (SaaS)');
+    }
+  }, [apiKey]);
 
   // --- Handlers ---
 
   const handleLLMGeneration = async () => {
+    if (!apiKey) return;
     setLoading(true);
     addLog('APP', 'User requested GPT-4 generation...');
     
@@ -88,33 +131,64 @@ export default function ImprovedDemoPage() {
       
       // 2. Simulate the Tracking Call
       addLog('API', `POST /v1/events/ingest`, {
-        event_type: 'LLM_COMPLETION',
+        event_type: 'TOKEN_USAGE',
         model: 'gpt-4',
         input_tokens: 120,
         output_tokens: 1300
       });
 
-      // 3. Actual API Call (or simulated for demo UI)
-      /* Here you would call your actual backend. 
-         For visual clarity in this specific React Component, 
-         I'm simulating the "Success" response to ensure the UI flows 
-         even if your local Docker isn't running.
-      */
-      
-      setTimeout(() => {
-        addLog('BILLING', 'Rating event: GPT-4 Pricing Rule applied');
-        addLog('BILLING', `Deducted ${tokens * 1.5} credits`, { new_balance: balance - (tokens * 1.5) });
-        setBalance(prev => prev - (tokens * 1.5)); // Optimistic update
-        setLoading(false);
-      }, 500);
+      // 3. Actual API Call
+      const event = {
+        event_id: crypto.randomUUID(),
+        customer_id: 'self', // The API key identifies the customer
+        event_type: 'TOKEN_USAGE',
+        feature_id: 'gpt-4-completion', // Assuming this exists in burntable
+        provider: 'OPENAI',
+        model: 'gpt-4',
+        input_tokens: 120,
+        output_tokens: 1300,
+        timestamp: new Date().toISOString(),
+      };
+
+      const res = await fetch(`${API_URL}/v1/events/ingest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({ events: [event] }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle Quota Exceeded
+        if (res.status === 402 || res.status === 429) {
+          addLog('API', '❌ Request Blocked: Quota Exceeded', data);
+          alert(data.message); // Simple alert for MVP
+        } else {
+          addLog('API', `❌ Error: ${data.message || res.statusText}`);
+        }
+      } else {
+        addLog('BILLING', 'Event Ingested Successfully');
+        
+        // Wait a bit for async rating then fetch balance
+        setTimeout(() => {
+          fetchBalance();
+        }, 1000);
+      }
+
+      setLoading(false);
 
     } catch (error) {
       console.error(error);
+      addLog('API', 'Network Error');
       setLoading(false);
     }
   };
 
   const handleImageGen = async () => {
+    if (!apiKey) return;
     setLoading(true);
     addLog('APP', 'User requested DALL-E 3 generation...');
     
@@ -128,9 +202,47 @@ export default function ImprovedDemoPage() {
       count: 1
     });
 
-    addLog('BILLING', 'Rating event: DALL-E 3 Flat Rate applied');
-    addLog('BILLING', 'Deducted 40 credits');
-    setBalance(prev => prev - 40);
+    // Actual API Call
+    const event = {
+      event_id: crypto.randomUUID(),
+      customer_id: 'self',
+      event_type: 'IMAGE_GENERATION',
+      feature_id: 'dalle-3-gen',
+      image_count: 1,
+      image_size: '1024x1024',
+      quality: 'hd',
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/v1/events/ingest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({ events: [event] }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 402 || res.status === 429) {
+          addLog('API', '❌ Request Blocked: Quota Exceeded', data);
+          alert(data.message);
+        } else {
+          addLog('API', `❌ Error: ${data.message || res.statusText}`);
+        }
+      } else {
+        addLog('BILLING', 'Event Ingested Successfully');
+        setTimeout(() => {
+          fetchBalance();
+        }, 1000);
+      }
+    } catch (err) {
+      addLog('API', 'Network Error');
+    }
+
     setLoading(false);
   };
 
@@ -139,13 +251,13 @@ export default function ImprovedDemoPage() {
   const snippets = {
     llm: `// 1. Initialize Client
 const client = new OpenMonetize({ 
-  apiKey: process.env.OM_KEY 
+  apiKey: '${apiKey || 'YOUR_API_KEY'}' 
 });
 
 // 2. Track Usage after LLM response
 await client.track({
-  event: 'LLM_COMPLETION',
-  customer_id: 'user_123',
+  event: 'TOKEN_USAGE',
+  customer_id: 'user_123', // Your end-user's ID
   properties: {
     model: 'gpt-4',
     provider: 'openai',
@@ -155,7 +267,7 @@ await client.track({
 });`,
     image: `// 1. Initialize Client
 const client = new OpenMonetize({ 
-  apiKey: process.env.OM_KEY 
+  apiKey: '${apiKey || 'YOUR_API_KEY'}' 
 });
 
 // 2. Track Image Generation
@@ -171,14 +283,38 @@ await client.track({
 });`,
   };
 
+  if (!authChecked) return null;
+
+  // --- RENDER: Sign Up Flow ---
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">OpenMonetize <span className="text-blue-600">Cloud</span></h1>
+          <p className="text-slate-500">The open-source pricing & billing infrastructure for AI.</p>
+        </div>
+        <SignUpForm onSuccess={handleLoginSuccess} />
+      </div>
+    );
+  }
+
+  // --- RENDER: Playground ---
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
       
       {/* Header Section */}
       <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">OpenMonetize <span className="text-blue-600">Playground</span></h1>
-          <p className="text-slate-500 mt-2">Interactive demo: See how usage events translate to billing in real-time.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">OpenMonetize <span className="text-blue-600">Console</span></h1>
+          <div className="flex items-center gap-2 mt-2">
+             <Badge variant="secondary" className="gap-1">
+                <User className="h-3 w-3" />
+                {customerName}
+             </Badge>
+             <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
+                <LogOut className="h-3 w-3" /> Sign Out
+             </button>
+          </div>
         </div>
         
         {/* Live Balance Badge */}
@@ -206,7 +342,7 @@ await client.track({
                 Simulate Usage
               </CardTitle>
               <CardDescription>
-                Perform actions to trigger metering events.
+                Perform actions to trigger metering events against your account.
               </CardDescription>
             </CardHeader>
             

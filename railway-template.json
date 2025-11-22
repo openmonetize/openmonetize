@@ -91,6 +91,26 @@
         "OPENAI_API_KEY": "",
         "ANTHROPIC_API_KEY": ""
       }
+    },
+    "dashboard": {
+      "build": {
+        "builder": "NIXPACKS",
+        "root": "platform",
+        "buildCommand": "pnpm install && pnpm build --filter=dashboard...",
+        "watchPatterns": [
+          "apps/dashboard/**",
+          "packages/sdk/**"
+        ]
+      },
+      "deploy": {
+        "startCommand": "npm start --workspace=dashboard"
+      },
+      "variables": {
+        "NIXPACKS_PROVIDERS": "node",
+        "NODE_ENV": "production",
+        "PORT": "3000",
+        "NEXT_PUBLIC_API_URL": "https://${{api-gateway.RAILWAY_PUBLIC_DOMAIN}}"
+      }
     }
   }
 }

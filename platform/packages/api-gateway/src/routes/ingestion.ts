@@ -20,6 +20,7 @@ import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { config } from '../config';
 import { authenticate } from '../middleware/auth';
+import { checkQuota } from '../middleware/quota';
 import { logger } from '../logger';
 import { withCommonResponses } from '../types/schemas';
 import type { IngestEventsRoute, ReplayDLQRoute } from '../types/routes';
@@ -53,6 +54,8 @@ const BatchSchema = z.object({
 export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all ingestion routes
   app.addHook('preHandler', authenticate);
+  // Register quota check for all ingestion routes
+  app.addHook('preHandler', checkQuota);
 
   // Ingest events
   app.post<IngestEventsRoute>(

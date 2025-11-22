@@ -175,7 +175,7 @@ pnpm dev
 
 **SDKs (MIT)**: 100% free to use in your proprietary applications without restriction.
 
-[Full License Details](LICENSE) | [Commercial Support](mailto:legal@openmonetize.com)
+[Full License Details](LICENSE) | [Commercial Support](mailto:gamaprojector@gmail.com)
 
 ---
 
