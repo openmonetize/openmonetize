@@ -18,7 +18,7 @@
 // Zod Validation Schemas for Entitlements
 
 import { z } from 'zod';
-import { LimitType, LimitPeriod } from '@prisma/client';
+import { LimitType, LimitPeriod } from '../generated/client';
 
 export const limitTypeSchema = z.nativeEnum(LimitType);
 export const limitPeriodSchema = z.nativeEnum(LimitPeriod);

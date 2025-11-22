@@ -17,17 +17,7 @@
 
 // OpenMonetize Type Definitions
 
-// Re-export Prisma enums for convenience
-export {
-  EventType,
-  ProviderName,
-  CostType,
-  TransactionType,
-  LimitType,
-  LimitPeriod,
-  CustomerTier,
-  CustomerStatus
-} from '@prisma/client';
+
 
 export * from './events';
 export * from './api';

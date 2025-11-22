@@ -17,7 +17,7 @@
 
 // Credit System Types
 
-import { TransactionType } from '@prisma/client';
+import { TransactionType } from '../generated/client';
 
 export interface CreditBalance {
   wallet_id: string;

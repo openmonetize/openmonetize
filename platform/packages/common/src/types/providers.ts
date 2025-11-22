@@ -17,10 +17,7 @@
 
 // LLM Provider Types and Pricing
 
-import { ProviderName, CostType } from '@prisma/client';
-
-// Re-export for convenience
-export { ProviderName, CostType };
+import { ProviderName } from '../generated/client';
 
 export interface ProviderPricing {
   provider: ProviderName;

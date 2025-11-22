@@ -17,10 +17,7 @@
 
 // Entitlement and Feature Access Types
 
-import { LimitType, LimitPeriod } from '@prisma/client';
-
-// Re-export for convenience
-export { LimitType, LimitPeriod };
+import { LimitPeriod } from '../generated/client';
 
 export interface EntitlementCheckRequest {
   customer_id: string;
