@@ -22,6 +22,7 @@ import { config } from '../config';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
 import { withCommonResponses } from '../types/schemas';
+import type { IngestEventsRoute, ReplayDLQRoute } from '../types/routes';
 
 // Event schema matching Ingestion Service
 const EventSchema = z.object({
@@ -54,7 +55,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', authenticate);
 
   // Ingest events
-  app.post(
+  app.post<IngestEventsRoute>(
     '/v1/events/ingest',
     {
       schema: {
@@ -141,7 +142,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
         }, [403, 500]),
       },
     },
-    async (request, reply) => {
+    async (_request, reply) => {
       try {
         const response = await fetch(`${config.services.ingestion.url}/v1/events/dlq`, {
           method: 'GET',
@@ -163,7 +164,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Replay DLQ items
-  app.post(
+  app.post<ReplayDLQRoute>(
     '/v1/events/dlq/replay',
     {
       schema: {
@@ -218,7 +219,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
         }, [403, 500]),
       },
     },
-    async (request, reply) => {
+    async (_request, reply) => {
       try {
         // Mapping to /ready of ingestion service which returns status info
         const response = await fetch(`${config.services.ingestion.url}/ready`, {

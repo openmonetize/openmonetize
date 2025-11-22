@@ -24,7 +24,13 @@
       "Bash(git log:*)",
       "Bash(pnpm --filter @openmonetize/rating-engine build)",
       "Bash(npx prisma generate:*)",
-      "Bash(pnpm build)"
+      "Bash(pnpm build)",
+      "Bash(tree:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(timeout 5 pnpm start)",
+      "Bash(npx tsc:*)",
+      "Bash(echo:*)",
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" timeout 5 node dist/index.js)"
     ],
     "deny": [],
     "ask": []

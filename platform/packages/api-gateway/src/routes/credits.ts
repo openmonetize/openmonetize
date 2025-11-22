@@ -22,6 +22,12 @@ import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
 import { withCommonResponses } from '../types/schemas';
+import type {
+  GetUserCreditBalanceRoute,
+  PurchaseCreditsRoute,
+  GrantCreditsRoute,
+  GetCreditTransactionsRoute,
+} from '../types/routes';
 
 const db = getPrismaClient();
 
@@ -116,7 +122,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Get credit balance for a user
-  app.get(
+  app.get<GetUserCreditBalanceRoute>(
     '/v1/customers/:customerId/users/:userId/credits',
     {
       schema: {
@@ -187,7 +193,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Purchase credits (top-up)
-  app.post(
+  app.post<PurchaseCreditsRoute>(
     '/v1/credits/purchase',
     {
       schema: {
@@ -283,7 +289,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Grant credits (admin operation - no payment required)
-  app.post(
+  app.post<GrantCreditsRoute>(
     '/v1/credits/grant',
     {
       schema: {
@@ -473,7 +479,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Get credit transaction history
-  app.get(
+  app.get<GetCreditTransactionsRoute>(
     '/v1/customers/:customerId/users/:userId/transactions',
     {
       schema: {

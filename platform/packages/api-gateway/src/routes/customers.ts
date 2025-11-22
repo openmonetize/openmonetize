@@ -22,6 +22,7 @@ import { logger } from '../logger';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth';
 import { withCommonResponses } from '../types/schemas';
+import type { RegisterCustomerRoute } from '../types/routes';
 
 const db = getPrismaClient();
 
@@ -34,7 +35,7 @@ const CustomerRegistrationSchema = z.object({
 
 export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
   // Customer registration (no auth required)
-  app.post(
+  app.post<RegisterCustomerRoute>(
     '/v1/customers/register',
     {
       schema: {

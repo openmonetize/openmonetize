@@ -22,26 +22,33 @@ import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
 import { withCommonResponses } from '../types/schemas';
+import type {
+  GetUsageAnalyticsRoute,
+  GetCostAnalyticsRoute,
+  GetBurnRateAnalyticsRoute,
+} from '../types/routes';
 
 const db = getPrismaClient();
+
+const usageQuerySchema = z.object({
+  customerId: z.string().uuid().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  groupBy: z.enum(['day', 'week', 'month']).optional(),
+});
 
 export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all analytics routes
   app.addHook('preHandler', authenticate);
 
   // Usage Analytics - Get usage by feature
-  app.get(
+  app.get<GetUsageAnalyticsRoute>(
     '/v1/analytics/usage',
     {
       schema: {
         tags: ['Analytics'],
         description: 'Get usage analytics by feature for a customer',
-        querystring: z.object({
-          customerId: z.string().uuid().optional(),
-          startDate: z.string().datetime().optional(),
-          endDate: z.string().datetime().optional(),
-          groupBy: z.enum(['day', 'week', 'month']).optional(),
-        }),
+        querystring: usageQuerySchema,
         response: withCommonResponses({
           200: z.object({
             data: z.object({
@@ -91,6 +98,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
+        // After Fastify validates against usageQuerySchema, query is guaranteed to match the schema
         const { customerId, startDate, endDate } = request.query;
 
         // Use authenticated customer's ID if customerId not provided
@@ -243,7 +251,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Cost Analytics - Get cost breakdown
-  app.get(
+  app.get<GetCostAnalyticsRoute>(
     '/v1/analytics/costs',
     {
       schema: {
@@ -366,7 +374,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   // Burn Rate Analytics - Get credit consumption rate
-  app.get(
+  app.get<GetBurnRateAnalyticsRoute>(
     '/v1/analytics/burn-rate',
     {
       schema: {
