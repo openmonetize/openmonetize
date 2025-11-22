@@ -16,39 +16,456 @@
  */
 
 // Rating Engine proxy routes
-import { FastifyInstance } from 'fastify';
-import proxy from '@fastify/http-proxy';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { config } from '../config';
 import { authenticate } from '../middleware/auth';
+import { logger } from '../logger';
+import { withCommonResponses } from '../types/schemas';
 
-export async function ratingRoutes(app: FastifyInstance) {
+// Shared Schemas
+const ProviderEnum = z.enum(['OPENAI', 'ANTHROPIC', 'GOOGLE', 'COHERE', 'MISTRAL']);
+
+const CalculateCostSchema = z.object({
+  customerId: z.string().uuid(),
+  provider: ProviderEnum,
+  model: z.string().min(1),
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+});
+
+const BulkCalculateSchema = z.object({
+  customerId: z.string().uuid(),
+  calculations: z
+    .array(
+      z.object({
+        provider: ProviderEnum,
+        model: z.string().min(1),
+        inputTokens: z.number().int().nonnegative(),
+        outputTokens: z.number().int().nonnegative(),
+      })
+    )
+    .min(1)
+    .max(100),
+});
+
+const CreateBurnTableSchema = z.object({
+  customerId: z.string().uuid().optional(),
+  name: z.string().min(1).max(255),
+  rules: z.record(z.string(), z.object({
+    inputTokens: z.number().nonnegative(),
+    outputTokens: z.number().nonnegative(),
+    perUnit: z.number().positive().default(1000),
+  })),
+  validFrom: z.string().datetime().optional(),
+  validUntil: z.string().datetime().optional(),
+});
+
+const UpdateBurnTableSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  rules: z.record(z.string(), z.object({
+    inputTokens: z.number().nonnegative(),
+    outputTokens: z.number().nonnegative(),
+    perUnit: z.number().positive().default(1000),
+  })).optional(),
+  isActive: z.boolean().optional(),
+  validFrom: z.string().datetime().optional(),
+  validUntil: z.string().datetime().optional(),
+});
+
+const AnalyticsQuerySchema = z.object({
+  customerId: z.string().uuid(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  groupBy: z.enum(['day', 'week', 'month']).optional().default('day'),
+});
+
+export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all rating routes
   app.addHook('preHandler', authenticate);
 
-  // Proxy all /v1/rating/* requests to rating engine
-  await app.register(proxy, {
-    upstream: config.services.rating.url,
-    prefix: '/v1/rating',
-    http2: false,
-    rewritePrefix: '/v1/rating',
-    proxyPayloads: true,
-  });
+  // --- Rating Routes ---
 
-  // Proxy all /v1/burn-tables/* requests to rating engine
-  await app.register(proxy, {
-    upstream: config.services.rating.url,
-    prefix: '/v1/burn-tables',
-    http2: false,
-    rewritePrefix: '/v1/burn-tables',
-    proxyPayloads: true,
-  });
+  app.post(
+    '/v1/rating/calculate',
+    {
+      schema: {
+        tags: ['Rating'],
+        description: 'Calculate cost for a single operation',
+        body: CalculateCostSchema,
+        response: withCommonResponses({
+          200: z.object({
+            cost: z.number(),
+            currency: z.string(),
+            credits: z.number(),
+          }),
+        }, [400, 404, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await fetch(`${config.services.rating.url}/calculate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.body),
+        });
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
 
-  // Proxy all /v1/analytics/* requests to rating engine
-  await app.register(proxy, {
-    upstream: config.services.rating.url,
-    prefix: '/v1/analytics',
-    http2: false,
-    rewritePrefix: '/v1/analytics',
-    proxyPayloads: true,
-  });
-}
+  app.post(
+    '/v1/rating/calculate/bulk',
+    {
+      schema: {
+        tags: ['Rating'],
+        description: 'Bulk cost calculation',
+        body: BulkCalculateSchema,
+        response: withCommonResponses({
+          200: z.object({
+            customerId: z.string(),
+            results: z.array(z.any()), // Simplified for now
+            total: z.number(),
+          }),
+        }, [400, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await fetch(`${config.services.rating.url}/calculate/bulk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.body),
+        });
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/rating/pricing',
+    {
+      schema: {
+        tags: ['Rating'],
+        description: 'Get all provider pricing',
+        response: withCommonResponses({
+          200: z.object({
+            data: z.array(z.any()),
+            total: z.number(),
+          }),
+        }, [500]),
+      },
+    },
+    async (_request, reply) => {
+      try {
+        const response = await fetch(`${config.services.rating.url}/pricing`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  // --- Burn Table Routes ---
+
+  app.get(
+    '/v1/burn-tables',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'List all burn tables',
+        querystring: z.object({
+          customerId: z.string().uuid().optional(),
+          isActive: z.string().optional(), // Query params are strings
+        }),
+        response: withCommonResponses({
+          200: z.object({
+            data: z.array(z.any()),
+            total: z.number(),
+          }),
+        }, [500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = new URLSearchParams(request.query as any).toString();
+        const response = await fetch(`${config.services.rating.url}/burn-tables?${query}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/burn-tables/:id',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'Get a specific burn table',
+        params: z.object({ id: z.string().uuid() }),
+        response: withCommonResponses({
+          200: z.object({ data: z.any() }),
+        }, [404, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params;
+        const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.post(
+    '/v1/burn-tables',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'Create a new burn table',
+        body: CreateBurnTableSchema,
+        response: withCommonResponses({
+          201: z.object({ data: z.any() }),
+        }, [400, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const response = await fetch(`${config.services.rating.url}/burn-tables`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.body),
+        });
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.patch(
+    '/v1/burn-tables/:id',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'Update a burn table',
+        params: z.object({ id: z.string().uuid() }),
+        body: UpdateBurnTableSchema,
+        response: withCommonResponses({
+          200: z.object({ data: z.any() }),
+        }, [400, 404, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params;
+        const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.body),
+        });
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.delete(
+    '/v1/burn-tables/:id',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'Delete (deactivate) a burn table',
+        params: z.object({ id: z.string().uuid() }),
+        response: withCommonResponses({
+          200: z.object({ message: z.string() }),
+        }, [404, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { id } = request.params;
+        const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/burn-tables/customer/:customerId/active',
+    {
+      schema: {
+        tags: ['Burn Tables'],
+        description: 'Get active burn table for a customer',
+        params: z.object({ customerId: z.string().uuid() }),
+        response: withCommonResponses({
+          200: z.object({
+            data: z.any(),
+            isDefault: z.boolean(),
+          }),
+        }, [404, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { customerId } = request.params;
+        const response = await fetch(`${config.services.rating.url}/burn-tables/customer/${customerId}/active`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  // --- Analytics Routes ---
+
+  app.get(
+    '/v1/analytics/cost-breakdown',
+    {
+      schema: {
+        tags: ['Analytics'],
+        description: 'Get cost breakdown by provider/model',
+        querystring: AnalyticsQuerySchema,
+        response: withCommonResponses({
+          200: z.object({
+            data: z.array(z.any()),
+            totals: z.any(),
+            period: z.any(),
+          }),
+        }, [400, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = new URLSearchParams(request.query as any).toString();
+        const response = await fetch(`${config.services.rating.url}/analytics/cost-breakdown?${query}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/analytics/usage-trends',
+    {
+      schema: {
+        tags: ['Analytics'],
+        description: 'Get usage trends over time',
+        querystring: AnalyticsQuerySchema,
+        response: withCommonResponses({
+          200: z.object({
+            data: z.array(z.any()),
+            period: z.any(),
+          }),
+        }, [400, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = new URLSearchParams(request.query as any).toString();
+        const response = await fetch(`${config.services.rating.url}/analytics/usage-trends?${query}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/analytics/burn-forecast',
+    {
+      schema: {
+        tags: ['Analytics'],
+        description: 'Credit burn forecasting',
+        querystring: z.object({
+          customerId: z.string().uuid(),
+          days: z.string().optional(), // Query params are strings
+        }),
+        response: withCommonResponses({
+          200: z.object({
+            currentBalance: z.number(),
+            averageDailyBurn: z.number(),
+            forecast: z.array(z.any()),
+            projections: z.any(),
+          }),
+        }, [400, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = new URLSearchParams(request.query as any).toString();
+        const response = await fetch(`${config.services.rating.url}/analytics/burn-forecast?${query}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+
+  app.get(
+    '/v1/analytics/summary/:customerId',
+    {
+      schema: {
+        tags: ['Analytics'],
+        description: 'Get customer summary statistics',
+        params: z.object({ customerId: z.string().uuid() }),
+        response: withCommonResponses({
+          200: z.object({
+            creditBalance: z.any(),
+            lifetime: z.any(),
+            last30Days: z.any(),
+            recentActivity: z.array(z.any()),
+          }),
+        }, [500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { customerId } = request.params;
+        const response = await fetch(`${config.services.rating.url}/analytics/summary/${customerId}`);
+        const data = await response.json();
+        return reply.status(response.status).send(data);
+      } catch (error) {
+        logger.error({ err: error }, 'Error proxying to rating service');
+        return reply.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  );
+};

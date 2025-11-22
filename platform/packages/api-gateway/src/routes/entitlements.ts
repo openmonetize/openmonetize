@@ -72,7 +72,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const startTime = Date.now();
       try {
-        const { customerId, userId, featureId, action } = request.body;
+        const { customerId, userId, featureId, action } = request.body as z.infer<typeof EntitlementCheckSchema>;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
@@ -287,7 +287,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId, userId, featureId, limitType, limitValue, period, metadata } = request.body;
+        const { customerId, userId, featureId, limitType, limitValue, period, metadata } = request.body as any;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
@@ -360,8 +360,8 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { id } = request.params;
-        const { limitType, limitValue, period, metadata } = request.body;
+        const { id } = request.params as { id: string };
+        const { limitType, limitValue, period, metadata } = request.body as any;
 
         // Get existing entitlement to verify ownership
         const existing = await db.entitlement.findUnique({
@@ -431,7 +431,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
 
         // Get existing entitlement to verify ownership
         const existing = await db.entitlement.findUnique({
@@ -499,7 +499,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params;
+        const { customerId } = request.params as { customerId: string };
 
         // Verify customer access
         if (customerId !== request.customer!.id) {

@@ -15,102 +15,129 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { config } from '../config';
 import { logger } from '../logger';
 import { randomUUID } from 'crypto';
+import { withCommonResponses } from '../types/schemas';
 
-export async function demoRoutes(app: FastifyInstance) {
-  app.post('/v1/demo/generate', {
-    schema: {
-      body: {
-        type: 'object',
-        properties: {
-          prompt: { type: 'string' },
-          model: { type: 'string' },
-          provider: { type: 'string' }
-        },
-        required: ['prompt']
+export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
+  app.post(
+    '/v1/demo/generate',
+    {
+      schema: {
+        tags: ['Demo'],
+        description: 'Generate AI response (Demo Mode)',
+        body: z.object({
+          prompt: z.string(),
+          model: z.string().optional(),
+          provider: z.string().optional(),
+        }),
+        response: withCommonResponses({
+          200: z.object({
+            id: z.string(),
+            object: z.string(),
+            created: z.number(),
+            model: z.string(),
+            choices: z.array(
+              z.object({
+                index: z.number(),
+                message: z.object({
+                  role: z.string(),
+                  content: z.string(),
+                }),
+                finish_reason: z.string(),
+              })
+            ),
+            usage: z.object({
+              prompt_tokens: z.number(),
+              completion_tokens: z.number(),
+              total_tokens: z.number(),
+            }),
+          }),
+        }, [404, 500]),
       },
-      tags: ['Demo'],
-      description: 'Generate AI response (Demo Mode)',
     },
-  }, async (request, reply) => {
-    if (!config.demo.enabled) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Demo mode is disabled' });
-    }
-
-    const body = request.body as { prompt: string, model?: string, provider?: string };
-    const prompt = body.prompt;
-    const model = body.model || 'gpt-4';
-    const provider = body.provider || 'openai';
-
-    // Simulate latency
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Generate dummy response
-    const completionId = `chatcmpl-${randomUUID()}`;
-    const created = Math.floor(Date.now() / 1000);
-    const promptTokens = Math.ceil(prompt.length / 4);
-    const completionTokens = 20;
-    const totalTokens = promptTokens + completionTokens;
-
-    const response = {
-      id: completionId,
-      object: 'chat.completion',
-      created: created,
-      model: model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: 'This is a simulated response from OpenMonetize Demo. In a real application, this would be the output from the LLM.',
-          },
-          finish_reason: 'stop',
-        },
-      ],
-      usage: {
-        prompt_tokens: promptTokens,
-        completion_tokens: completionTokens,
-        total_tokens: totalTokens,
-      },
-    };
-
-    // Send usage event to ingestion service
-    try {
-      const event = {
-        event_id: randomUUID(),
-        customer_id: config.demo.tenantId,
-        event_type: 'TOKEN_USAGE',
-        feature_id: 'demo-chat',
-        provider: provider.toUpperCase(),
-        model: model,
-        input_tokens: promptTokens,
-        output_tokens: completionTokens,
-        timestamp: new Date().toISOString(),
-        idempotency_key: completionId
-      };
-
-      const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
-      
-      const ingestResponse = await fetch(ingestionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': config.demo.apiKey,
-        },
-        body: JSON.stringify({ events: [event] }),
-      });
-
-      if (!ingestResponse.ok) {
-        logger.error({ status: ingestResponse.status, statusText: ingestResponse.statusText }, 'Failed to send demo event to ingestion service');
+    async (request, reply) => {
+      if (!config.demo.enabled) {
+        return reply.status(404).send({
+          error: 'Not Found',
+          message: 'Demo mode is disabled',
+        });
       }
 
-    } catch (error) {
-      logger.error({ err: error }, 'Failed to record demo usage');
-    }
+      const { prompt, model = 'gpt-4', provider = 'openai' } = request.body;
 
-    return response;
-  });
-}
+      // Simulate latency
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      // Generate dummy response
+      const completionId = `chatcmpl-${randomUUID()}`;
+      const created = Math.floor(Date.now() / 1000);
+      const promptTokens = Math.ceil(prompt.length / 4);
+      const completionTokens = 20;
+      const totalTokens = promptTokens + completionTokens;
+
+      const response = {
+        id: completionId,
+        object: 'chat.completion',
+        created: created,
+        model: model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: 'This is a simulated response from OpenMonetize Demo. In a real application, this would be the output from the LLM.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: {
+          prompt_tokens: promptTokens,
+          completion_tokens: completionTokens,
+          total_tokens: totalTokens,
+        },
+      };
+
+      // Send usage event to ingestion service
+      try {
+        const event = {
+          event_id: randomUUID(),
+          customer_id: config.demo.tenantId,
+          event_type: 'TOKEN_USAGE',
+          feature_id: 'demo-chat',
+          provider: provider.toUpperCase(),
+          model: model,
+          input_tokens: promptTokens,
+          output_tokens: completionTokens,
+          timestamp: new Date().toISOString(),
+          idempotency_key: completionId,
+        };
+
+        const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
+
+        const ingestResponse = await fetch(ingestionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': config.demo.apiKey,
+          },
+          body: JSON.stringify({ events: [event] }),
+        });
+
+        if (!ingestResponse.ok) {
+          logger.error(
+            { status: ingestResponse.status, statusText: ingestResponse.statusText },
+            'Failed to send demo event to ingestion service'
+          );
+        }
+      } catch (error) {
+        logger.error({ err: error }, 'Failed to record demo usage');
+      }
+
+      return response;
+    }
+  );
+};
