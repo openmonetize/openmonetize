@@ -491,7 +491,6 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             data: z.array(
               z.object({
                 featureId: z.string(),
-                isEnabled: z.boolean().optional(), // isEnabled is not in select, but maybe implied?
                 limitType: z.string(),
                 limitValue: z.number().nullable(), // Converted from BigInt
                 period: z.string().nullable(),
