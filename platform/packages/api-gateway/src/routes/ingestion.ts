@@ -42,7 +42,7 @@ const EventSchema = z.object({
   unit_type: z.string().optional(),
   quantity: z.number().positive().optional(),
   timestamp: z.string().datetime().or(z.date()),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   idempotency_key: z.string().optional(),
 });
 
@@ -130,7 +130,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
         description: 'Get Dead Letter Queue items (failed events)',
         response: withCommonResponses({
           200: z.object({
-            counts: z.record(z.number()),
+            counts: z.record(z.string(), z.number()),
             items: z.array(
               z.object({
                 id: z.string().optional(),
@@ -218,7 +218,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
           200: z.object({
             status: z.string(),
             timestamp: z.string(),
-            services: z.record(z.string()).optional(),
+            services: z.record(z.string(), z.string()).optional(),
           }),
         }, [403, 500]),
       },

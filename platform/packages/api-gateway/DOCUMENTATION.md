@@ -55,16 +55,13 @@ app.get('/v1/example', {
 ### Generate Specs
 
 ```bash
-# CI/Production build (no Redis/DB required)
+# Build TypeScript + generate OpenAPI specs (no Redis/DB required)
 pnpm build
-
-# Local build (requires infrastructure running)
-pnpm build:local
 
 # Output: dist/docs/openapi-public.json, openapi-internal.json, internal.html
 ```
 
-**Note**: The default `pnpm build` uses a lightweight spec generator that doesn't require Redis or PostgreSQL connections. Use `pnpm build:local` if you need to test with the full app initialization.
+**Note**: Spec generation uses a lightweight approach that doesn't require Redis or PostgreSQL connections, making it perfect for CI/CD environments and local development.
 
 ---
 

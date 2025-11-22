@@ -53,12 +53,12 @@ export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
       response: withCommonResponses({
         200: z.object({
           status: z.string(),
-          checks: z.record(z.boolean()),
+          checks: z.record(z.string(), z.boolean()),
           timestamp: z.string(),
         }),
         503: z.object({
           status: z.string(),
-          checks: z.record(z.boolean()),
+          checks: z.record(z.string(), z.boolean()),
           timestamp: z.string(),
         }).describe('Service Unavailable - One or more dependencies are down'),
       }, []),

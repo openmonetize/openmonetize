@@ -273,7 +273,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           limitType: z.enum(['HARD', 'SOFT', 'NONE']),
           limitValue: z.number().nullable().optional(),
           period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
-          metadata: z.record(z.any()).optional(),
+          metadata: z.record(z.string(), z.any()).optional(),
         }),
         response: withCommonResponses({
           201: z.object({
@@ -347,7 +347,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           limitType: z.enum(['HARD', 'SOFT', 'NONE']).optional(),
           limitValue: z.number().nullable().optional(),
           period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
-          metadata: z.record(z.any()).optional(),
+          metadata: z.record(z.string(), z.any()).optional(),
         }),
         response: withCommonResponses({
           200: z.object({

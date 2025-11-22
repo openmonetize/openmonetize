@@ -305,7 +305,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           teamId: z.string().uuid().optional(),
           amount: z.number().min(1),
           reason: z.string().optional(),
-          metadata: z.record(z.any()).optional(),
+          metadata: z.record(z.string(), z.any()).optional(),
           idempotencyKey: z.string().optional(),
           expiresAt: z.string().datetime().optional(),
         }),
