@@ -14,7 +14,7 @@ cp ../../packages/api-gateway/dist/docs/openapi-public.json ./public/
 echo "🎨 Generating Redoc HTML..."
 npx @redocly/cli build-docs public/openapi-public.json \
   --output public/index.html \
-  --theme.colors.primary.main=#00A67E \
+  --config redocly.yaml \
   --title="OpenMonetize API Documentation"
 
 echo "✅ Redoc documentation generated at public/index.html"

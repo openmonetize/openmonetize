@@ -1,0 +1,5 @@
+theme:
+  openapi:
+    colors:
+      primary:
+        main: '#00A67E'

@@ -1,0 +1,1189 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OpenMonetize API Gateway",
+    "description": "Open-source AI monetization infrastructure\n\n## Authentication\n\nAll API endpoints require authentication using Bearer token format:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\nOr using the X-API-Key header:\n\n```\nX-API-Key: YOUR_API_KEY\n```\n\n## Rate Limiting\n\nAPI requests are rate-limited to 100 requests per 1 minute per API key.\n\n## Development Mode\n\nYou are viewing the development API documentation. Some endpoints may be unavailable or behave differently in production.",
+    "version": "0.1.0",
+    "contact": {
+      "name": "OpenMonetize",
+      "url": "https://github.com/openmonetize/platform"
+    },
+    "license": {
+      "name": "AGPL-3.0",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
+    }
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {
+    "/v1/customers/register": {
+      "post": {
+        "tags": [
+          "Customers"
+        ],
+        "description": "Register a new customer account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "tier": {
+                    "default": "STARTER",
+                    "type": "string",
+                    "enum": [
+                      "STARTER",
+                      "GROWTH",
+                      "ENTERPRISE"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "email"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "x-visibility": "public",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "customerId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "apiKey": {
+                          "description": "API key - only shown once! Save it securely.",
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "tier": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "customerId",
+                        "apiKey",
+                        "name",
+                        "email",
+                        "tier",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Bad Request",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - Duplicate operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Conflict - Duplicate operation",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "existingTransaction": {}
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Internal Server Error",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/events/ingest": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "description": "Ingest a batch of usage events",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "event_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "customer_id": {
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "type": "string"
+                        },
+                        "team_id": {
+                          "type": "string"
+                        },
+                        "event_type": {
+                          "type": "string",
+                          "enum": [
+                            "TOKEN_USAGE",
+                            "API_CALL",
+                            "FEATURE_ACCESS",
+                            "IMAGE_GENERATION",
+                            "CUSTOM"
+                          ]
+                        },
+                        "feature_id": {
+                          "type": "string"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "enum": [
+                            "OPENAI",
+                            "ANTHROPIC",
+                            "GOOGLE",
+                            "COHERE",
+                            "MISTRAL"
+                          ]
+                        },
+                        "model": {
+                          "type": "string"
+                        },
+                        "input_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "output_tokens": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "image_count": {
+                          "type": "integer",
+                          "exclusiveMinimum": true,
+                          "maximum": 9007199254740991
+                        },
+                        "image_size": {
+                          "type": "string"
+                        },
+                        "quality": {
+                          "type": "string"
+                        },
+                        "unit_type": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "minimum": 0,
+                          "exclusiveMinimum": true
+                        },
+                        "timestamp": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                            }
+                          ]
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "idempotency_key": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "event_id",
+                        "customer_id",
+                        "event_type",
+                        "feature_id",
+                        "timestamp"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "events"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "x-visibility": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "number"
+                    },
+                    "rejected": {
+                      "type": "number"
+                    },
+                    "duplicates": {
+                      "type": "number"
+                    },
+                    "batch_id": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "rejected",
+                    "duplicates",
+                    "batch_id",
+                    "status",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "number"
+                    },
+                    "rejected": {
+                      "type": "number"
+                    },
+                    "duplicates": {
+                      "type": "number"
+                    },
+                    "batch_id": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "processing_time_ms": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "rejected",
+                    "duplicates",
+                    "batch_id",
+                    "status",
+                    "processing_time_ms"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Bad Request",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Unauthorized - Authentication required",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Forbidden - Access denied",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Internal Server Error",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/usage": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get usage analytics by feature for a customer",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "customerId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "in": "query",
+            "name": "startDate",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "in": "query",
+            "name": "endDate",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ]
+            },
+            "in": "query",
+            "name": "groupBy",
+            "required": false
+          }
+        ],
+        "x-visibility": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalEvents": {
+                              "type": "number"
+                            },
+                            "totalInputTokens": {
+                              "type": "string"
+                            },
+                            "totalOutputTokens": {
+                              "type": "string"
+                            },
+                            "totalCreditsBurned": {
+                              "type": "string"
+                            },
+                            "totalCostUsd": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "totalEvents",
+                            "totalInputTokens",
+                            "totalOutputTokens",
+                            "totalCreditsBurned",
+                            "totalCostUsd"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "byFeature": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "featureId": {
+                                "type": "string"
+                              },
+                              "eventCount": {
+                                "type": "number"
+                              },
+                              "creditsBurned": {
+                                "type": "string"
+                              },
+                              "costUsd": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "featureId",
+                              "eventCount",
+                              "creditsBurned",
+                              "costUsd"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "byProvider": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "provider": {
+                                "type": "string"
+                              },
+                              "model": {
+                                "type": "string"
+                              },
+                              "eventCount": {
+                                "type": "number"
+                              },
+                              "inputTokens": {
+                                "type": "string"
+                              },
+                              "outputTokens": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "provider",
+                              "model",
+                              "eventCount",
+                              "inputTokens",
+                              "outputTokens"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "byEventType": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "eventType": {
+                                "type": "string"
+                              },
+                              "eventCount": {
+                                "type": "number"
+                              },
+                              "creditsBurned": {
+                                "type": "string"
+                              },
+                              "costUsd": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "eventType",
+                              "eventCount",
+                              "creditsBurned",
+                              "costUsd"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "timeline": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "date": {
+                                "type": "string"
+                              },
+                              "events": {
+                                "type": "number"
+                              },
+                              "creditsBurned": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "date",
+                              "events",
+                              "creditsBurned"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "summary",
+                        "byFeature",
+                        "byProvider",
+                        "byEventType",
+                        "timeline"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Forbidden - Access denied",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Internal Server Error",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/costs": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get cost breakdown and margin analysis",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "customerId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "in": "query",
+            "name": "startDate",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "in": "query",
+            "name": "endDate",
+            "required": false
+          }
+        ],
+        "x-visibility": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalRevenue": {
+                              "type": "string"
+                            },
+                            "totalProviderCost": {
+                              "type": "string"
+                            },
+                            "totalMargin": {
+                              "type": "string"
+                            },
+                            "marginPercent": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "totalRevenue",
+                            "totalProviderCost",
+                            "totalMargin",
+                            "marginPercent"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "byProvider": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "provider": {
+                                "type": "string"
+                              },
+                              "model": {
+                                "type": "string"
+                              },
+                              "providerCost": {
+                                "type": "string"
+                              },
+                              "revenue": {
+                                "type": "string"
+                              },
+                              "margin": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "provider",
+                              "model",
+                              "providerCost",
+                              "revenue",
+                              "margin"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "summary",
+                        "byProvider"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Forbidden - Access denied",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Internal Server Error",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/burn-rate": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "description": "Get credit burn rate and consumption trends",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "customerId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "userId",
+            "required": false
+          }
+        ],
+        "x-visibility": "public",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentBalance": {
+                          "type": "string"
+                        },
+                        "last7Days": {
+                          "type": "object",
+                          "properties": {
+                            "creditsBurned": {
+                              "type": "string"
+                            },
+                            "averagePerDay": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "creditsBurned",
+                            "averagePerDay"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "last30Days": {
+                          "type": "object",
+                          "properties": {
+                            "creditsBurned": {
+                              "type": "string"
+                            },
+                            "averagePerDay": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "creditsBurned",
+                            "averagePerDay"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "projectedRunout": {
+                          "type": "object",
+                          "properties": {
+                            "daysRemaining": {
+                              "nullable": true,
+                              "type": "number"
+                            },
+                            "estimatedRunoutDate": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "daysRemaining",
+                            "estimatedRunoutDate"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "recommendations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "action": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "message",
+                              "action"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "currentBalance",
+                        "last7Days",
+                        "last30Days",
+                        "projectedRunout",
+                        "recommendations"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Access denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Forbidden - Access denied",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Not Found",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Internal Server Error",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "System health and readiness checks"
+    },
+    {
+      "name": "Customers",
+      "description": "Customer account management"
+    },
+    {
+      "name": "Events",
+      "description": "Usage event ingestion"
+    },
+    {
+      "name": "Credits",
+      "description": "Credit wallet management"
+    },
+    {
+      "name": "Entitlements",
+      "description": "Feature access control"
+    },
+    {
+      "name": "Analytics",
+      "description": "Usage analytics"
+    },
+    {
+      "name": "Rating",
+      "description": "Cost calculation engine"
+    },
+    {
+      "name": "Burn Tables",
+      "description": "Pricing configuration"
+    }
+  ]
+}
