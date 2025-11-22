@@ -35,9 +35,7 @@ declare module 'fastify' {
     customer?: {
       id: string;
       name: string;
-      email: string;
       tier: string;
-      status: string;
     };
   }
 }
