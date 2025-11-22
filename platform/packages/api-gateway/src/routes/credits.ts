@@ -271,7 +271,7 @@ export async function creditsRoutes(app: FastifyInstance) {
         }
 
         // Create credit purchase transaction
-        const result = await db.$transaction(async (tx) => {
+        const result = await db.$transaction(async (tx: any) => {
           // Create transaction record
           const transaction = await tx.creditTransaction.create({
             data: {
@@ -443,7 +443,7 @@ export async function creditsRoutes(app: FastifyInstance) {
         }
 
         // Create grant transaction atomically
-        const result = await db.$transaction(async (tx) => {
+        const result = await db.$transaction(async (tx: any) => {
           const newBalance = BigInt(Number(wallet.balance) + amount);
 
           // Create transaction record
@@ -615,7 +615,7 @@ export async function creditsRoutes(app: FastifyInstance) {
         ]);
 
         return reply.send({
-          data: transactions.map(tx => ({
+          data: transactions.map((tx: typeof transactions[number]) => ({
             ...tx,
             createdAt: tx.createdAt.toISOString(),
           })),

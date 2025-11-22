@@ -192,7 +192,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
         // Group by provider
         const providerMap = new Map<string, { count: number; inputTokens: bigint; outputTokens: bigint }>();
-        events.forEach((event) => {
+        events.forEach((event: typeof events[number]) => {
           if (event.provider && event.model) {
             const key = `${String(event.provider)}:${event.model}`;
             const existing = providerMap.get(key) || { count: 0, inputTokens: BigInt(0), outputTokens: BigInt(0) };
@@ -217,7 +217,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
         // Group by event type
         const eventTypeMap = new Map<string, { count: number; credits: bigint; cost: number }>();
-        events.forEach((event) => {
+        events.forEach((event: typeof events[number]) => {
           const key = String(event.eventType || 'UNKNOWN');
           const existing = eventTypeMap.get(key) || { count: 0, credits: BigInt(0), cost: 0 };
           eventTypeMap.set(key, {
@@ -236,7 +236,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
         // Create timeline (daily aggregation)
         const timelineMap = new Map<string, { events: number; credits: bigint }>();
-        events.forEach((event) => {
+        events.forEach((event: typeof events[number]) => {
           const dateKey = event.timestamp.toISOString().split('T')[0] as string; // YYYY-MM-DD
           const existing = timelineMap.get(dateKey) || { events: 0, credits: BigInt(0) };
           timelineMap.set(dateKey, {
@@ -364,7 +364,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
 
         // Group by provider
         const providerMap = new Map<string, { providerCost: number; revenue: number }>();
-        events.forEach((event) => {
+        events.forEach((event: typeof events[number]) => {
           if (event.provider && event.model) {
             const key = `${event.provider}:${event.model}`;
             const existing = providerMap.get(key) || { providerCost: 0, revenue: 0 };
