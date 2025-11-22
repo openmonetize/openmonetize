@@ -223,7 +223,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
         const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`);
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -277,7 +277,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
         const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -306,7 +306,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
         const response = await fetch(`${config.services.rating.url}/burn-tables/${id}`, {
           method: 'DELETE',
         });
@@ -336,7 +336,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params;
+        const { customerId } = request.params as { customerId: string };
         const response = await fetch(`${config.services.rating.url}/burn-tables/customer/${customerId}/active`);
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -458,7 +458,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params;
+        const { customerId } = request.params as { customerId: string };
         const response = await fetch(`${config.services.rating.url}/analytics/summary/${customerId}`);
         const data = await response.json();
         return reply.status(response.status).send(data);

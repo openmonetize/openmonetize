@@ -67,7 +67,7 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
         });
       }
 
-      const { prompt, model = 'gpt-4', provider = 'openai' } = request.body;
+      const { prompt, model = 'gpt-4', provider = 'openai' } = request.body as any;
 
       // Simulate latency
       await new Promise((resolve) => setTimeout(resolve, 800));

@@ -51,7 +51,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['Entitlements'],
         description: 'Check if a user is entitled to perform an action (sub-10ms latency)',
         body: EntitlementCheckSchema,
-        response: {
+        response: withCommonResponses({
           200: z.object({
             allowed: z.boolean(),
             reason: z.string().nullable(),
@@ -66,7 +66,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
               })
             ),
           }),
-        },
+        }, [403, 500]),
       },
     },
     async (request, reply) => {
@@ -346,7 +346,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
           metadata: z.record(z.any()).optional(),
         }),
-        response: {
+        response: withCommonResponses({
           200: z.object({
             data: z.object({
               id: z.string(),
@@ -355,7 +355,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
               limitValue: z.number().nullable(),
             }),
           }),
-        },
+        }, [403, 404, 500]),
       },
     },
     async (request, reply) => {
@@ -424,9 +424,9 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         params: z.object({
           id: z.string().uuid(),
         }),
-        response: {
+        response: withCommonResponses({
           204: z.null().describe('Entitlement deleted successfully'),
-        },
+        }, [403, 404, 500]),
       },
     },
     async (request, reply) => {
@@ -481,7 +481,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         params: z.object({
           customerId: z.string().uuid(),
         }),
-        response: {
+        response: withCommonResponses({
           200: z.object({
             data: z.array(
               z.object({
@@ -494,7 +494,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
               })
             ),
           }),
-        },
+        }, [403, 500]),
       },
     },
     async (request, reply) => {
