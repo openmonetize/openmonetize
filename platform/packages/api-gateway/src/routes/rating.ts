@@ -91,7 +91,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Calculate cost for a single operation',
         body: CalculateCostSchema,
         response: withCommonResponses({
@@ -124,7 +124,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Bulk cost calculation',
         body: BulkCalculateSchema,
         response: withCommonResponses({
@@ -157,7 +157,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get all provider pricing',
         response: withCommonResponses({
           200: z.object({
@@ -186,7 +186,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'List all burn tables',
         querystring: z.object({
           customerId: z.string().uuid().optional(),
@@ -218,7 +218,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get a specific burn table',
         params: z.object({ id: z.string().uuid() }),
         response: withCommonResponses({
@@ -244,7 +244,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Create a new burn table',
         body: CreateBurnTableSchema,
         response: withCommonResponses({
@@ -273,7 +273,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Update a burn table',
         params: z.object({ id: z.string().uuid() }),
         body: UpdateBurnTableSchema,
@@ -304,7 +304,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Delete (deactivate) a burn table',
         params: z.object({ id: z.string().uuid() }),
         response: withCommonResponses({
@@ -332,7 +332,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get active burn table for a customer',
         params: z.object({ customerId: z.string().uuid() }),
         response: withCommonResponses({
@@ -363,7 +363,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get cost breakdown by provider/model',
         querystring: AnalyticsQuerySchema,
         response: withCommonResponses({
@@ -393,7 +393,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get usage trends over time',
         querystring: AnalyticsQuerySchema,
         response: withCommonResponses({
@@ -422,7 +422,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Credit burn forecasting',
         querystring: z.object({
           customerId: z.string().uuid(),
@@ -456,7 +456,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Get customer summary statistics',
         params: z.object({ customerId: z.string().uuid() }),
         response: withCommonResponses({

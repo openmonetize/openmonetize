@@ -49,7 +49,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Entitlements'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Check if a user is entitled to perform an action (sub-10ms latency)',
         body: EntitlementCheckSchema,
         response: withCommonResponses({
@@ -264,7 +264,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Entitlements'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Create a new entitlement for a customer or user',
         body: z.object({
           customerId: z.string().uuid(),
@@ -338,7 +338,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Entitlements'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Update an existing entitlement',
         params: z.object({
           id: z.string().uuid(),
@@ -423,7 +423,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Entitlements'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'Delete an entitlement',
         params: z.object({
           id: z.string().uuid(),
@@ -481,7 +481,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Entitlements'],
-        'x-visibility': 'internal',
+        'x-visibility': 'public',
         description: 'List all entitlements for a customer',
         params: z.object({
           customerId: z.string().uuid(),
