@@ -151,6 +151,9 @@ importers:
 
   apps/docs:
     devDependencies:
+      '@openmonetize/api-gateway':
+        specifier: workspace:*
+        version: link:../../packages/api-gateway
       '@redocly/cli':
         specifier: ^1.25.15
         version: 1.34.5(ajv@8.17.1)
