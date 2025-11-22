@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/client';
 
 export interface AuditLogEntry {
   customerId: string;
