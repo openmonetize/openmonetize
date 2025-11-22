@@ -47,6 +47,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'public',
         description: 'Get usage analytics by feature for a customer',
         querystring: usageQuerySchema,
         response: withCommonResponses({
@@ -256,6 +257,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'public',
         description: 'Get cost breakdown and margin analysis',
         querystring: z.object({
           customerId: z.string().uuid().optional(),
@@ -379,6 +381,7 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'public',
         description: 'Get credit burn rate and consumption trends',
         querystring: z.object({
           customerId: z.string().uuid().optional(),

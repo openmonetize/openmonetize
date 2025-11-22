@@ -40,6 +40,7 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Customers'],
+        'x-visibility': 'public',
         description: 'Register a new customer account',
         body: CustomerRegistrationSchema,
         response: withCommonResponses({
@@ -128,6 +129,7 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: authenticate,
       schema: {
         tags: ['Customers'],
+        'x-visibility': 'internal',
         description: 'Get current customer profile',
         security: [{ bearerAuth: [] }],
         response: withCommonResponses({

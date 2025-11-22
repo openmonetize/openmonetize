@@ -55,10 +55,16 @@ export const config = {
 
   // API Documentation
   swagger: {
+    enabled: process.env.SWAGGER_ENABLED !== 'false', // Enabled by default, disable with SWAGGER_ENABLED=false
+    requireAuth: process.env.NODE_ENV === 'production' || process.env.SWAGGER_REQUIRE_AUTH === 'true',
     title: 'OpenMonetize API',
     description: 'Open-source AI monetization infrastructure',
     version: '1.0.0',
   },
+
+  // Public API URL (for Swagger server configuration)
+  publicUrl: process.env.PUBLIC_URL ||
+    (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined),
 
   // Demo Mode
   demo: {

@@ -1,0 +1,52 @@
+extends: spectral:oas
+rules:
+  # Tag rules
+  operation-tag-defined: error
+  openapi-tags-alphabetical: off
+
+  # Operation rules
+  operation-operationId-unique: error
+  operation-operationId-valid-in-url: error
+  operation-description: warn
+  operation-summary: warn
+
+  # Security rules
+  operation-security-defined: warn
+  
+  # Schema rules
+  no-$ref-siblings: error
+
+  # Custom rules for x-visibility
+  x-visibility-required:
+    description: All operations must have x-visibility field
+    given: $.paths[*][get,post,put,delete,patch]
+    severity: error
+    then:
+      field: x-visibility
+      function: truthy
+
+  x-visibility-valid:
+    description: x-visibility must be one of public, internal, or admin
+    given: $.paths[*][get,post,put,delete,patch]
+    severity: error
+    then:
+      field: x-visibility
+      function: enumeration
+      functionOptions:
+        values:
+          - public
+          - internal
+          - admin
+
+  # Prevent proxy routes in specs
+  no-wildcard-paths:
+    description: Paths must not contain wildcards (proxy routes should be filtered)
+    given: $.paths
+    severity: error
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "\\*"
+
+  # Response rules
+  operation-success-response: warn

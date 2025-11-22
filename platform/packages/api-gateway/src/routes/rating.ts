@@ -91,6 +91,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
+        'x-visibility': 'internal',
         description: 'Calculate cost for a single operation',
         body: CalculateCostSchema,
         response: withCommonResponses({
@@ -123,6 +124,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
+        'x-visibility': 'internal',
         description: 'Bulk cost calculation',
         body: BulkCalculateSchema,
         response: withCommonResponses({
@@ -155,6 +157,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Rating'],
+        'x-visibility': 'internal',
         description: 'Get all provider pricing',
         response: withCommonResponses({
           200: z.object({
@@ -183,6 +186,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'List all burn tables',
         querystring: z.object({
           customerId: z.string().uuid().optional(),
@@ -214,6 +218,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'Get a specific burn table',
         params: z.object({ id: z.string().uuid() }),
         response: withCommonResponses({
@@ -239,6 +244,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'Create a new burn table',
         body: CreateBurnTableSchema,
         response: withCommonResponses({
@@ -267,6 +273,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'Update a burn table',
         params: z.object({ id: z.string().uuid() }),
         body: UpdateBurnTableSchema,
@@ -297,6 +304,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'Delete (deactivate) a burn table',
         params: z.object({ id: z.string().uuid() }),
         response: withCommonResponses({
@@ -324,6 +332,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Burn Tables'],
+        'x-visibility': 'internal',
         description: 'Get active burn table for a customer',
         params: z.object({ customerId: z.string().uuid() }),
         response: withCommonResponses({
@@ -354,6 +363,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'internal',
         description: 'Get cost breakdown by provider/model',
         querystring: AnalyticsQuerySchema,
         response: withCommonResponses({
@@ -383,6 +393,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'internal',
         description: 'Get usage trends over time',
         querystring: AnalyticsQuerySchema,
         response: withCommonResponses({
@@ -411,6 +422,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'internal',
         description: 'Credit burn forecasting',
         querystring: z.object({
           customerId: z.string().uuid(),
@@ -444,6 +456,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Analytics'],
+        'x-visibility': 'internal',
         description: 'Get customer summary statistics',
         params: z.object({ customerId: z.string().uuid() }),
         response: withCommonResponses({

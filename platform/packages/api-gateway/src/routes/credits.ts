@@ -55,6 +55,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Credits'],
+        'x-visibility': 'internal',
         description: 'Get credit balance for the authenticated customer',
         security: [{ bearerAuth: [] }],
         response: withCommonResponses({
@@ -127,6 +128,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Credits'],
+        'x-visibility': 'internal',
         description: 'Get credit balance for a specific user',
         params: CreditBalanceSchema,
         response: withCommonResponses({
@@ -198,6 +200,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Credits'],
+        'x-visibility': 'internal',
         description: 'Purchase credits for a user (top-up)',
         body: CreditPurchaseSchema,
         response: withCommonResponses({
@@ -294,6 +297,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Credits'],
+        'x-visibility': 'internal',
         description: 'Grant credits to a customer, user, or team (admin operation)',
         body: z.object({
           customerId: z.string().uuid(),
@@ -484,6 +488,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Credits'],
+        'x-visibility': 'internal',
         description: 'Get credit transaction history for a user',
         params: z.object({
           customerId: z.string().uuid(),

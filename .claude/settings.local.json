@@ -30,7 +30,11 @@
       "Bash(timeout 5 pnpm start)",
       "Bash(npx tsc:*)",
       "Bash(echo:*)",
-      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" timeout 5 node dist/index.js)"
+      "Bash(DATABASE_URL=\"postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public\" REDIS_URL=\"redis://localhost:6379\" timeout 5 node dist/index.js)",
+      "Bash(pnpm install:*)",
+      "Bash(timeout 5 pnpm dev:*)",
+      "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" REDIS_URL=\"redis://localhost:6379\" tsx ../../scripts/generate-docs.ts:*)",
+      "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" REDIS_URL=\"redis://localhost:6379\" npx tsx:*)"
     ],
     "deny": [],
     "ask": []

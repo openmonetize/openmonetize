@@ -60,6 +60,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Events'],
+        'x-visibility': 'public',
         description: 'Ingest a batch of usage events',
         body: BatchSchema,
         response: withCommonResponses({
@@ -125,6 +126,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Events'],
+        'x-visibility': 'internal',
         description: 'Get Dead Letter Queue items (failed events)',
         response: withCommonResponses({
           200: z.object({
@@ -169,6 +171,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Events'],
+        'x-visibility': 'internal',
         description: 'Replay failed events from DLQ',
         body: z.object({
           jobIds: z.array(z.string()).optional(),
@@ -209,6 +212,7 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Events'],
+        'x-visibility': 'internal',
         description: 'Get ingestion service information',
         response: withCommonResponses({
           200: z.object({

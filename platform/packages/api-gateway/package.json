@@ -5,8 +5,11 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "PORT=3000 tsx watch src/index.ts",
+    "docs:generate": "tsx ../../scripts/generate-docs.ts",
+    "docs:build": "redoc-cli build dist/docs/openapi-internal.json -o dist/docs/internal.html --title=\"OpenMonetize API Documentation (Internal)\"",
     "prebuild": "rm -rf dist && rm -f tsconfig.tsbuildinfo",
-    "build": "tsc",
+    "build": "tsc && pnpm docs:generate",
+    "postbuild": "pnpm docs:build",
     "start": "node dist/index.js",
     "test": "vitest",
     "lint": "eslint src --ext .ts"
@@ -27,6 +30,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@redocly/cli": "^1.25.15",
     "@types/node": "^22.10.6",
     "eslint": "^9.0.0",
     "tsx": "^4.19.5",
