@@ -7,6 +7,7 @@
     "serve": "npx serve public"
   },
   "devDependencies": {
+    "@openmonetize/api-gateway": "workspace:*",
     "@redocly/cli": "^1.25.15"
   }
 }
