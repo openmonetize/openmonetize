@@ -158,7 +158,7 @@ export async function buildApp() {
               version: config.swagger.version,
               contact: {
                 name: 'OpenMonetize',
-                url: 'https://github.com/openmonetize/platform',
+                url: 'https://github.com/openmonetize/openmonetize',
               },
               license: {
                 name: 'AGPL-3.0',
