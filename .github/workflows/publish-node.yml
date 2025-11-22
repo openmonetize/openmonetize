@@ -20,15 +20,20 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Install dependencies
         run: |
-          cd platform/packages/sdk
-          npm install
+          cd platform
+          pnpm install
 
       - name: Build package
         run: |
-          cd platform/packages/sdk
-          npm run build
+          cd platform
+          pnpm build --filter @openmonetize/sdk
 
       - name: Publish to NPM
         run: |

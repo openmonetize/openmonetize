@@ -18,10 +18,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Install dependencies
         working-directory: platform
-        run: npm install glob
+        run: pnpm install
 
       - name: Check License Headers
         working-directory: platform
-        run: npx tsx scripts/apply-licenses.ts --check
+        run: pnpm tsx scripts/apply-licenses.ts --check
