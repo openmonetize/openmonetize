@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "PORT=3000 tsx watch src/index.ts",
     "docs:generate": "tsx ../../scripts/generate-docs.ts",
+    "docs:generate:ci": "tsx ../../scripts/generate-docs-vercel.ts",
     "docs:build": "redoc-cli build dist/docs/openapi-internal.json -o dist/docs/internal.html --title=\"OpenMonetize API Documentation (Internal)\"",
     "prebuild": "rm -rf dist && rm -f tsconfig.tsbuildinfo",
-    "build": "tsc && pnpm docs:generate",
+    "build": "tsc && pnpm docs:generate:ci",
+    "build:local": "tsc && pnpm docs:generate",
     "postbuild": "pnpm docs:build",
     "start": "node dist/index.js",
     "test": "vitest",
