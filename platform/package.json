@@ -6,6 +6,10 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "dotenv -e .env -- turbo run dev",
     "build": "turbo run build",

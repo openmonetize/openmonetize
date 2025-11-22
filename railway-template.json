@@ -103,7 +103,7 @@
         ]
       },
       "deploy": {
-        "startCommand": "npm start --workspace=dashboard"
+        "startCommand": "pnpm start --filter=dashboard"
       },
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
