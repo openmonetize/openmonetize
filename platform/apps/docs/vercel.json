@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm --filter @openmonetize/api-gateway build && cd apps/docs && bash scripts/build-redoc.sh",
+  "buildCommand": "cd ../.. && DATABASE_URL='postgresql://user:pass@localhost:5432/db?schema=public' REDIS_URL='redis://localhost:6379' pnpm --filter @openmonetize/api-gateway... build && cd apps/docs && bash scripts/build-redoc.sh",
   "outputDirectory": "public",
   "headers": [
     {

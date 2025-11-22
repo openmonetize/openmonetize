@@ -3,6 +3,9 @@ set -e
 
 echo "🔨 Building Redoc static documentation..."
 
+# Ensure public directory exists
+mkdir -p public
+
 # Copy generated spec from api-gateway
 echo "📄 Copying OpenAPI spec from api-gateway..."
 cp ../../packages/api-gateway/dist/docs/openapi-public.json ./public/
