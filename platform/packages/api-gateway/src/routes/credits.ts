@@ -16,11 +16,11 @@
  */
 
 // Credit management routes
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
-import { z } from 'zod';
 import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
@@ -39,7 +39,7 @@ const CreditPurchaseSchema = z.object({
   expiresAt: z.string().datetime().optional(),
 });
 
-export async function creditsRoutes(app: FastifyInstance) {
+export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all credit routes
   app.addHook('preHandler', authenticate);
 
@@ -52,24 +52,18 @@ export async function creditsRoutes(app: FastifyInstance) {
         description: 'Get credit balance for the authenticated customer',
         security: [{ bearerAuth: [] }],
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  balance: { type: 'string', description: 'Total balance' },
-                  reservedBalance: { type: 'string', description: 'Reserved credits' },
-                  availableBalance: { type: 'string', description: 'Available credits' },
-                  currency: { type: 'string' },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              balance: z.string().describe('Total balance'),
+              reservedBalance: z.string().describe('Reserved credits'),
+              availableBalance: z.string().describe('Available credits'),
+              currency: z.string(),
+            }),
+          }),
         }, [401, 404, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         if (!request.customer) {
           return reply.status(401).send({
@@ -122,35 +116,22 @@ export async function creditsRoutes(app: FastifyInstance) {
   );
 
   // Get credit balance for a user
-  app.get<{ Params: z.infer<typeof CreditBalanceSchema> }>(
+  app.get(
     '/v1/customers/:customerId/users/:userId/credits',
     {
       schema: {
         tags: ['Credits'],
         description: 'Get credit balance for a specific user',
-        params: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-          },
-          required: ['customerId', 'userId'],
-        },
+        params: CreditBalanceSchema,
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  balance: { type: 'number' },
-                  reserved: { type: 'number' },
-                  available: { type: 'number' },
-                  expiresAt: { type: 'string', nullable: true },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              balance: z.number(),
+              reserved: z.number(),
+              available: z.number(),
+              expiresAt: z.string().nullable(),
+            }),
+          }),
         }, [403, 404, 500]),
       },
     },
@@ -206,36 +187,20 @@ export async function creditsRoutes(app: FastifyInstance) {
   );
 
   // Purchase credits (top-up)
-  app.post<{ Body: z.infer<typeof CreditPurchaseSchema> }>(
+  app.post(
     '/v1/credits/purchase',
     {
       schema: {
         tags: ['Credits'],
         description: 'Purchase credits for a user (top-up)',
-        body: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-            amount: { type: 'number', minimum: 1 },
-            purchasePrice: { type: 'number', minimum: 0 },
-            expiresAt: { type: 'string', format: 'date-time' },
-          },
-          required: ['customerId', 'userId', 'amount', 'purchasePrice'],
-        },
+        body: CreditPurchaseSchema,
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  transactionId: { type: 'string' },
-                  newBalance: { type: 'number' },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              transactionId: z.string(),
+              newBalance: z.number(),
+            }),
+          }),
         }, [403, 500]),
       },
     },
@@ -324,39 +289,29 @@ export async function creditsRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Credits'],
         description: 'Grant credits to a customer, user, or team (admin operation)',
-        body: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-            teamId: { type: 'string', format: 'uuid' },
-            amount: { type: 'number', minimum: 1 },
-            reason: { type: 'string' },
-            metadata: { type: 'object' },
-            idempotencyKey: { type: 'string' },
-            expiresAt: { type: 'string', format: 'date-time' },
-          },
-          required: ['customerId', 'amount'],
-        },
+        body: z.object({
+          customerId: z.string().uuid(),
+          userId: z.string().uuid().optional(),
+          teamId: z.string().uuid().optional(),
+          amount: z.number().min(1),
+          reason: z.string().optional(),
+          metadata: z.record(z.any()).optional(),
+          idempotencyKey: z.string().optional(),
+          expiresAt: z.string().datetime().optional(),
+        }),
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  transactionId: { type: 'string' },
-                  walletId: { type: 'string' },
-                  newBalance: { type: 'string' },
-                  amount: { type: 'string' },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              transactionId: z.string(),
+              walletId: z.string(),
+              newBalance: z.string(),
+              amount: z.string(),
+            }),
+          }),
         }, [403, 409, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const {
           customerId,
@@ -461,6 +416,8 @@ export async function creditsRoutes(app: FastifyInstance) {
                 grantedBy: request.customer!.id,
                 userId: userId || null,
                 teamId: teamId || null,
+                // Add idempotencyKey if provided
+                ...(idempotencyKey ? { idempotencyKey } : {}),
               },
               idempotencyKey: idempotencyKey || undefined,
             },
@@ -516,63 +473,46 @@ export async function creditsRoutes(app: FastifyInstance) {
   );
 
   // Get credit transaction history
-  app.get<{ Params: { customerId: string; userId: string }; Querystring: { limit?: number; offset?: number } }>(
+  app.get(
     '/v1/customers/:customerId/users/:userId/transactions',
     {
       schema: {
         tags: ['Credits'],
         description: 'Get credit transaction history for a user',
-        params: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-          },
-          required: ['customerId', 'userId'],
-        },
-        querystring: {
-          type: 'object',
-          properties: {
-            limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
-            offset: { type: 'integer', minimum: 0, default: 0 },
-          },
-        },
+        params: z.object({
+          customerId: z.string().uuid(),
+          userId: z.string().uuid(),
+        }),
+        querystring: z.object({
+          limit: z.number().int().min(1).max(100).default(50),
+          offset: z.number().int().min(0).default(0),
+        }),
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    transactionType: { type: 'string' },
-                    amount: { type: 'number' },
-                    balanceBefore: { type: 'number' },
-                    balanceAfter: { type: 'number' },
-                    description: { type: 'string', nullable: true },
-                    createdAt: { type: 'string' },
-                  },
-                },
-              },
-              pagination: {
-                type: 'object',
-                properties: {
-                  limit: { type: 'integer' },
-                  offset: { type: 'integer' },
-                  total: { type: 'integer' },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.array(
+              z.object({
+                id: z.string(),
+                transactionType: z.string(),
+                amount: z.number(), // Converted from BigInt
+                balanceBefore: z.number(), // Converted from BigInt
+                balanceAfter: z.number(), // Converted from BigInt
+                description: z.string().nullable(),
+                createdAt: z.string(),
+              })
+            ),
+            pagination: z.object({
+              limit: z.number(),
+              offset: z.number(),
+              total: z.number(),
+            }),
+          }),
         }, [403, 500]),
       },
     },
     async (request, reply) => {
       try {
         const { customerId, userId } = request.params;
-        const { limit = 50, offset = 0 } = request.query;
+        const { limit, offset } = request.query;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
@@ -617,6 +557,9 @@ export async function creditsRoutes(app: FastifyInstance) {
         return reply.send({
           data: transactions.map((tx: typeof transactions[number]) => ({
             ...tx,
+            amount: Number(tx.amount),
+            balanceBefore: Number(tx.balanceBefore),
+            balanceAfter: Number(tx.balanceAfter),
             createdAt: tx.createdAt.toISOString(),
           })),
           pagination: {
@@ -634,4 +577,4 @@ export async function creditsRoutes(app: FastifyInstance) {
       }
     }
   );
-}
+};

@@ -16,7 +16,7 @@
  */
 
 // Entitlement check routes
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
@@ -39,61 +39,33 @@ const EntitlementCheckSchema = z.object({
   }),
 });
 
-type EntitlementCheckRequest = z.infer<typeof EntitlementCheckSchema>;
-
-export async function entitlementsRoutes(app: FastifyInstance) {
+export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all entitlement routes
   app.addHook('preHandler', authenticate);
 
   // Check entitlement - Real-time access control
-  app.post<{ Body: EntitlementCheckRequest }>(
+  app.post(
     '/v1/entitlements/check',
     {
       schema: {
         tags: ['Entitlements'],
         description: 'Check if a user is entitled to perform an action (sub-10ms latency)',
-        body: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-            featureId: { type: 'string' },
-            action: {
-              type: 'object',
-              properties: {
-                type: { type: 'string', enum: ['token_usage', 'image_generation', 'api_call', 'custom'] },
-                provider: { type: 'string' },
-                model: { type: 'string' },
-                estimated_input_tokens: { type: 'number' },
-                estimated_output_tokens: { type: 'number' },
-              },
-              required: ['type'],
-            },
-          },
-          required: ['customerId', 'userId', 'featureId', 'action'],
-        },
+        body: EntitlementCheckSchema,
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              allowed: { type: 'boolean' },
-              reason: { type: 'string', nullable: true },
-              estimatedCostCredits: { type: 'number', nullable: true },
-              estimatedCostUsd: { type: 'number', nullable: true },
-              currentBalance: { type: 'number', nullable: true },
-              actions: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    type: { type: 'string' },
-                    label: { type: 'string' },
-                    url: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
+          200: z.object({
+            allowed: z.boolean(),
+            reason: z.string().nullable(),
+            estimatedCostCredits: z.number().nullable(),
+            estimatedCostUsd: z.number().nullable(),
+            currentBalance: z.number().nullable(),
+            actions: z.array(
+              z.object({
+                type: z.string(),
+                label: z.string(),
+                url: z.string(),
+              })
+            ),
+          }),
         },
       },
     },
@@ -167,7 +139,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
             reason: 'Credits have expired',
             estimatedCostCredits: null,
             estimatedCostUsd: null,
-            currentBalance: wallet.balance,
+            currentBalance: Number(wallet.balance),
             actions: [
               {
                 type: 'purchase',
@@ -292,38 +264,28 @@ export async function entitlementsRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Entitlements'],
         description: 'Create a new entitlement for a customer or user',
-        body: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-            featureId: { type: 'string' },
-            limitType: { type: 'string', enum: ['HARD', 'SOFT', 'NONE'] },
-            limitValue: { type: 'number', nullable: true },
-            period: { type: 'string', enum: ['DAILY', 'MONTHLY', 'TOTAL'], nullable: true },
-            metadata: { type: 'object' },
-          },
-          required: ['customerId', 'featureId', 'limitType'],
-        },
+        body: z.object({
+          customerId: z.string().uuid(),
+          userId: z.string().uuid().optional(),
+          featureId: z.string(),
+          limitType: z.enum(['HARD', 'SOFT', 'NONE']),
+          limitValue: z.number().nullable().optional(),
+          period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
+          metadata: z.record(z.any()).optional(),
+        }),
         response: withCommonResponses({
-          201: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  featureId: { type: 'string' },
-                  limitType: { type: 'string' },
-                  limitValue: { type: 'number', nullable: true },
-                },
-              },
-            },
-          },
+          201: z.object({
+            data: z.object({
+              id: z.string(),
+              featureId: z.string(),
+              limitType: z.string(),
+              limitValue: z.number().nullable(),
+            }),
+          }),
         }, [403, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { customerId, userId, featureId, limitType, limitValue, period, metadata } = request.body;
 
@@ -342,7 +304,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
             userId: userId || null,
             featureId,
             limitType,
-            limitValue: limitValue !== undefined ? BigInt(limitValue) : null,
+            limitValue: limitValue !== undefined && limitValue !== null ? BigInt(limitValue) : null,
             period: period || null,
             metadata: metadata || null,
           },
@@ -369,47 +331,34 @@ export async function entitlementsRoutes(app: FastifyInstance) {
   );
 
   // Update entitlement
-  app.put<{ Params: { id: string } }>(
+  app.put(
     '/v1/entitlements/:id',
     {
       schema: {
         tags: ['Entitlements'],
         description: 'Update an existing entitlement',
-        params: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-          },
-          required: ['id'],
-        },
-        body: {
-          type: 'object',
-          properties: {
-            limitType: { type: 'string', enum: ['HARD', 'SOFT', 'NONE'] },
-            limitValue: { type: 'number', nullable: true },
-            period: { type: 'string', enum: ['DAILY', 'MONTHLY', 'TOTAL'], nullable: true },
-            metadata: { type: 'object' },
-          },
-        },
+        params: z.object({
+          id: z.string().uuid(),
+        }),
+        body: z.object({
+          limitType: z.enum(['HARD', 'SOFT', 'NONE']).optional(),
+          limitValue: z.number().nullable().optional(),
+          period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
+          metadata: z.record(z.any()).optional(),
+        }),
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  featureId: { type: 'string' },
-                  limitType: { type: 'string' },
-                  limitValue: { type: 'number', nullable: true },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              id: z.string(),
+              featureId: z.string(),
+              limitType: z.string(),
+              limitValue: z.number().nullable(),
+            }),
+          }),
         },
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { id } = request.params;
         const { limitType, limitValue, period, metadata } = request.body;
@@ -439,7 +388,7 @@ export async function entitlementsRoutes(app: FastifyInstance) {
           where: { id },
           data: {
             ...(limitType && { limitType }),
-            ...(limitValue !== undefined && { limitValue: limitValue !== null ? BigInt(limitValue) : null }),
+            ...(limitValue !== undefined ? { limitValue: limitValue !== null ? BigInt(limitValue) : null } : {}),
             ...(period && { period }),
             ...(metadata && { metadata }),
           },
@@ -466,28 +415,21 @@ export async function entitlementsRoutes(app: FastifyInstance) {
   );
 
   // Delete entitlement
-  app.delete<{ Params: { id: string } }>(
+  app.delete(
     '/v1/entitlements/:id',
     {
       schema: {
         tags: ['Entitlements'],
         description: 'Delete an entitlement',
-        params: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-          },
-          required: ['id'],
-        },
+        params: z.object({
+          id: z.string().uuid(),
+        }),
         response: {
-          204: {
-            type: 'null',
-            description: 'Entitlement deleted successfully',
-          },
+          204: z.null().describe('Entitlement deleted successfully'),
         },
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { id } = request.params;
 
@@ -530,37 +472,28 @@ export async function entitlementsRoutes(app: FastifyInstance) {
   );
 
   // List entitlements for a customer
-  app.get<{ Params: { customerId: string } }>(
+  app.get(
     '/v1/customers/:customerId/entitlements',
     {
       schema: {
         tags: ['Entitlements'],
         description: 'List all entitlements for a customer',
-        params: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-          },
-          required: ['customerId'],
-        },
+        params: z.object({
+          customerId: z.string().uuid(),
+        }),
         response: {
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    featureId: { type: 'string' },
-                    isEnabled: { type: 'boolean' },
-                    limitType: { type: 'string' },
-                    limitValue: { type: 'number', nullable: true },
-                  },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.array(
+              z.object({
+                featureId: z.string(),
+                isEnabled: z.boolean().optional(), // isEnabled is not in select, but maybe implied?
+                limitType: z.string(),
+                limitValue: z.number().nullable(), // Converted from BigInt
+                period: z.string().nullable(),
+                metadata: z.any().nullable(),
+              })
+            ),
+          }),
         },
       },
     },
@@ -590,7 +523,10 @@ export async function entitlementsRoutes(app: FastifyInstance) {
         });
 
         return reply.send({
-          data: entitlements,
+          data: entitlements.map((e: typeof entitlements[number]) => ({
+            ...e,
+            limitValue: e.limitValue ? Number(e.limitValue) : null,
+          })),
         });
       } catch (error) {
         logger.error({ err: error }, 'Error fetching entitlements');
@@ -601,4 +537,4 @@ export async function entitlementsRoutes(app: FastifyInstance) {
       }
     }
   );
-}
+};

@@ -16,7 +16,8 @@
  */
 
 // Analytics routes
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import { getPrismaClient } from '@openmonetize/common';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../logger';
@@ -24,9 +25,7 @@ import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
-// Note: Query parameter schemas defined inline in route handlers for Fastify compatibility
-
-export async function analyticsRoutes(app: FastifyInstance) {
+export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all analytics routes
   app.addHook('preHandler', authenticate);
 
@@ -37,89 +36,60 @@ export async function analyticsRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Analytics'],
         description: 'Get usage analytics by feature for a customer',
-        querystring: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            startDate: { type: 'string', format: 'date-time' },
-            endDate: { type: 'string', format: 'date-time' },
-            groupBy: { type: 'string', enum: ['day', 'week', 'month'] },
-          },
-        },
-
+        querystring: z.object({
+          customerId: z.string().uuid().optional(),
+          startDate: z.string().datetime().optional(),
+          endDate: z.string().datetime().optional(),
+          groupBy: z.enum(['day', 'week', 'month']).optional(),
+        }),
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  summary: {
-                    type: 'object',
-                    properties: {
-                      totalEvents: { type: 'number' },
-                      totalInputTokens: { type: 'string' },
-                      totalOutputTokens: { type: 'string' },
-                      totalCreditsBurned: { type: 'string' },
-                      totalCostUsd: { type: 'string' },
-                    },
-                  },
-                  byFeature: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        featureId: { type: 'string' },
-                        eventCount: { type: 'number' },
-                        creditsBurned: { type: 'string' },
-                        costUsd: { type: 'string' },
-                      },
-                    },
-                  },
-                  byProvider: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        provider: { type: 'string' },
-                        model: { type: 'string' },
-                        eventCount: { type: 'number' },
-                        inputTokens: { type: 'string' },
-                        outputTokens: { type: 'string' },
-                      },
-                    },
-                  },
-                  byEventType: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        eventType: { type: 'string' },
-                        eventCount: { type: 'number' },
-                        creditsBurned: { type: 'string' },
-                        costUsd: { type: 'string' },
-                      },
-                    },
-                  },
-                  timeline: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        date: { type: 'string' },
-                        events: { type: 'number' },
-                        creditsBurned: { type: 'string' },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              summary: z.object({
+                totalEvents: z.number(),
+                totalInputTokens: z.string(),
+                totalOutputTokens: z.string(),
+                totalCreditsBurned: z.string(),
+                totalCostUsd: z.string(),
+              }),
+              byFeature: z.array(
+                z.object({
+                  featureId: z.string(),
+                  eventCount: z.number(),
+                  creditsBurned: z.string(),
+                  costUsd: z.string(),
+                })
+              ),
+              byProvider: z.array(
+                z.object({
+                  provider: z.string(),
+                  model: z.string(),
+                  eventCount: z.number(),
+                  inputTokens: z.string(),
+                  outputTokens: z.string(),
+                })
+              ),
+              byEventType: z.array(
+                z.object({
+                  eventType: z.string(),
+                  eventCount: z.number(),
+                  creditsBurned: z.string(),
+                  costUsd: z.string(),
+                })
+              ),
+              timeline: z.array(
+                z.object({
+                  date: z.string(),
+                  events: z.number(),
+                  creditsBurned: z.string(),
+                })
+              ),
+            }),
+          }),
         }, [403, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { customerId, startDate, endDate } = request.query;
 
@@ -135,8 +105,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
 
         // Date range defaults
-        const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-        const end = endDate ? new Date(endDate as string) : new Date();
+        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+        const end = endDate ? new Date(endDate) : new Date();
 
         // Get usage events
         const events = await db.usageEvent.findMany({
@@ -279,56 +249,43 @@ export async function analyticsRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Analytics'],
         description: 'Get cost breakdown and margin analysis',
-        querystring: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            startDate: { type: 'string', format: 'date-time' },
-            endDate: { type: 'string', format: 'date-time' },
-          },
-        },
+        querystring: z.object({
+          customerId: z.string().uuid().optional(),
+          startDate: z.string().datetime().optional(),
+          endDate: z.string().datetime().optional(),
+        }),
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  summary: {
-                    type: 'object',
-                    properties: {
-                      totalRevenue: { type: 'string' },
-                      totalProviderCost: { type: 'string' },
-                      totalMargin: { type: 'string' },
-                      marginPercent: { type: 'number' },
-                    },
-                  },
-                  byProvider: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        provider: { type: 'string' },
-                        model: { type: 'string' },
-                        providerCost: { type: 'string' },
-                        revenue: { type: 'string' },
-                        margin: { type: 'string' },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              summary: z.object({
+                totalRevenue: z.string(),
+                totalProviderCost: z.string(),
+                totalMargin: z.string(),
+                marginPercent: z.number(),
+              }),
+              byProvider: z.array(
+                z.object({
+                  provider: z.string(),
+                  model: z.string(),
+                  providerCost: z.string(),
+                  revenue: z.string(),
+                  margin: z.string(),
+                })
+              ),
+            }),
+          }),
         }, [403, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { customerId, startDate, endDate } = request.query;
 
+        // Use authenticated customer's ID if customerId not provided or verify access
+        const targetCustomerId = customerId || request.customer!.id;
+
         // Verify customer access
-        if (customerId !== request.customer!.id) {
+        if (targetCustomerId !== request.customer!.id) {
           return reply.status(403).send({
             error: 'Forbidden',
             message: 'Access denied to this customer',
@@ -336,13 +293,13 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
 
         // Date range defaults
-        const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate as string) : new Date();
+        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const end = endDate ? new Date(endDate) : new Date();
 
         // Get usage events with costs
         const events = await db.usageEvent.findMany({
           where: {
-            customerId,
+            customerId: targetCustomerId,
             timestamp: {
               gte: start,
               lte: end,
@@ -415,66 +372,47 @@ export async function analyticsRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Analytics'],
         description: 'Get credit burn rate and consumption trends',
-        querystring: {
-          type: 'object',
-          properties: {
-            customerId: { type: 'string', format: 'uuid' },
-            userId: { type: 'string', format: 'uuid' },
-          },
-        },
+        querystring: z.object({
+          customerId: z.string().uuid().optional(),
+          userId: z.string().uuid().optional(),
+        }),
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  currentBalance: { type: 'string' },
-                  last7Days: {
-                    type: 'object',
-                    properties: {
-                      creditsBurned: { type: 'string' },
-                      averagePerDay: { type: 'string' },
-                    },
-                  },
-                  last30Days: {
-                    type: 'object',
-                    properties: {
-                      creditsBurned: { type: 'string' },
-                      averagePerDay: { type: 'string' },
-                    },
-                  },
-                  projectedRunout: {
-                    type: 'object',
-                    properties: {
-                      daysRemaining: { type: 'number' },
-                      estimatedRunoutDate: { type: 'string', nullable: true },
-                    },
-                  },
-                  recommendations: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        type: { type: 'string' },
-                        message: { type: 'string' },
-                        action: { type: 'string' },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              currentBalance: z.string(),
+              last7Days: z.object({
+                creditsBurned: z.string(),
+                averagePerDay: z.string(),
+              }),
+              last30Days: z.object({
+                creditsBurned: z.string(),
+                averagePerDay: z.string(),
+              }),
+              projectedRunout: z.object({
+                daysRemaining: z.number().nullable(),
+                estimatedRunoutDate: z.string().nullable(),
+              }),
+              recommendations: z.array(
+                z.object({
+                  type: z.string(),
+                  message: z.string(),
+                  action: z.string(),
+                })
+              ),
+            }),
+          }),
         }, [403, 404, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         const { customerId, userId } = request.query;
 
+        // Use authenticated customer's ID if customerId not provided or verify access
+        const targetCustomerId = customerId || request.customer!.id;
+
         // Verify customer access
-        if (customerId !== request.customer!.id) {
+        if (targetCustomerId !== request.customer!.id) {
           return reply.status(403).send({
             error: 'Forbidden',
             message: 'Access denied to this customer',
@@ -482,7 +420,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
         }
 
         // Get credit wallet
-        const walletQuery: any = { customerId };
+        const walletQuery: any = { customerId: targetCustomerId };
         if (userId) {
           walletQuery.userId = userId;
         } else {
@@ -599,4 +537,4 @@ export async function analyticsRoutes(app: FastifyInstance) {
       }
     }
   );
-}
+};

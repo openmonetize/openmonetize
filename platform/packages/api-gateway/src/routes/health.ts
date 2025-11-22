@@ -16,28 +16,26 @@
  */
 
 // Health check routes
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { getPrismaClient } from '@openmonetize/common';
 import { logger } from '../logger';
 import { config } from '../config';
+import { z } from 'zod';
 import { withCommonResponses } from '../types/schemas';
 
 const db = getPrismaClient();
 
-export async function healthRoutes(app: FastifyInstance) {
+export const healthRoutes: FastifyPluginAsyncZod = async (app) => {
   // Basic health check
   app.get('/health', {
     schema: {
       tags: ['Health'],
       description: 'Basic health check endpoint',
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-            timestamp: { type: 'string' },
-          },
-        },
+        200: z.object({
+          status: z.string(),
+          timestamp: z.string(),
+        }),
       },
     },
   }, async (_request, reply) => {
@@ -53,23 +51,16 @@ export async function healthRoutes(app: FastifyInstance) {
       tags: ['Health'],
       description: 'Readiness check including database connectivity',
       response: withCommonResponses({
-        200: {
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-            checks: { type: 'object' },
-            timestamp: { type: 'string' },
-          },
-        },
-        503: {
-          description: 'Service Unavailable - One or more dependencies are down',
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-            checks: { type: 'object' },
-            timestamp: { type: 'string' },
-          },
-        },
+        200: z.object({
+          status: z.string(),
+          checks: z.record(z.boolean()),
+          timestamp: z.string(),
+        }),
+        503: z.object({
+          status: z.string(),
+          checks: z.record(z.boolean()),
+          timestamp: z.string(),
+        }).describe('Service Unavailable - One or more dependencies are down'),
       }, []),
     },
   }, async (_request, reply) => {
@@ -121,15 +112,12 @@ export async function healthRoutes(app: FastifyInstance) {
       tags: ['Health'],
       description: 'API Gateway information and version',
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            service: { type: 'string' },
-            version: { type: 'string' },
-            environment: { type: 'string' },
-            uptime: { type: 'number' },
-          },
-        },
+        200: z.object({
+          service: z.string(),
+          version: z.string(),
+          environment: z.string(),
+          uptime: z.number(),
+        }),
       },
     },
   }, async (_request, reply) => {
@@ -140,4 +128,4 @@ export async function healthRoutes(app: FastifyInstance) {
       uptime: process.uptime(),
     });
   });
-}
+};

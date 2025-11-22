@@ -16,7 +16,7 @@
  */
 
 // Customer registration and management routes
-import { FastifyInstance } from 'fastify';
+import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { getPrismaClient, generateApiKey, hashApiKey } from '@openmonetize/common';
 import { logger } from '../logger';
 import { z } from 'zod';
@@ -32,55 +32,33 @@ const CustomerRegistrationSchema = z.object({
   tier: z.enum(['STARTER', 'GROWTH', 'ENTERPRISE']).default('STARTER'),
 });
 
-export async function customersRoutes(app: FastifyInstance) {
+export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
   // Customer registration (no auth required)
-  app.post<{ Body: z.infer<typeof CustomerRegistrationSchema> }>(
+  app.post(
     '/v1/customers/register',
     {
       schema: {
         tags: ['Customers'],
         description: 'Register a new customer account',
-        body: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', minLength: 1, maxLength: 255 },
-            email: { type: 'string', format: 'email' },
-            tier: {
-              type: 'string',
-              enum: ['STARTER', 'GROWTH', 'ENTERPRISE'],
-              default: 'STARTER',
-            },
-          },
-          required: ['name', 'email'],
-        },
+        body: CustomerRegistrationSchema,
         response: withCommonResponses({
-          201: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  customerId: { type: 'string', format: 'uuid' },
-                  apiKey: {
-                    type: 'string',
-                    description: 'API key - only shown once! Save it securely.',
-                  },
-                  name: { type: 'string' },
-                  email: { type: 'string' },
-                  tier: { type: 'string' },
-                  createdAt: { type: 'string', format: 'date-time' },
-                },
-              },
-            },
-          },
+          201: z.object({
+            data: z.object({
+              customerId: z.string().uuid(),
+              apiKey: z.string().describe('API key - only shown once! Save it securely.'),
+              name: z.string(),
+              email: z.string(),
+              tier: z.string(),
+              createdAt: z.string().datetime(),
+            }),
+          }),
         }, [400, 409, 500]),
       },
     },
     async (request, reply) => {
       try {
         // Validate request body
-        const validatedData = CustomerRegistrationSchema.parse(request.body);
-        const { name, email, tier } = validatedData;
+        const { name, email, tier } = request.body;
 
         // Check if email already exists
         const existingCustomer = await db.customer.findUnique({
@@ -152,26 +130,20 @@ export async function customersRoutes(app: FastifyInstance) {
         description: 'Get current customer profile',
         security: [{ bearerAuth: [] }],
         response: withCommonResponses({
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', format: 'uuid' },
-                  name: { type: 'string' },
-                  email: { type: 'string' },
-                  tier: { type: 'string' },
-                  status: { type: 'string' },
-                  createdAt: { type: 'string', format: 'date-time' },
-                },
-              },
-            },
-          },
+          200: z.object({
+            data: z.object({
+              id: z.string().uuid(),
+              name: z.string(),
+              email: z.string(),
+              tier: z.string(),
+              status: z.string(),
+              createdAt: z.string().datetime(),
+            }),
+          }),
         }, [401, 404, 500]),
       },
     },
-    async (request: any, reply) => {
+    async (request, reply) => {
       try {
         // Customer is attached by auth middleware
         if (!request.customer) {
@@ -215,4 +187,4 @@ export async function customersRoutes(app: FastifyInstance) {
       }
     }
   );
-}
+};

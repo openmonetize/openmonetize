@@ -22,6 +22,12 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider,
+} from 'fastify-type-provider-zod';
 import { config } from './config';
 import { logger } from './logger';
 import { getPrismaClient } from '@openmonetize/common';
@@ -49,7 +55,11 @@ export async function buildApp() {
     disableRequestLogging: false,
     requestIdHeader: 'x-request-id',
     bodyLimit: 10485760, // 10MB
-  });
+  }).withTypeProvider<ZodTypeProvider>();
+
+  // Set validator and serializer compilers
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
 
   // Register CORS
   await app.register(cors, {
@@ -199,6 +209,7 @@ X-API-Key: YOUR_API_KEY
         },
       ],
     },
+    transform: jsonSchemaTransform,
   });
 
   // Register Swagger UI

@@ -15,89 +15,44 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { z } from 'zod';
+
 /**
- * Common Fastify JSON Schema definitions for API responses
+ * Common Zod Schema definitions for API responses
  * These schemas are used across all routes to ensure consistency
  */
 
 // Standard error response schema
-export const ErrorResponseSchema = {
-  type: 'object' as const,
-  properties: {
-    error: { type: 'string' as const },
-    message: { type: 'string' as const },
-  },
-};
+export const ErrorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+});
 
 // Common HTTP error response schemas
 export const CommonResponses = {
-  400: {
-    description: 'Bad Request',
-    ...ErrorResponseSchema,
-  },
-  401: {
-    description: 'Unauthorized - Authentication required',
-    ...ErrorResponseSchema,
-  },
-  403: {
-    description: 'Forbidden - Access denied',
-    ...ErrorResponseSchema,
-  },
-  404: {
-    description: 'Not Found',
-    ...ErrorResponseSchema,
-  },
-  409: {
-    description: 'Conflict - Duplicate operation',
-    type: 'object' as const,
-    properties: {
-      error: { type: 'string' as const },
-      message: { type: 'string' as const },
-      existingTransaction: { type: 'object' as const },
-    },
-  },
-  500: {
-    description: 'Internal Server Error',
-    ...ErrorResponseSchema,
-  },
+  400: ErrorResponseSchema.describe('Bad Request'),
+  401: ErrorResponseSchema.describe('Unauthorized - Authentication required'),
+  403: ErrorResponseSchema.describe('Forbidden - Access denied'),
+  404: ErrorResponseSchema.describe('Not Found'),
+  409: z.object({
+    error: z.string(),
+    message: z.string(),
+    existingTransaction: z.any().optional(),
+  }).describe('Conflict - Duplicate operation'),
+  500: ErrorResponseSchema.describe('Internal Server Error'),
 };
 
 /**
  * Helper function to merge response schemas with common error responses
- * @param successSchemas - Object with successful status code schemas (e.g., { 200: {...}, 201: {...} })
+ * @param successSchemas - Object with successful status code schemas (e.g., { 200: z.object(...) })
  * @param errorCodes - Array of error status codes to include (defaults to common ones)
  * @returns Complete response schema object
- *
- * @example
- * // For 200 responses
- * const schema = {
- *   response: withCommonResponses({
- *     200: { type: 'object', properties: { data: { type: 'string' } } }
- *   }, [403, 404, 500])
- * }
- *
- * @example
- * // For 201 responses
- * const schema = {
- *   response: withCommonResponses({
- *     201: { type: 'object', properties: { data: { type: 'string' } } }
- *   }, [403, 500])
- * }
- *
- * @example
- * // For health checks with multiple success codes
- * const schema = {
- *   response: withCommonResponses({
- *     200: { type: 'object', properties: { status: { type: 'string' } } },
- *     503: { type: 'object', properties: { status: { type: 'string' }, checks: { type: 'object' } } }
- *   })
- * }
  */
 export function withCommonResponses(
-  successSchemas: Record<number, any>,
+  successSchemas: Record<number, z.ZodTypeAny>,
   errorCodes: number[] = [403, 404, 500]
 ) {
-  const responses: Record<number, any> = { ...successSchemas };
+  const responses: Record<number, z.ZodTypeAny> = { ...successSchemas };
 
   errorCodes.forEach((code) => {
     if (CommonResponses[code as keyof typeof CommonResponses]) {
