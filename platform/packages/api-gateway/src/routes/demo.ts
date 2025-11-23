@@ -30,9 +30,14 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['Demo'],
         description: 'Generate AI response (Demo Mode)',
         body: z.object({
+          type: z.enum(['text', 'image']).default('text'),
           prompt: z.string(),
           model: z.string().optional(),
           provider: z.string().optional(),
+          // Image specific
+          size: z.string().optional(),
+          quality: z.string().optional(),
+          count: z.number().optional(),
         }),
         response: withCommonResponses({
           200: z.object({
@@ -40,21 +45,24 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
             object: z.string(),
             created: z.number(),
             model: z.string(),
+            // Common response fields
             choices: z.array(
               z.object({
                 index: z.number(),
                 message: z.object({
                   role: z.string(),
                   content: z.string(),
-                }),
-                finish_reason: z.string(),
+                }).optional(),
+                url: z.string().optional(), // For images
+                finish_reason: z.string().optional(),
               })
             ),
             usage: z.object({
-              prompt_tokens: z.number(),
-              completion_tokens: z.number(),
-              total_tokens: z.number(),
-            }),
+              prompt_tokens: z.number().optional(),
+              completion_tokens: z.number().optional(),
+              total_tokens: z.number().optional(),
+              image_count: z.number().optional(),
+            }).optional(),
           }),
         }, [404, 500]),
       },
@@ -67,43 +75,53 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
         });
       }
 
-      const { prompt, model = 'gpt-4', provider = 'openai' } = request.body as any;
+      const { 
+        type = 'text', 
+        prompt, 
+        model = type === 'text' ? 'gpt-4' : 'dall-e-3', 
+        provider = 'openai',
+        size = '1024x1024',
+        quality = 'hd',
+        count = 1
+      } = request.body;
 
       // Simulate latency
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, type === 'text' ? 800 : 1500));
 
-      // Generate dummy response
-      const completionId = `chatcmpl-${randomUUID()}`;
+      const completionId = `demo-${randomUUID()}`;
       const created = Math.floor(Date.now() / 1000);
-      const promptTokens = Math.ceil(prompt.length / 4);
-      const completionTokens = 20;
-      const totalTokens = promptTokens + completionTokens;
+      
+      let response: any;
+      let event: any;
 
-      const response = {
-        id: completionId,
-        object: 'chat.completion',
-        created: created,
-        model: model,
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: 'This is a simulated response from OpenMonetize Demo. In a real application, this would be the output from the LLM.',
+      if (type === 'text') {
+        const promptTokens = Math.ceil(prompt.length / 4);
+        const completionTokens = 20;
+        const totalTokens = promptTokens + completionTokens;
+
+        response = {
+          id: completionId,
+          object: 'chat.completion',
+          created: created,
+          model: model,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: 'This is a simulated response from OpenMonetize Demo. In a real application, this would be the output from the LLM.',
+              },
+              finish_reason: 'stop',
             },
-            finish_reason: 'stop',
+          ],
+          usage: {
+            prompt_tokens: promptTokens,
+            completion_tokens: completionTokens,
+            total_tokens: totalTokens,
           },
-        ],
-        usage: {
-          prompt_tokens: promptTokens,
-          completion_tokens: completionTokens,
-          total_tokens: totalTokens,
-        },
-      };
+        };
 
-      // Send usage event to ingestion service
-      try {
-        const event = {
+        event = {
           event_id: randomUUID(),
           customer_id: config.demo.tenantId,
           event_type: 'TOKEN_USAGE',
@@ -115,7 +133,39 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
           timestamp: new Date().toISOString(),
           idempotency_key: completionId,
         };
+      } else {
+        // Image Generation
+        response = {
+          id: completionId,
+          object: 'image.generation',
+          created: created,
+          model: model,
+          choices: Array(count).fill(0).map((_, i) => ({
+            index: i,
+            url: 'https://placehold.co/1024x1024/png?text=Demo+Image',
+          })),
+          usage: {
+            image_count: count,
+          }
+        };
 
+        event = {
+          event_id: randomUUID(),
+          customer_id: config.demo.tenantId,
+          event_type: 'IMAGE_GENERATION',
+          feature_id: 'demo-image',
+          provider: provider.toUpperCase(),
+          model: model,
+          image_size: size,
+          quality: quality,
+          image_count: count,
+          timestamp: new Date().toISOString(),
+          idempotency_key: completionId,
+        };
+      }
+
+      // Send usage event to ingestion service
+      try {
         const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
 
         const ingestResponse = await fetch(ingestionUrl, {

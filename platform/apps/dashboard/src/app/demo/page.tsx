@@ -8,25 +8,79 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User } from 'lucide-react';
+import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck } from 'lucide-react';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 
 // Types for our simulated logs
 type LogEntry = {
   id: string;
   timestamp: string;
-  source: 'APP' | 'API' | 'BILLING';
+  source: 'APP' | 'API' | 'INGESTION' | 'RATING' | 'BILLING';
   message: string;
   details?: any;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+// --- Visual Data Flow Component ---
+const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
+  const steps = [
+    { id: 'app', label: 'Your App', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-100' },
+    { id: 'gateway', label: 'API Gateway', icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-100' },
+    { id: 'ingestion', label: 'Ingestion', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-100' },
+    { id: 'rating', label: 'Rating Engine', icon: Server, color: 'text-orange-500', bg: 'bg-orange-100' },
+    { id: 'db', label: 'Ledger DB', icon: Database, color: 'text-green-500', bg: 'bg-green-100' },
+  ];
+
+  return (
+    <div className="w-full py-6 px-4 bg-slate-50 rounded-xl border border-slate-200 mb-6 overflow-hidden">
+      <div className="flex justify-between items-center relative">
+        {/* Connecting Line */}
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-0" />
+        
+        {steps.map((step, index) => {
+          const isActive = activeStep === step.id;
+          const isPast = activeStep ? steps.findIndex(s => s.id === activeStep) >= index : false;
+          
+          return (
+            <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 transition-all duration-300">
+              <div 
+                className={`
+                  w-12 h-12 rounded-full flex items-center justify-center border-4 transition-all duration-500
+                  ${isActive ? `${step.bg} ${step.color} border-white shadow-lg scale-110 ring-4 ring-blue-100` : ''}
+                  ${!isActive && isPast ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}
+                `}
+              >
+                <step.icon className="w-5 h-5" />
+              </div>
+              <span className={`text-xs font-medium transition-colors duration-300 ${isActive ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 text-center h-6">
+        {activeStep && (
+          <span className="text-sm text-blue-600 font-medium animate-pulse">
+            {activeStep === 'app' && 'Sending Request...'}
+            {activeStep === 'gateway' && 'Authenticating & Routing...'}
+            {activeStep === 'ingestion' && 'High-speed Event Capture...'}
+            {activeStep === 'rating' && 'Calculating Cost & Metering...'}
+            {activeStep === 'db' && 'Updating Wallet Balance...'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function ImprovedDemoPage() {
   const [activeTab, setActiveTab] = useState('llm');
   const [balance, setBalance] = useState<number>(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeStep, setActiveStep] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   // Auth State
@@ -57,7 +111,6 @@ export default function ImprovedDemoPage() {
   // --- Auth & Init ---
 
   useEffect(() => {
-    // Check local storage for existing session
     const storedKey = localStorage.getItem('om_api_key');
     const storedName = localStorage.getItem('om_customer_name');
     
@@ -113,118 +166,54 @@ export default function ImprovedDemoPage() {
     if (apiKey) {
       fetchBalance(true);
       addLog('APP', 'OpenMonetize SDK initialized');
-      addLog('APP', 'Environment: Production (SaaS)');
     }
   }, [apiKey]);
 
   // --- Handlers ---
 
-  const handleLLMGeneration = async () => {
-    if (!apiKey) return;
-    setLoading(true);
-    addLog('APP', 'User requested GPT-4 generation...');
-    
-    try {
-      // 1. Simulate the Application Logic
-      await new Promise(r => setTimeout(r, 800)); // Fake latency
-      const tokens = 1420; // Fake usage
-      
-      // 2. Simulate the Tracking Call
-      addLog('API', `POST /v1/events/ingest`, {
-        event_type: 'TOKEN_USAGE',
-        model: 'gpt-4',
-        input_tokens: 120,
-        output_tokens: 1300
-      });
-
-      // 3. Actual API Call
-      const event = {
-        event_id: crypto.randomUUID(),
-        event_type: 'TOKEN_USAGE',
-        feature_id: 'gpt-4-completion',
-        provider: 'OPENAI',
-        model: 'gpt-4',
-        input_tokens: 120,
-        output_tokens: 1300,
-        timestamp: new Date().toISOString(),
-      };
-
-      const res = await fetch(`${API_URL}/v1/events/ingest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({ events: [event] }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Handle Quota Exceeded
-        if (res.status === 402 || res.status === 429) {
-          addLog('API', '❌ Request Blocked: Quota Exceeded', data);
-          alert(data.message); // Simple alert for MVP
-        } else {
-          addLog('API', `❌ Error: ${data.message || res.statusText}`);
-        }
-      } else {
-        addLog('BILLING', 'Event Ingested Successfully');
-        
-        // Wait a bit for async rating then fetch balance
-        setTimeout(() => {
-          fetchBalance();
-        }, 1000);
-      }
-
-      setLoading(false);
-
-    } catch (error) {
-      console.error(error);
-      addLog('API', 'Network Error');
-      setLoading(false);
-    }
+  const simulateFlow = async (step: string, duration: number) => {
+    setActiveStep(step);
+    await new Promise(r => setTimeout(r, duration));
   };
 
-  const handleImageGen = async () => {
+  const handleGeneration = async (type: 'text' | 'image') => {
     if (!apiKey) return;
     setLoading(true);
-    addLog('APP', 'User requested DALL-E 3 generation...');
     
-    // Simulate API Latency
-    await new Promise(r => setTimeout(r, 1500));
-    
-    addLog('API', `POST /v1/events/ingest`, {
-      event_type: 'IMAGE_GENERATION',
-      size: '1024x1024',
-      quality: 'hd',
-      count: 1
-    });
-
-    // Actual API Call
-    const event = {
-      event_id: crypto.randomUUID(),
-      event_type: 'IMAGE_GENERATION',
-      feature_id: 'dalle-3-gen',
-      image_count: 1,
-      image_size: '1024x1024',
-      quality: 'hd',
-      timestamp: new Date().toISOString(),
-    };
-
     try {
-      const res = await fetch(`${API_URL}/v1/events/ingest`, {
+      // 1. APP: User initiates action
+      await simulateFlow('app', 500);
+      addLog('APP', `User requested ${type === 'text' ? 'GPT-4' : 'DALL-E 3'} generation...`);
+
+      // 2. GATEWAY: Request hits API
+      await simulateFlow('gateway', 400);
+      addLog('API', `POST /v1/demo/generate`, { type });
+
+      // 3. INGESTION: Backend calls ingestion (Simulated visualization)
+      await simulateFlow('ingestion', 400);
+      
+      // Actual API Call to BFF
+      const res = await fetch(`${API_URL}/v1/demo/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ events: [event] }),
+        body: JSON.stringify({
+          type,
+          prompt: type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city',
+          model: type === 'text' ? 'gpt-4' : 'dall-e-3',
+          // Image specific
+          size: '1024x1024',
+          quality: 'hd',
+          count: 1
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        setActiveStep(null);
         if (res.status === 402 || res.status === 429) {
           addLog('API', '❌ Request Blocked: Quota Exceeded', data);
           alert(data.message);
@@ -232,53 +221,96 @@ export default function ImprovedDemoPage() {
           addLog('API', `❌ Error: ${data.message || res.statusText}`);
         }
       } else {
-        addLog('BILLING', 'Event Ingested Successfully');
-        setTimeout(() => {
-          fetchBalance();
-        }, 1000);
-      }
-    } catch (err) {
-      addLog('API', 'Network Error');
-    }
+        // 4. RATING: Event processed
+        await simulateFlow('rating', 600);
+        addLog('RATING', 'Calculated cost based on Pricing Table', { 
+          model: type === 'text' ? 'gpt-4' : 'dall-e-3',
+          cost: type === 'text' ? '~0.03 USD' : '0.04 USD'
+        });
 
+        // 5. DB: Balance updated
+        await simulateFlow('db', 500);
+        addLog('BILLING', 'Deducted credits from wallet');
+        
+        // Finalize
+        setActiveStep(null);
+        addLog('APP', 'Response received successfully');
+        
+        // Refresh balance
+        fetchBalance();
+      }
+
+    } catch (error) {
+      console.error(error);
+      addLog('API', 'Network Error');
+      setActiveStep(null);
+    }
+    
     setLoading(false);
   };
 
   // --- Code Snippets ---
 
   const snippets = {
-    llm: `// 1. Initialize Client
+    llm: `// Server-Side Code (Node.js)
+import { OpenMonetize } from '@openmonetize/sdk';
+
 const client = new OpenMonetize({ 
-  apiKey: '${apiKey || 'YOUR_API_KEY'}' 
+  apiKey: process.env.OPENMONETIZE_API_KEY 
 });
 
-// 2. Track Usage after LLM response
-await client.track({
-  event: 'TOKEN_USAGE',
-  customer_id: 'user_123', // Your end-user's ID
-  properties: {
+// In your API Route:
+async function generateCompletion(req, res) {
+  // 1. Generate content
+  const completion = await openai.chat.completions.create({
     model: 'gpt-4',
-    provider: 'openai',
-    input_tokens: 120,
-    output_tokens: 1300
-  }
-});`,
-    image: `// 1. Initialize Client
+    messages: [...]
+  });
+
+  // 2. Track Usage (Async)
+  // This sends the event to OpenMonetize Ingestion Service
+  await client.trackTokenUsage({
+    customer_id: req.user.id,
+    feature_id: 'gpt-4-chat',
+    provider: 'OPENAI',
+    model: 'gpt-4',
+    input_tokens: completion.usage.prompt_tokens,
+    output_tokens: completion.usage.completion_tokens
+  });
+
+  return res.json(completion);
+}`,
+    image: `// Server-Side Code (Node.js)
+import { OpenMonetize } from '@openmonetize/sdk';
+
 const client = new OpenMonetize({ 
-  apiKey: '${apiKey || 'YOUR_API_KEY'}' 
+  apiKey: process.env.OPENMONETIZE_API_KEY 
 });
 
-// 2. Track Image Generation
-await client.track({
-  event: 'IMAGE_GENERATION',
-  customer_id: 'user_123',
-  properties: {
+// In your API Route:
+async function generateImage(req, res) {
+  // 1. Generate Image
+  const image = await openai.images.generate({
     model: 'dall-e-3',
     size: '1024x1024',
-    quality: 'hd',
-    count: 1
-  }
-});`,
+    quality: 'hd'
+  });
+
+  // 2. Track Usage (Async)
+  await client.track({
+    event_type: 'IMAGE_GENERATION',
+    customer_id: req.user.id,
+    feature_id: 'dalle-gen',
+    properties: {
+      model: 'dall-e-3',
+      size: '1024x1024',
+      quality: 'hd',
+      count: 1
+    }
+  });
+
+  return res.json(image);
+}`,
   };
 
   if (!authChecked) return null;
@@ -301,7 +333,7 @@ await client.track({
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
       
       {/* Header Section */}
-      <div className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center">
+      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">OpenMonetize <span className="text-blue-600">Console</span></h1>
           <div className="flex items-center gap-2 mt-2">
@@ -338,11 +370,11 @@ await client.track({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-[800px]">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* LEFT COLUMN: User Interface (The "App") */}
-        <div className="flex flex-col gap-6">
-          <Card className="flex-1 border-slate-200 shadow-md flex flex-col">
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          <Card className="flex-1 border-slate-200 shadow-md flex flex-col h-full">
             <CardHeader className="bg-slate-100/50 border-b pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-600" />
@@ -383,7 +415,7 @@ await client.track({
                     </div>
                   </div>
 
-                  <Button size="lg" className="w-full" onClick={handleLLMGeneration} disabled={loading}>
+                  <Button size="lg" className="w-full" onClick={() => handleGeneration('text')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                     Send Message & Meter Usage
                   </Button>
@@ -420,7 +452,7 @@ await client.track({
                     </div>
                   </div>
 
-                  <Button size="lg" className="w-full" onClick={handleImageGen} disabled={loading}>
+                  <Button size="lg" className="w-full" onClick={() => handleGeneration('image')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                     Generate Image
                   </Button>
@@ -431,25 +463,10 @@ await client.track({
         </div>
 
         {/* RIGHT COLUMN: Developer Experience (The "Under the hood") */}
-        <div className="flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6">
           
-          {/* 1. The Implementation Code */}
-          <Card className="bg-[#1e1e1e] border-slate-800 text-slate-300 shadow-xl">
-            <CardHeader className="border-b border-slate-800 pb-3">
-              <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
-                <Code2 className="h-4 w-4 text-blue-400" />
-                Implementation (Client-Side)
-              </CardTitle>
-            </CardHeader>
-            <div className="p-4 overflow-x-auto font-mono text-sm leading-relaxed">
-              <pre>
-                <code className="language-typescript">
-                  {/* Dynamically show the code relevant to what the user is doing */}
-                  {activeTab === 'llm' ? snippets.llm : snippets.image}
-                </code>
-              </pre>
-            </div>
-          </Card>
+          {/* 1. Visual Data Flow */}
+          <VisualDataFlow activeStep={activeStep} />
 
           {/* 2. The Live Execution Log */}
           <Card className="flex-1 bg-black border-slate-800 text-slate-300 shadow-xl flex flex-col min-h-[300px]">
@@ -464,7 +481,7 @@ await client.track({
                 </Badge>
               </div>
             </CardHeader>
-            <ScrollArea className="flex-1 p-4 font-mono text-xs">
+            <ScrollArea className="flex-1 p-4 font-mono text-xs h-[300px]">
               <div className="space-y-3">
                 {logs.map((log) => (
                   <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
@@ -477,7 +494,9 @@ await client.track({
                             h-5 px-1 text-[10px] border-0
                             ${log.source === 'APP' ? 'bg-blue-900/30 text-blue-400' : ''}
                             ${log.source === 'API' ? 'bg-purple-900/30 text-purple-400' : ''}
-                            ${log.source === 'BILLING' ? 'bg-orange-900/30 text-orange-400' : ''}
+                            ${log.source === 'INGESTION' ? 'bg-yellow-900/30 text-yellow-400' : ''}
+                            ${log.source === 'RATING' ? 'bg-orange-900/30 text-orange-400' : ''}
+                            ${log.source === 'BILLING' ? 'bg-green-900/30 text-green-400' : ''}
                           `}
                         >
                           {log.source}
@@ -495,6 +514,24 @@ await client.track({
                 <div ref={logEndRef} />
               </div>
             </ScrollArea>
+          </Card>
+
+          {/* 3. The Implementation Code */}
+          <Card className="bg-[#1e1e1e] border-slate-800 text-slate-300 shadow-xl">
+            <CardHeader className="border-b border-slate-800 pb-3">
+              <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
+                <Code2 className="h-4 w-4 text-blue-400" />
+                Implementation (Server-Side)
+              </CardTitle>
+            </CardHeader>
+            <div className="p-4 overflow-x-auto font-mono text-sm leading-relaxed">
+              <pre>
+                <code className="language-typescript">
+                  {/* Dynamically show the code relevant to what the user is doing */}
+                  {activeTab === 'llm' ? snippets.llm : snippets.image}
+                </code>
+              </pre>
+            </div>
           </Card>
 
         </div>
