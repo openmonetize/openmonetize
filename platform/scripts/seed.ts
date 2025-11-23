@@ -551,7 +551,7 @@ async function main() {
     data: {
       name: 'Acme AI Corp',
       email: 'dev@acme-ai.example.com',
-      apiKeyHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', // Hash of 'om_dev_test_key'
+      apiKeyHash: '74c5d88a6d2c201c5e004dadf414979a082209ea1e77fe985cac75283cf7ecdf', // Hash of 'om_dev_test_key'
       tier: CustomerTier.GROWTH,
       status: CustomerStatus.ACTIVE,
 

@@ -28,7 +28,7 @@ import type { IngestEventsRoute, ReplayDLQRoute } from '../types/routes';
 // Event schema matching Ingestion Service
 const EventSchema = z.object({
   event_id: z.string().uuid(),
-  customer_id: z.string(),
+  customer_id: z.string().optional(),
   user_id: z.string().optional(),
   team_id: z.string().optional(),
   event_type: z.enum(['TOKEN_USAGE', 'API_CALL', 'FEATURE_ACCESS', 'IMAGE_GENERATION', 'CUSTOM']),
@@ -90,25 +90,24 @@ export const ingestionRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         // Forward to Ingestion Service
         // We use the internal service URL
+        // Always inject authenticated customer's ID (ignore client-provided value)
+        const events = request.body.events.map((event) => ({
+          ...event,
+          customer_id: request.customer!.id,
+        }));
+
+        // Extract API key from Authorization Bearer or X-API-Key header
+        const apiKey = request.headers['x-api-key'] as string
+          || request.headers.authorization?.replace('Bearer ', '')
+          || '';
+
         const response = await fetch(`${config.services.ingestion.url}/v1/events/ingest`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': request.headers['x-api-key'] as string || '', // Pass original API key if present
-            // Or we could pass the customer ID if the service trusted us, but it validates API key.
-            // Since we are authenticated here, we know the API key is valid (if Bearer).
-            // If Bearer, we might need to extract the key or rely on internal trust.
-            // The ingestion service checks 'x-api-key'.
-            // If the user used Bearer token, we don't have the raw API key easily unless we stored it.
-            // But wait, `authenticate` middleware attaches `request.customer`.
-            // Does it attach the key? No, usually just the customer object.
-            // However, for the demo/proxy to work, we might need to pass the key.
-            // If the user authenticated with `x-api-key`, we have it.
-            // If they used Bearer, we might not have the raw key if it was a JWT (but here it's likely the API key itself as Bearer).
-            // Let's assume we pass what we have.
-            ...(request.headers['authorization'] ? { 'Authorization': request.headers['authorization'] } : {}),
+            'x-api-key': apiKey,
           },
-          body: JSON.stringify(request.body),
+          body: JSON.stringify({ events }),
         });
 
         const data = await response.json();

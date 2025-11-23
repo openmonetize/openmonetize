@@ -140,9 +140,8 @@ export default function ImprovedDemoPage() {
       // 3. Actual API Call
       const event = {
         event_id: crypto.randomUUID(),
-        customer_id: 'self', // The API key identifies the customer
         event_type: 'TOKEN_USAGE',
-        feature_id: 'gpt-4-completion', // Assuming this exists in burntable
+        feature_id: 'gpt-4-completion',
         provider: 'OPENAI',
         model: 'gpt-4',
         input_tokens: 120,
@@ -205,7 +204,6 @@ export default function ImprovedDemoPage() {
     // Actual API Call
     const event = {
       event_id: crypto.randomUUID(),
-      customer_id: 'self',
       event_type: 'IMAGE_GENERATION',
       feature_id: 'dalle-3-gen',
       image_count: 1,
