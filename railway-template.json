@@ -21,7 +21,7 @@
       "build": {
         "builder": "NIXPACKS",
         "root": "platform",
-        "buildCommand": "pnpm install && pnpm build --filter=api-gateway...",
+        "buildCommand": "pnpm install && pnpm db:deploy && pnpm build --filter=api-gateway...",
         "watchPatterns": [
           "packages/api-gateway/**",
           "packages/common/**"

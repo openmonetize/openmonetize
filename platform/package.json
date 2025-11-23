@@ -17,6 +17,7 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "db:migrate": "pnpm --filter @openmonetize/common db:migrate:dev",
+    "db:deploy": "pnpm --filter @openmonetize/common prisma migrate deploy",
     "db:generate": "pnpm --filter @openmonetize/common db:generate",
     "db:seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "docker:up": "docker-compose up -d",
