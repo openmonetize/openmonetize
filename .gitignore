@@ -9,3 +9,6 @@ internal-docs/
 !SECURITY.md
 
 # Platform-specific ignores are in platform/.gitignore
+docs/guides/launch-checklist.md
+node_modules/
+

@@ -1,13 +1,23 @@
 {
-    "name": "openmonetize-root",
-    "private": true,
-    "description": "Root of OpenMonetize repository",
-    "scripts": {
-        "postinstall": "cd platform && pnpm install",
-        "build": "cd platform && pnpm build"
-    },
-    "engines": {
-        "node": ">=18"
-    },
-    "packageManager": "pnpm@9.0.0"
+  "name": "openmonetize-root",
+  "private": true,
+  "description": "Root of OpenMonetize repository",
+  "scripts": {
+    "postinstall": "cd platform && pnpm install",
+    "build": "cd platform && pnpm build",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "lint-staged": {
+    "platform/**/*.{ts,tsx,py}": [
+      "pnpm -C platform license:check"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  }
 }
