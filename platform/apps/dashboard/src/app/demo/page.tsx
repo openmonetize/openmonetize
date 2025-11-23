@@ -309,6 +309,15 @@ await client.track({
                 <User className="h-3 w-3" />
                 {customerName}
              </Badge>
+             {apiKey && (
+               <Badge variant="outline" className="gap-1 font-mono cursor-pointer hover:bg-slate-100" onClick={() => {
+                 navigator.clipboard.writeText(apiKey);
+                 alert('API Key copied to clipboard!');
+               }}>
+                 <Terminal className="h-3 w-3" />
+                 {apiKey.substring(0, 8)}...
+               </Badge>
+             )}
              <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
                 <LogOut className="h-3 w-3" /> Sign Out
              </button>
