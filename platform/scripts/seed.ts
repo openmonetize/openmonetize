@@ -19,7 +19,7 @@ import {
   CustomerStatus,
   LimitType,
   LimitPeriod
-} from '@prisma/client';
+} from '../packages/common/src/database';
 
 const prisma = getPrismaClient();
 
