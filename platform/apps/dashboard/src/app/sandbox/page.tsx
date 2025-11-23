@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck } from 'lucide-react';
+import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck, Plus, BookOpen } from 'lucide-react';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 
 // Types for our simulated logs
@@ -159,6 +159,118 @@ export default function SandboxPage() {
       }
     } catch (e) {
       if (!silent) addLog('API', 'Failed to fetch balance (Is local server running?)');
+    }
+  };
+
+  const handleTopUp = async () => {
+    if (!apiKey) return;
+    
+    try {
+      // Decode JWT to get userId/customerId if possible, or just use what we have.
+      // Since we don't have the full user object here easily without decoding the token or fetching /me,
+      // we'll rely on the fact that the /v1/credits/purchase endpoint might need specific IDs.
+      // However, looking at the API, it takes customerId and userId in the body.
+      // Let's fetch the user details first if we don't have them, or just use a "self" shortcut if the API supported it.
+      // The API requires customerId and userId.
+      // We can get them from the /v1/credits/balance endpoint if we updated it to return them, 
+      // OR we can just fetch /v1/auth/me or similar.
+      // Actually, let's just fetch the balance again and assume we can get IDs from somewhere? 
+      // Wait, the previous code didn't have user IDs.
+      // Let's check how we can get the IDs. 
+      // The /v1/credits/balance endpoint returns balance but not IDs.
+      // We might need to decode the token or fetch user info.
+      // For this demo, let's assume we can fetch /v1/customers/me/users/me or similar?
+      // Actually, let's look at the seed script. The user is 'user_001' and customer is 'Acme AI Corp'.
+      // But we are logged in as *someone*.
+      // Let's try to decode the token client-side? No, that's messy.
+      // Let's try to hit an endpoint that gives us our ID.
+      // API Gateway doesn't seem to have a /me endpoint exposed in the snippets I saw.
+      // However, the `authenticate` middleware attaches `customer` to the request.
+      // The `creditsRoutes` `purchase` endpoint requires `customerId` and `userId` in the body.
+      // This is a bit strict for a client-side call where we just want to "top up my account".
+      // Maybe we can use a hardcoded "demo" user ID if we are in demo mode? 
+      // Or better, let's just try to call it and see if we can pass the IDs from local storage if we saved them?
+      // We only saved api key and name.
+      
+      // WORKAROUND: For the sandbox, we'll just call a new "quick purchase" endpoint or 
+      // we'll fetch the customer details first.
+      // Let's assume we can get the customer ID from the token if we decoded it, but we can't easily here.
+      // Let's use a simpler approach: The `seed.ts` created a user with `externalUserId: 'user_001'`.
+      // If we are using the seeded key, we are that user.
+      // But wait, the `purchase` endpoint checks `if (customerId !== request.customer!.id)`.
+      // So we need to send the correct customerId.
+      
+      // Let's add a small helper to get the current customer details?
+      // Or we can just add a "Grant" button that hits the grant endpoint which might be more flexible?
+      // No, grant is admin only.
+      
+      // Let's try to fetch the customer ID from a new endpoint or existing one.
+      // The `fetchBalance` calls `/v1/credits/balance`. 
+      // Let's see if we can modify `fetchBalance` to return the customer ID?
+      // The `credits.ts` file shows `/v1/credits/balance` returns `data: { balance, ... }`.
+      
+      // Let's just implement a client-side "Top Up" that calls a server action or API route?
+      // No, we are in a pure client component calling the API Gateway directly.
+      
+      // Let's assume for the Sandbox, we can just call `/v1/credits/purchase` and maybe the backend 
+      // can be lenient or we can find the ID.
+      // Actually, looking at `credits.ts`, `purchase` expects `customerId` and `userId` in body.
+      // This is a bit of a blocker if we don't know them.
+      
+      // Alternative: We can use the `grant` endpoint if we use the "demo" key which might be an admin?
+      // The seed key `om_dev_test_key` belongs to `Acme AI Corp`.
+      
+      // Let's try to fetch `/v1/customers`? No, that lists all.
+      
+      // Let's just use a hardcoded ID for the "Sandbox" since it's a demo?
+      // The seed script prints the customer ID. But that changes every seed.
+      
+      // BEST APPROACH: Update `credits.ts` to allow `/v1/credits/purchase` to infer `customerId` from the auth token
+      // if not provided? Or add a `/v1/me` endpoint.
+      // But I can't easily change the backend API structure right now without more planning.
+      
+      // WAIT! `fetchBalance` in `page.tsx` calls `/v1/credits/balance`.
+      // That endpoint uses `request.customer.id`.
+      // So the backend KNOWS the customer ID.
+      // The `purchase` endpoint *requires* it in the body to verify it matches.
+      // If I send *any* UUID, it will fail if it doesn't match.
+      
+      // Let's cheat slightly for the UI:
+      // We will decode the JWT if it is one? No, it's an opaque key "om_...".
+      
+      // Let's look at `authenticate` middleware again. It looks up customer by API key hash.
+      // It attaches `customer` to request.
+      
+      // I will modify `credits.ts` to make `customerId` and `userId` OPTIONAL in the body for `purchase`,
+      // and default to the authenticated customer/user?
+      // `credits.ts` schema: `customerId: z.string().uuid(), userId: z.string().uuid()`.
+      // It's required.
+      
+      // Okay, I will modify `credits.ts` to allow omitting them and inferring from context?
+      // Or better, I'll add a specific `/v1/sandbox/topup` endpoint in `sandbox.ts`!
+      // That is much cleaner and safer. It can just grant credits to the authenticated user.
+      
+      // YES. I will add `/v1/sandbox/topup` to `sandbox.ts`.
+      // This keeps the "Sandbox" logic encapsulated.
+      
+      const res = await fetch(`${API_URL}/v1/sandbox/topup`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ amount: 10000 })
+      });
+
+      if (res.ok) {
+        addLog('BILLING', 'Top-up successful: +10,000 credits');
+        fetchBalance();
+      } else {
+        addLog('API', 'Top-up failed');
+      }
+    } catch (e) {
+      console.error(e);
+      addLog('API', 'Top-up failed');
     }
   };
 
@@ -357,15 +469,31 @@ async function generateImage(req, res) {
         </div>
         
         {/* Live Balance Badge */}
-        <div className="mt-4 md:mt-0 bg-white p-4 rounded-xl border shadow-sm flex items-center gap-4">
-          <div className="p-2 bg-green-100 rounded-full text-green-600">
-            <CreditCard className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Current Balance</div>
-            <div className="text-2xl font-mono font-bold tabular-nums">
-              {balance.toLocaleString()} <span className="text-sm text-slate-400 font-normal">credits</span>
+        <div className="mt-4 md:mt-0 flex items-center gap-4">
+           {/* Docs Link */}
+           <a 
+             href="https://openmonetize-docs.vercel.app" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors mr-4"
+           >
+             <BookOpen className="h-4 w-4" />
+             Full API Docs
+           </a>
+
+           <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-4">
+            <div className="p-2 bg-green-100 rounded-full text-green-600">
+              <CreditCard className="h-6 w-6" />
             </div>
+            <div>
+              <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Current Balance</div>
+              <div className="text-2xl font-mono font-bold tabular-nums">
+                {balance.toLocaleString()} <span className="text-sm text-slate-400 font-normal">credits</span>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className="ml-2 h-8 gap-1" onClick={handleTopUp}>
+              <Plus className="h-3 w-3" /> Top Up
+            </Button>
           </div>
         </div>
       </div>

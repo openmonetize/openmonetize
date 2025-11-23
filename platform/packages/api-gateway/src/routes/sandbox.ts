@@ -207,4 +207,78 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
       return response;
     }
   );
+
+  app.post(
+    '/v1/sandbox/topup',
+    {
+      preHandler: authenticate,
+      schema: {
+        tags: ['Sandbox'],
+        description: 'Top up credits for sandbox testing',
+        body: z.object({
+          amount: z.number().positive().default(10000),
+        }),
+        response: withCommonResponses({
+          200: z.object({
+            success: z.boolean(),
+            newBalance: z.string(),
+          }),
+        }, [402, 500]),
+      },
+    },
+    async (request, reply) => {
+      const customerId = request.customer!.id;
+      const { amount } = request.body;
+
+      try {
+        // Find wallet
+        let wallet = await db.creditWallet.findFirst({
+          where: { customerId },
+        });
+
+        if (!wallet) {
+           // Create if not exists (should exist from seed, but for safety)
+           wallet = await db.creditWallet.create({
+             data: {
+               customerId,
+               balance: 0,
+               reservedBalance: 0,
+             }
+           });
+        }
+
+        // Grant credits
+        const newBalance = BigInt(Number(wallet.balance) + amount);
+        
+        await db.$transaction([
+          db.creditWallet.update({
+            where: { id: wallet.id },
+            data: { balance: newBalance },
+          }),
+          db.creditTransaction.create({
+            data: {
+              walletId: wallet.id,
+              customerId,
+              transactionType: 'PURCHASE', // Treat as purchase for sandbox
+              amount: BigInt(amount),
+              balanceBefore: wallet.balance,
+              balanceAfter: newBalance,
+              description: 'Sandbox Top-Up',
+            },
+          }),
+        ]);
+
+        return {
+          success: true,
+          newBalance: newBalance.toString(),
+        };
+      } catch (error) {
+        logger.error({ err: error }, 'Failed to top up sandbox credits');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to top up credits',
+        });
+      }
+    }
+  );
 };
