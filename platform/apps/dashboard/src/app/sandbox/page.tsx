@@ -75,7 +75,7 @@ const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
   );
 };
 
-export default function ImprovedDemoPage() {
+export default function SandboxPage() {
   const [activeTab, setActiveTab] = useState('llm');
   const [balance, setBalance] = useState<number>(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -101,7 +101,7 @@ export default function ImprovedDemoPage() {
   };
 
   const scrollToBottom = () => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   useEffect(() => {
@@ -187,13 +187,13 @@ export default function ImprovedDemoPage() {
 
       // 2. GATEWAY: Request hits API
       await simulateFlow('gateway', 400);
-      addLog('API', `POST /v1/demo/generate`, { type });
+      addLog('API', `POST /v1/sandbox/generate`, { type });
 
       // 3. INGESTION: Backend calls ingestion (Simulated visualization)
       await simulateFlow('ingestion', 400);
       
       // Actual API Call to BFF
-      const res = await fetch(`${API_URL}/v1/demo/generate`, {
+      const res = await fetch(`${API_URL}/v1/sandbox/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -378,7 +378,7 @@ async function generateImage(req, res) {
             <CardHeader className="bg-slate-100/50 border-b pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-600" />
-                Simulate Usage
+                Simulate Usage (Sandbox)
               </CardTitle>
               <CardDescription>
                 Perform actions to trigger metering events against your account.

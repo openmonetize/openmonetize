@@ -21,14 +21,19 @@ import { config } from '../config';
 import { logger } from '../logger';
 import { randomUUID } from 'crypto';
 import { withCommonResponses } from '../types/schemas';
+import { authenticate } from '../middleware/auth';
+import { getPrismaClient } from '@openmonetize/common';
 
-export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
+const db = getPrismaClient();
+
+export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
-    '/v1/demo/generate',
+    '/v1/sandbox/generate',
     {
+      preHandler: authenticate,
       schema: {
-        tags: ['Demo'],
-        description: 'Generate AI response (Demo Mode)',
+        tags: ['Sandbox'],
+        description: 'Generate AI response (Sandbox Mode - Authenticated & Metered)',
         body: z.object({
           type: z.enum(['text', 'image']).default('text'),
           prompt: z.string(),
@@ -64,14 +69,21 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
               image_count: z.number().optional(),
             }).optional(),
           }),
-        }, [404, 500]),
+        }, [402, 404, 500]),
       },
     },
     async (request, reply) => {
-      if (!config.demo.enabled) {
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Demo mode is disabled',
+      // 1. Verify Credit Balance
+      const customerId = request.customer!.id;
+      
+      const wallet = await db.creditWallet.findFirst({
+        where: { customerId },
+      });
+
+      if (!wallet || wallet.balance <= 0) {
+        return reply.status(402).send({
+          error: 'Payment Required',
+          message: 'Insufficient credits. Please top up your wallet to continue using the sandbox.',
         });
       }
 
@@ -88,7 +100,7 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
       // Simulate latency
       await new Promise((resolve) => setTimeout(resolve, type === 'text' ? 800 : 1500));
 
-      const completionId = `demo-${randomUUID()}`;
+      const completionId = `sandbox-${randomUUID()}`;
       const created = Math.floor(Date.now() / 1000);
       
       let response: any;
@@ -109,7 +121,7 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
               index: 0,
               message: {
                 role: 'assistant',
-                content: 'This is a simulated response from OpenMonetize Demo. In a real application, this would be the output from the LLM.',
+                content: 'This is a simulated response from OpenMonetize Sandbox. In a real application, this would be the output from the LLM.',
               },
               finish_reason: 'stop',
             },
@@ -123,9 +135,9 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
 
         event = {
           event_id: randomUUID(),
-          customer_id: config.demo.tenantId,
+          customer_id: customerId, // Attribute to real user
           event_type: 'TOKEN_USAGE',
-          feature_id: 'demo-chat',
+          feature_id: 'demo-chat', // Keep feature ID consistent for now, or change to 'sandbox-chat'
           provider: provider.toUpperCase(),
           model: model,
           input_tokens: promptTokens,
@@ -142,7 +154,7 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
           model: model,
           choices: Array(count).fill(0).map((_, i) => ({
             index: i,
-            url: 'https://placehold.co/1024x1024/png?text=Demo+Image',
+            url: 'https://placehold.co/1024x1024/png?text=Sandbox+Image',
           })),
           usage: {
             image_count: count,
@@ -151,7 +163,7 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
 
         event = {
           event_id: randomUUID(),
-          customer_id: config.demo.tenantId,
+          customer_id: customerId, // Attribute to real user
           event_type: 'IMAGE_GENERATION',
           feature_id: 'demo-image',
           provider: provider.toUpperCase(),
@@ -168,11 +180,16 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
 
+        // We need to use a system key or the user's key if the ingestion service supports it.
+        // Typically ingestion is protected by API Key.
+        // For now, we'll use the demo key or a system key if available, 
+        // BUT the event payload carries the actual customer_id.
+        
         const ingestResponse = await fetch(ingestionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': config.demo.apiKey,
+            'x-api-key': config.demo.apiKey, // Still using a system key to authorize the *ingestion call* itself
           },
           body: JSON.stringify({ events: [event] }),
         });
@@ -180,11 +197,11 @@ export const demoRoutes: FastifyPluginAsyncZod = async (app) => {
         if (!ingestResponse.ok) {
           logger.error(
             { status: ingestResponse.status, statusText: ingestResponse.statusText },
-            'Failed to send demo event to ingestion service'
+            'Failed to send sandbox event to ingestion service'
           );
         }
       } catch (error) {
-        logger.error({ err: error }, 'Failed to record demo usage');
+        logger.error({ err: error }, 'Failed to record sandbox usage');
       }
 
       return response;
