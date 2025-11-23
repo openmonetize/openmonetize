@@ -34,20 +34,38 @@ const prisma = getPrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...\n');
 
-  // Clean existing data (for development only)
-  console.log('🧹 Cleaning existing data...');
+  const args = process.argv.slice(2);
+  const force = args.includes('--force');
 
-  // Delete in correct order to respect foreign keys
-  await prisma.usageEvent.deleteMany();
-  await prisma.creditTransaction.deleteMany();
-  await prisma.entitlement.deleteMany();
-  await prisma.teamMembership.deleteMany();
-  await prisma.team.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.creditWallet.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.burnTable.deleteMany();
-  await prisma.providerCost.deleteMany();
+  // Check if database is already seeded
+  const existingCosts = await prisma.providerCost.count();
+  
+  if (existingCosts > 0 && !force) {
+    console.log('⚠️  Database already seeded. Skipping...');
+    console.log('   Use --force to overwrite existing data.');
+    return;
+  }
+
+  if (force) {
+    // Clean existing data (only if forced)
+    console.log('🧹 Cleaning existing data (--force used)...');
+
+    try {
+      // Delete in correct order to respect foreign keys
+      await prisma.usageEvent.deleteMany();
+      await prisma.creditTransaction.deleteMany();
+      await prisma.entitlement.deleteMany();
+      await prisma.teamMembership.deleteMany();
+      await prisma.team.deleteMany();
+      await prisma.user.deleteMany();
+      await prisma.creditWallet.deleteMany();
+      await prisma.customer.deleteMany();
+      await prisma.burnTable.deleteMany();
+      await prisma.providerCost.deleteMany();
+    } catch (error) {
+      console.warn('⚠️  Warning: Failed to clean some tables. They might not exist yet.');
+    }
+  }
 
   // Seed Provider Costs (Q1 2025 pricing)
   console.log('💰 Seeding provider costs...');

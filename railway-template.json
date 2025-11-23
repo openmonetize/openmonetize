@@ -28,7 +28,8 @@
         ]
       },
       "deploy": {
-        "startCommand": "npm run start:api"
+        "startCommand": "npm run start:api",
+        "initCommand": "pnpm db:seed"
       },
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
