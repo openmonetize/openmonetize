@@ -6,14 +6,6 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 // OpenMonetize Database Seed Script
@@ -67,12 +59,61 @@ async function main() {
     }
   }
 
-  // Seed Provider Costs (Q1 2025 pricing)
+  // Seed Provider Costs (Q4 2025 pricing update)
   console.log('💰 Seeding provider costs...');
 
   const providerCosts = await Promise.all([
-    // OpenAI - Latest Models (January 2025)
-    // o1-pro (Top-tier reasoning)
+    // ==========================================
+    // OpenAI - Latest Models (Late 2025)
+    // ==========================================
+    
+    // GPT-5 (The new standard)
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'gpt-5',
+        costType: CostType.INPUT_TOKEN,
+        costPerUnit: 1.25,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-01')
+      }
+    }),
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'gpt-5',
+        costType: CostType.OUTPUT_TOKEN,
+        costPerUnit: 10.00,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-01')
+      }
+    }),
+    // o3 (Next-gen reasoning)
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'o3',
+        costType: CostType.INPUT_TOKEN,
+        costPerUnit: 2.00,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-01')
+      }
+    }),
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'o3',
+        costType: CostType.OUTPUT_TOKEN,
+        costPerUnit: 8.00,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-01')
+      }
+    }),
+    // o1-pro (Top-tier reasoning - retained)
     prisma.providerCost.create({
       data: {
         provider: ProviderName.OPENAI,
@@ -118,7 +159,7 @@ async function main() {
         validFrom: new Date('2025-01-01')
       }
     }),
-    // gpt-4o (Flagship)
+    // gpt-4o (Legacy Flagship)
     prisma.providerCost.create({
       data: {
         provider: ProviderName.OPENAI,
@@ -188,7 +229,10 @@ async function main() {
       }
     }),
 
-    // Anthropic - Latest Models (January 2025)
+    // ==========================================
+    // Anthropic - Latest Models (Late 2025)
+    // ==========================================
+    
     // Claude 4.1 Opus (Highest performance)
     prisma.providerCost.create({
       data: {
@@ -258,31 +302,58 @@ async function main() {
         validFrom: new Date('2025-01-01')
       }
     }),
-    // Claude 3.5 Sonnet (Previous generation)
+
+    // ==========================================
+    // Google - Latest Models (Gemini 3.0 Era)
+    // ==========================================
+
+    // Gemini 3.0 Pro (November 2025 Release)
     prisma.providerCost.create({
       data: {
-        provider: ProviderName.ANTHROPIC,
-        model: 'claude-3.5-sonnet',
+        provider: ProviderName.GOOGLE,
+        model: 'gemini-3.0-pro',
         costType: CostType.INPUT_TOKEN,
-        costPerUnit: 3.00,
+        costPerUnit: 2.00,
         unitSize: 1000000,
         currency: 'USD',
-        validFrom: new Date('2025-01-01')
+        validFrom: new Date('2025-11-12')
       }
     }),
     prisma.providerCost.create({
       data: {
-        provider: ProviderName.ANTHROPIC,
-        model: 'claude-3.5-sonnet',
+        provider: ProviderName.GOOGLE,
+        model: 'gemini-3.0-pro',
         costType: CostType.OUTPUT_TOKEN,
-        costPerUnit: 15.00,
+        costPerUnit: 12.00,
         unitSize: 1000000,
         currency: 'USD',
-        validFrom: new Date('2025-01-01')
+        validFrom: new Date('2025-11-12')
+      }
+    }),
+    // Gemini 3.0 Flash (High speed)
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.GOOGLE,
+        model: 'gemini-3.0-flash',
+        costType: CostType.INPUT_TOKEN,
+        costPerUnit: 0.20,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-12')
+      }
+    }),
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.GOOGLE,
+        model: 'gemini-3.0-flash',
+        costType: CostType.OUTPUT_TOKEN,
+        costPerUnit: 0.80,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-11-12')
       }
     }),
 
-    // Google - Latest Models (January 2025)
     // Gemini 2.5 Pro (up to 200K context)
     prisma.providerCost.create({
       data: {
@@ -306,30 +377,7 @@ async function main() {
         validFrom: new Date('2025-01-01')
       }
     }),
-    // Gemini 1.5 Pro (up to 128K context)
-    prisma.providerCost.create({
-      data: {
-        provider: ProviderName.GOOGLE,
-        model: 'gemini-1.5-pro',
-        costType: CostType.INPUT_TOKEN,
-        costPerUnit: 1.25,
-        unitSize: 1000000,
-        currency: 'USD',
-        validFrom: new Date('2025-01-01')
-      }
-    }),
-    prisma.providerCost.create({
-      data: {
-        provider: ProviderName.GOOGLE,
-        model: 'gemini-1.5-pro',
-        costType: CostType.OUTPUT_TOKEN,
-        costPerUnit: 5.00,
-        unitSize: 1000000,
-        currency: 'USD',
-        validFrom: new Date('2025-01-01')
-      }
-    }),
-    // Gemini 2.5 Flash-Lite (Fastest, low-cost)
+    // Gemini 2.5 Flash-Lite
     prisma.providerCost.create({
       data: {
         provider: ProviderName.GOOGLE,
@@ -409,11 +457,21 @@ async function main() {
 
   const defaultBurnTable = await prisma.burnTable.create({
     data: {
-      name: 'Default Pricing - January 2025',
+      name: 'Default Pricing - Late 2025',
       version: 1,
       isActive: true,
       rules: {
         // OpenAI Models
+        'gpt-5': {
+          input_tokens: 1.25,
+          output_tokens: 10.0,
+          per_unit: 1000000
+        },
+        'o3': {
+          input_tokens: 2.0,
+          output_tokens: 8.0,
+          per_unit: 1000000
+        },
         'o1-pro': {
           input_tokens: 75.0,
           output_tokens: 300.0,
@@ -455,20 +513,20 @@ async function main() {
           output_tokens: 5.0,
           per_unit: 1000000
         },
-        'claude-3.5-sonnet': {
-          input_tokens: 3.0,
-          output_tokens: 15.0,
+        // Google Models
+        'gemini-3.0-pro': {
+          input_tokens: 2.00,
+          output_tokens: 12.00,
           per_unit: 1000000
         },
-        // Google Models
+        'gemini-3.0-flash': {
+          input_tokens: 0.20,
+          output_tokens: 0.80,
+          per_unit: 1000000
+        },
         'gemini-2.5-pro': {
           input_tokens: 1.25,
           output_tokens: 10.0,
-          per_unit: 1000000
-        },
-        'gemini-1.5-pro': {
-          input_tokens: 1.25,
-          output_tokens: 5.0,
           per_unit: 1000000
         },
         'gemini-2.5-flash-lite': {
