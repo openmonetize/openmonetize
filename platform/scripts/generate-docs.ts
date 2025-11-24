@@ -90,9 +90,15 @@ async function generate() {
               bearerFormat: 'API Key',
               description: 'API key authentication',
             },
+            ApiKeyAuth: {
+              type: 'apiKey',
+              in: 'header',
+              name: 'x-api-key',
+              description: 'API Key Authentication',
+            },
           },
         },
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { ApiKeyAuth: [] }],
       },
       transform: jsonSchemaTransform,
     });
@@ -142,12 +148,13 @@ async function generate() {
       }
     });
 
-    if (publicSpec.components?.securitySchemes) {
-      delete publicSpec.components.securitySchemes;
-    }
-    if (publicSpec.security) {
-      publicSpec.security = [];
-    }
+    // Security schemes are now preserved for public spec to allow "Try it out" functionality
+    // if (publicSpec.components?.securitySchemes) {
+    //   delete publicSpec.components.securitySchemes;
+    // }
+    // if (publicSpec.security) {
+    //   publicSpec.security = [];
+    // }
 
     const distDir = path.resolve(__dirname, '../packages/api-gateway/dist/docs');
     await fs.mkdir(distDir, { recursive: true });

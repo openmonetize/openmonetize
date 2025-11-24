@@ -73,9 +73,21 @@ Authorization: Bearer YOUR_API_KEY
 
 Or using the X-API-Key header:
 
-\`\`\`
 X-API-Key: YOUR_API_KEY
 \`\`\`
+
+## How to get an API Key
+
+You have two options to get started:
+
+1. **Self-Hosted (Free & Private)**: Run the platform locally or on your own infrastructure. You are the admin and can generate keys for yourself.
+2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.
+
+### Getting a Key (Sandbox)
+1. Go to the [OpenMonetize Console](https://console.openmonetize.com).
+2. Navigate to the **Sandbox** or **API Keys** section.
+3. Generate a new API key.
+4. Use this key in the "Authorize" button above.
 
 ## Rate Limiting
 
@@ -95,9 +107,21 @@ Authorization: Bearer YOUR_API_KEY
 
 Or using the X-API-Key header:
 
-\`\`\`
 X-API-Key: YOUR_API_KEY
 \`\`\`
+
+## How to get an API Key
+
+You have two options to get started:
+
+1. **Self-Hosted (Free & Private)**: Run the platform locally or on your own infrastructure. You are the admin and can generate keys for yourself.
+2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.
+
+### Getting a Key (Sandbox)
+1. Go to the [OpenMonetize Console](https://console.openmonetize.com).
+2. Navigate to the **Sandbox** or **API Keys** section.
+3. Generate a new API key.
+4. Use this key in the "Authorize" button above.
 
 ## Rate Limiting
 
