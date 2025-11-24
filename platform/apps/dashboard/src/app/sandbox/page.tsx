@@ -168,7 +168,7 @@ export default function SandboxPage() {
     
     try {
       // Call the top-up endpoint to add credits to the authenticated user's wallet
-      const res = await fetch(`${API_URL}/v1/sandbox/topup`, {
+      const res = await fetch(`${API_URL}/v1/apiconsole/topup`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${apiKey}`,
@@ -214,13 +214,13 @@ export default function SandboxPage() {
 
       // 2. GATEWAY: Request hits API
       await simulateFlow('gateway', 400);
-      addLog('API', `POST /v1/sandbox/generate`, { type });
+      addLog('API', `POST /v1/apiconsole/generate`, { type });
 
       // 3. INGESTION: Backend calls ingestion (Simulated visualization)
       await simulateFlow('ingestion', 400);
       
       // Actual API Call to BFF
-      const res = await fetch(`${API_URL}/v1/sandbox/generate`, {
+      const res = await fetch(`${API_URL}/v1/apiconsole/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

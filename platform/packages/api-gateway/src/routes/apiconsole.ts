@@ -23,12 +23,18 @@ import { randomUUID } from 'crypto';
 import { withCommonResponses } from '../types/schemas';
 import { authenticate } from '../middleware/auth';
 import { getPrismaClient } from '@openmonetize/common';
+import {
+  getMockTextResponse,
+  getMockImageResponse,
+  getMockTextEvent,
+  getMockImageEvent,
+} from '../constants/sandbox';
 
 const db = getPrismaClient();
 
 export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
-    '/v1/sandbox/generate',
+    '/v1/apiconsole/generate',
     {
       preHandler: authenticate,
       schema: {
@@ -110,69 +116,41 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
         const completionTokens = 150; // Realistic output length for o1
         const totalTokens = promptTokens + completionTokens;
 
-        response = {
-          id: completionId,
-          object: 'chat.completion',
-          created: created,
-          model: model,
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: 'Quantum computing harnesses the principles of quantum mechanics to process information. Unlike classical computers that use bits (0 or 1), quantum computers use qubits, which can exist in a state of superposition (both 0 and 1 simultaneously). This allows them to solve certain complex problems exponentially faster than traditional supercomputers.',
-              },
-              finish_reason: 'stop',
-            },
-          ],
-          usage: {
-            prompt_tokens: promptTokens,
-            completion_tokens: completionTokens,
-            total_tokens: totalTokens,
-          },
-        };
+        response = getMockTextResponse({
+          completionId,
+          created,
+          model,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        });
 
-        event = {
-          event_id: randomUUID(),
-          customer_id: customerId,
-          event_type: 'TOKEN_USAGE',
-          feature_id: 'ai-text-generation',
-          provider: provider.toUpperCase(),
-          model: model,
-          input_tokens: promptTokens,
-          output_tokens: completionTokens,
-          timestamp: new Date().toISOString(),
-          idempotency_key: completionId,
-        };
+        event = getMockTextEvent({
+          customerId,
+          provider,
+          model,
+          promptTokens,
+          completionTokens,
+          completionId,
+        });
       } else {
         // Image Generation
-        response = {
-          id: completionId,
-          object: 'image.generation',
-          created: created,
-          model: model,
-          choices: Array(count).fill(0).map((_, i) => ({
-            index: i,
-            url: 'https://placehold.co/1024x1024/png?text=Cyberpunk+City',
-          })),
-          usage: {
-            image_count: count,
-          }
-        };
+        response = getMockImageResponse({
+          completionId,
+          created,
+          model,
+          count,
+        });
 
-        event = {
-          event_id: randomUUID(),
-          customer_id: customerId,
-          event_type: 'IMAGE_GENERATION',
-          feature_id: 'image-generation',
-          provider: provider.toUpperCase(),
-          model: model,
-          image_size: size,
-          quality: quality,
-          image_count: count,
-          timestamp: new Date().toISOString(),
-          idempotency_key: completionId,
-        };
+        event = getMockImageEvent({
+          customerId,
+          provider,
+          model,
+          size,
+          quality,
+          count,
+          completionId,
+        });
       }
 
       // Send usage event to ingestion service
@@ -216,7 +194,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.post(
-    '/v1/sandbox/topup',
+    '/v1/apiconsole/topup',
     {
       preHandler: authenticate,
       schema: {

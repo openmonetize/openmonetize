@@ -45,7 +45,7 @@ import { ratingRoutes } from './routes/rating';
 import { creditsRoutes } from './routes/credits';
 import { entitlementsRoutes } from './routes/entitlements';
 import { analyticsRoutes } from './routes/analytics';
-import { sandboxRoutes } from './routes/sandbox';
+import { sandboxRoutes } from './routes/apiconsole';
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
