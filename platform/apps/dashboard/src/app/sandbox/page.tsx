@@ -314,7 +314,7 @@ export default function SandboxPage() {
         body: JSON.stringify({
           type,
           prompt: type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city',
-          model: type === 'text' ? 'gpt-4o' : 'dall-e-3',
+          model: type === 'text' ? 'o1-preview' : 'dall-e-3',
           // Image specific
           size: '1024x1024',
           quality: 'hd',
@@ -336,8 +336,8 @@ export default function SandboxPage() {
         // 4. RATING: Event processed
         await simulateFlow('rating', 600);
         addLog('RATING', 'Calculated cost based on Pricing Table', { 
-          model: type === 'text' ? 'gpt-4o' : 'dall-e-3',
-          cost: type === 'text' ? '~0.03 USD' : '0.04 USD'
+          model: type === 'text' ? 'o1-preview' : 'dall-e-3',
+          cost: type === 'text' ? '~0.15 USD' : '0.04 USD'
         });
 
         // 5. DB: Balance updated
@@ -505,26 +505,32 @@ async function generateImage(req, res) {
           <Card className="flex-1 border-slate-200 shadow-md flex flex-col h-full">
             <CardHeader className="bg-slate-100/50 border-b pb-4">
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-600" />
-                Simulate Usage (Sandbox)
+                <Terminal className="h-5 w-5 text-slate-700" />
+                API Console
               </CardTitle>
               <CardDescription>
-                Perform actions to trigger metering events against your account.
+                Test your integration with real-time metering.
               </CardDescription>
             </CardHeader>
             
             <div className="p-6 flex-1">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="llm">LLM Chat (Token Based)</TabsTrigger>
-                  <TabsTrigger value="image">Image Gen (Per Unit)</TabsTrigger>
+                  <TabsTrigger value="llm">Chat Completion</TabsTrigger>
+                  <TabsTrigger value="image">Image Generation</TabsTrigger>
                 </TabsList>
 
                 {/* LLM SCENARIO */}
                 <TabsContent value="llm" className="space-y-6">
                   <div className="space-y-2">
+                    <Label className="text-slate-600">Model</Label>
+                    <div className="p-2 bg-slate-100 rounded border text-sm font-medium text-slate-700">
+                      o1-preview
+                    </div>
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-slate-600">System Prompt</Label>
-                    <div className="p-3 bg-slate-100 rounded-md text-sm text-slate-500 font-mono">
+                    <div className="p-3 bg-slate-50 rounded-md border text-sm text-slate-600 font-mono">
                       You are a helpful AI assistant...
                     </div>
                   </div>
@@ -533,54 +539,36 @@ async function generateImage(req, res) {
                     <Input defaultValue="Explain quantum computing in simple terms" />
                   </div>
                   
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <div className="flex justify-between text-sm text-blue-900 mb-1">
-                      <span className="font-medium">Estimated Cost</span>
-                      <span className="font-mono">~2,100 Credits</span>
-                    </div>
-                    <div className="text-xs text-blue-600">
-                      Based on GPT-4o pricing (Input + Output tokens)
-                    </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+                     <span>Estimated Cost: ~$0.15</span>
+                     <span>Tokens: ~1,200</span>
                   </div>
 
-                  <Button size="lg" className="w-full" onClick={() => handleGeneration('text')} disabled={loading}>
+                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 text-white" onClick={() => handleGeneration('text')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    Send Message & Meter Usage
+                    Execute Request
                   </Button>
                 </TabsContent>
 
                 {/* IMAGE SCENARIO */}
                 <TabsContent value="image" className="space-y-6">
                   <div className="space-y-2">
-                    <Label>Image Description</Label>
-                    <Input defaultValue="Cyberpunk city with neon lights, rain, 4k" />
+                    <Label className="text-slate-600">Model</Label>
+                    <div className="p-2 bg-slate-100 rounded border text-sm font-medium text-slate-700">
+                      dall-e-3
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Size</Label>
-                      <select className="w-full p-2 rounded border bg-white text-sm">
-                        <option>1024x1024</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Quality</Label>
-                      <select className="w-full p-2 rounded border bg-white text-sm">
-                        <option>HD</option>
-                      </select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Prompt</Label>
+                    <Input defaultValue="A cyberpunk city with neon lights, digital art style" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+                     <span>Cost: $0.04 / image</span>
+                     <span>Size: 1024x1024</span>
                   </div>
 
-                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                    <div className="flex justify-between text-sm text-purple-900 mb-1">
-                      <span className="font-medium">Fixed Price</span>
-                      <span className="font-mono">40 Credits</span>
-                    </div>
-                    <div className="text-xs text-purple-600">
-                      Flat rate per HD Image generation
-                    </div>
-                  </div>
-
-                  <Button size="lg" className="w-full" onClick={() => handleGeneration('image')} disabled={loading}>
+                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 text-white" onClick={() => handleGeneration('image')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                     Generate Image
                   </Button>
@@ -590,78 +578,87 @@ async function generateImage(req, res) {
           </Card>
         </div>
 
-        {/* RIGHT COLUMN: Developer Experience (The "Under the hood") */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        {/* RIGHT COLUMN: Live Logs & Code */}
+        <div className="lg:col-span-7 flex flex-col gap-6 h-[600px]">
           
-          {/* 1. Visual Data Flow */}
-          <VisualDataFlow activeStep={activeStep} />
-
-          {/* 2. The Live Execution Log */}
-          <Card className="flex-1 bg-black border-slate-800 text-slate-300 shadow-xl flex flex-col min-h-[300px]">
-            <CardHeader className="border-b border-slate-800 pb-3 bg-slate-900/50">
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
-                  <Terminal className="h-4 w-4 text-green-400" />
-                  Live Event Stream
-                </CardTitle>
-                <Badge variant="outline" className="text-green-500 border-green-900 bg-green-900/20 animate-pulse text-[10px]">
-                  LISTENING
-                </Badge>
+          {/* TABS: Logs vs Code */}
+          <Tabs defaultValue="logs" className="flex-1 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-2">
+              <TabsList>
+                <TabsTrigger value="logs" className="gap-2"><Activity className="h-3 w-3" /> Live Logs</TabsTrigger>
+                <TabsTrigger value="code" className="gap-2"><Code className="h-3 w-3" /> Integration Code</TabsTrigger>
+              </TabsList>
+              <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    System Online
+                 </div>
               </div>
-            </CardHeader>
-            <ScrollArea className="flex-1 p-4 font-mono text-xs h-[300px]">
-              <div className="space-y-3">
-                {logs.map((log) => (
-                  <div key={log.id} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <div className="text-slate-600 shrink-0">{log.timestamp}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge 
-                          variant="outline" 
-                          className={`
-                            h-5 px-1 text-[10px] border-0
-                            ${log.source === 'APP' ? 'bg-blue-900/30 text-blue-400' : ''}
-                            ${log.source === 'API' ? 'bg-purple-900/30 text-purple-400' : ''}
-                            ${log.source === 'INGESTION' ? 'bg-yellow-900/30 text-yellow-400' : ''}
-                            ${log.source === 'RATING' ? 'bg-orange-900/30 text-orange-400' : ''}
-                            ${log.source === 'BILLING' ? 'bg-green-900/30 text-green-400' : ''}
-                          `}
-                        >
-                          {log.source}
-                        </Badge>
-                        <span className="text-slate-300">{log.message}</span>
-                      </div>
-                      {log.details && (
-                        <div className="bg-slate-900/50 p-2 rounded border border-slate-800 text-slate-400 ml-1">
-                          <pre>{JSON.stringify(log.details, null, 2)}</pre>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div ref={logEndRef} />
-              </div>
-            </ScrollArea>
-          </Card>
-
-          {/* 3. The Implementation Code */}
-          <Card className="bg-[#1e1e1e] border-slate-800 text-slate-300 shadow-xl">
-            <CardHeader className="border-b border-slate-800 pb-3">
-              <CardTitle className="flex items-center gap-2 text-slate-100 text-sm font-medium">
-                <Code2 className="h-4 w-4 text-blue-400" />
-                Implementation (Server-Side)
-              </CardTitle>
-            </CardHeader>
-            <div className="p-4 overflow-x-auto font-mono text-sm leading-relaxed">
-              <pre>
-                <code className="language-typescript">
-                  {/* Dynamically show the code relevant to what the user is doing */}
-                  {activeTab === 'llm' ? snippets.llm : snippets.image}
-                </code>
-              </pre>
             </div>
-          </Card>
 
+            <TabsContent value="logs" className="flex-1 h-full mt-0">
+              <Card className="h-full flex flex-col border-slate-200 shadow-md overflow-hidden bg-slate-950 text-slate-300 font-mono text-sm">
+                <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800">
+                  <span className="text-xs text-slate-500">Output Stream</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-slate-300" onClick={() => setLogs([])}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-1">
+                    {logs.length === 0 && (
+                      <div className="text-slate-600 italic text-center mt-20">
+                        Waiting for requests...
+                      </div>
+                    )}
+                    {logs.map((log) => (
+                      <div key={log.id} className="group flex gap-3 hover:bg-slate-900/50 p-1 rounded transition-colors">
+                        <span className="text-slate-600 shrink-0 select-none w-20">{log.timestamp}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-[10px] h-4 px-1 rounded-sm border-0 font-bold",
+                                log.source === 'API' && "bg-blue-900/30 text-blue-400",
+                                log.source === 'RATING' && "bg-purple-900/30 text-purple-400",
+                                log.source === 'BILLING' && "bg-green-900/30 text-green-400",
+                                log.source === 'APP' && "bg-slate-800 text-slate-400"
+                              )}
+                            >
+                              {log.source}
+                            </Badge>
+                            <span className="text-slate-300">{log.message}</span>
+                          </div>
+                          {log.data && (
+                            <pre className="mt-1 text-[10px] text-slate-500 overflow-x-auto bg-slate-900/50 p-2 rounded border border-slate-800/50">
+                              {JSON.stringify(log.data, null, 2)}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={logsEndRef} />
+                  </div>
+                </ScrollArea>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="code" className="flex-1 h-full mt-0">
+              <Card className="h-full flex flex-col border-slate-200 shadow-md overflow-hidden bg-[#1e1e1e] text-white">
+                 <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3e3e42]">
+                    <span className="text-xs text-slate-400">example.ts</span>
+                 </div>
+                 <ScrollArea className="flex-1">
+                    <pre className="p-4 text-sm font-mono leading-relaxed">
+                      <code className="language-typescript">
+                        {activeTab === 'llm' ? snippets.llm : snippets.image}
+                      </code>
+                    </pre>
+                 </ScrollArea>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

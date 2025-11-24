@@ -80,9 +80,37 @@ export async function calculateCost(event: any): Promise<CostResult> {
           model: event.model
         }, 'Provider cost not found in database');
 
+        logger.warn({
+          provider: event.provider,
+          model: event.model
+        }, 'Provider cost not found in database, using default fallback');
+
+        // Fallback: Use standard pricing based on model family
+        // o1-preview: $15.00 / 1M input, $60.00 / 1M output
+        // gpt-4o: $2.50 / 1M input, $10.00 / 1M output
+        
+        const isO1 = event.model?.includes('o1');
+        
+        const fallbackInputRate = isO1 ? 15.00 : 2.50;
+        const fallbackOutputRate = isO1 ? 60.00 : 10.00;
+        const unitSize = 1000000;
+
+        const inputUsd = (inputTokens / unitSize) * fallbackInputRate;
+        const outputUsd = (outputTokens / unitSize) * fallbackOutputRate;
+        const totalUsd = inputUsd + outputUsd;
+
+        const creditsPerDollar = 1000;
+        const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
+
         return {
-          credits: BigInt(0),
-          usd: new Decimal(0)
+          credits,
+          usd: new Decimal(totalUsd),
+          breakdown: {
+            inputCost: inputUsd,
+            outputCost: outputUsd,
+            inputTokens,
+            outputTokens
+          }
         };
       }
 

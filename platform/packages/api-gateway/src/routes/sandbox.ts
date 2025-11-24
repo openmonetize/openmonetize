@@ -90,25 +90,24 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
       const { 
         type = 'text', 
         prompt, 
-        model = type === 'text' ? 'gpt-4o' : 'dall-e-3', 
+        model = type === 'text' ? 'o1-preview' : 'dall-e-3', 
         provider = 'openai',
         size = '1024x1024',
         quality = 'hd',
         count = 1
       } = request.body;
 
-      // Simulate latency
-      await new Promise((resolve) => setTimeout(resolve, type === 'text' ? 800 : 1500));
-
-      const completionId = `sandbox-${randomUUID()}`;
+      // Mock Provider Execution (In a real scenario, this would call OpenAI)
+      const completionId = `chatcmpl-${randomUUID()}`;
       const created = Math.floor(Date.now() / 1000);
       
       let response: any;
       let event: any;
 
       if (type === 'text') {
+        // Calculate tokens (Mock logic)
         const promptTokens = Math.ceil(prompt.length / 4);
-        const completionTokens = 20;
+        const completionTokens = 150; // Realistic output length for o1
         const totalTokens = promptTokens + completionTokens;
 
         response = {
@@ -121,7 +120,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
               index: 0,
               message: {
                 role: 'assistant',
-                content: 'This is a simulated response from OpenMonetize Sandbox. In a real application, this would be the output from the LLM.',
+                content: 'Quantum computing harnesses the principles of quantum mechanics to process information. Unlike classical computers that use bits (0 or 1), quantum computers use qubits, which can exist in a state of superposition (both 0 and 1 simultaneously). This allows them to solve certain complex problems exponentially faster than traditional supercomputers.',
               },
               finish_reason: 'stop',
             },
@@ -135,9 +134,9 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
 
         event = {
           event_id: randomUUID(),
-          customer_id: customerId, // Attribute to real user
+          customer_id: customerId,
           event_type: 'TOKEN_USAGE',
-          feature_id: 'ai-text-generation', // Matches entitlement
+          feature_id: 'ai-text-generation',
           provider: provider.toUpperCase(),
           model: model,
           input_tokens: promptTokens,
@@ -154,7 +153,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
           model: model,
           choices: Array(count).fill(0).map((_, i) => ({
             index: i,
-            url: 'https://placehold.co/1024x1024/png?text=Sandbox+Image',
+            url: 'https://placehold.co/1024x1024/png?text=Cyberpunk+City',
           })),
           usage: {
             image_count: count,
@@ -163,9 +162,9 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
 
         event = {
           event_id: randomUUID(),
-          customer_id: customerId, // Attribute to real user
+          customer_id: customerId,
           event_type: 'IMAGE_GENERATION',
-          feature_id: 'image-generation', // Matches Burn Table rule
+          feature_id: 'image-generation',
           provider: provider.toUpperCase(),
           model: model,
           image_size: size,
