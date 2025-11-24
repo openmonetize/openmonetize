@@ -12,7 +12,7 @@ import type { RefObject } from 'react';
 interface LiveLogsPanelProps {
   logs: LogEntry[];
   onClearLogs: () => void;
-  logEndRef: RefObject<HTMLDivElement>;
+  logEndRef: RefObject<HTMLDivElement | null>;
 }
 
 export function LiveLogsPanel({ logs, onClearLogs, logEndRef }: LiveLogsPanelProps) {
