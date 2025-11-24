@@ -243,7 +243,6 @@ export default function SandboxPage() {
         setActiveStep(null);
         if (res.status === 402 || res.status === 429) {
           addLog('API', '❌ Request Blocked: Quota Exceeded', data);
-          alert(data.message);
         } else {
           addLog('API', `❌ Error: ${data.message || res.statusText}`);
         }
