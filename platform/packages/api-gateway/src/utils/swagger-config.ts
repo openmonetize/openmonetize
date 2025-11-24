@@ -82,7 +82,7 @@ X-API-Key: YOUR_API_KEY
 API requests are rate-limited to ${config.rateLimit.max} requests per ${config.rateLimit.timeWindow} per API key.`;
   }
 
-  // Development description with additional context
+  // Development description (same as production)
   return `${baseDescription}
 
 ## Authentication
@@ -101,9 +101,5 @@ X-API-Key: YOUR_API_KEY
 
 ## Rate Limiting
 
-API requests are rate-limited to ${config.rateLimit.max} requests per ${config.rateLimit.timeWindow} per API key.
-
-## Development Mode
-
-You are viewing the development API documentation. Some endpoints may be unavailable or behave differently in production.`;
+API requests are rate-limited to ${config.rateLimit.max} requests per ${config.rateLimit.timeWindow} per API key.`;
 }
