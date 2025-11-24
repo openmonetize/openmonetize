@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "PORT=3000 tsx watch src/index.ts",
     "docs:generate": "tsx ../../scripts/generate-docs.ts",
-    "docs:build": "redoc-cli build dist/docs/openapi-internal.json -o dist/docs/internal.html --title=\"OpenMonetize API Documentation (Internal)\"",
+    "docs:build": "redocly build-docs dist/docs/openapi-internal.json --output dist/docs/internal.html --title=\"OpenMonetize API Documentation (Internal)\"",
     "prebuild": "rm -rf dist && rm -f tsconfig.tsbuildinfo",
     "build": "tsc && pnpm docs:generate",
     "postbuild": "pnpm docs:build",
@@ -22,19 +22,19 @@
     "@fastify/swagger": "^9.6.0",
     "@fastify/swagger-ui": "^5.2.1",
     "@openmonetize/common": "workspace:*",
+    "@redocly/cli": "^1.25.15",
+    "@types/node": "^22.10.6",
     "fastify": "^5.6.2",
     "fastify-type-provider-zod": "^6.1.0",
     "ioredis": "^5.4.2",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
+    "tsx": "^4.19.5",
+    "typescript": "^5.9.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@redocly/cli": "^1.25.15",
-    "@types/node": "^22.10.6",
     "eslint": "^9.0.0",
-    "tsx": "^4.19.5",
-    "typescript": "^5.9.2",
     "vitest": "^1.3.1"
   }
 }

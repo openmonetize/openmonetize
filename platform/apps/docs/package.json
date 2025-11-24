@@ -6,8 +6,10 @@
     "build": "bash scripts/build-redoc.sh",
     "serve": "npx serve public"
   },
-  "devDependencies": {
-    "@openmonetize/api-gateway": "workspace:*",
+  "dependencies": {
     "@redocly/cli": "^1.25.15"
+  },
+  "devDependencies": {
+    "@openmonetize/api-gateway": "workspace:*"
   }
 }
