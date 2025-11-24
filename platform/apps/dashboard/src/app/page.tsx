@@ -1,210 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck, Plus, BookOpen, Code, Trash2 } from 'lucide-react';
-import { SignUpForm } from '@/components/auth/SignUpForm';
-import { cn } from '@/lib/utils';
-
-// Types for our simulated logs
-type LogEntry = {
-  id: string;
-  timestamp: string;
-  source: 'APP' | 'API' | 'INGESTION' | 'RATING' | 'BILLING';
-  message: string;
-  details?: any;
-};
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-// --- Visual Data Flow Component ---
-const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
-  const steps = [
-    { id: 'app', label: 'Your App', icon: Activity, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/50' },
-    { id: 'gateway', label: 'API Gateway', icon: ShieldCheck, color: 'text-purple-500 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/50' },
-    { id: 'ingestion', label: 'Ingestion', icon: Zap, color: 'text-yellow-500 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/50' },
-    { id: 'rating', label: 'Rating Engine', icon: Server, color: 'text-orange-500 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/50' },
-    { id: 'db', label: 'Ledger DB', icon: Database, color: 'text-green-500 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/50' },
-  ];
-
-  return (
-    <div className="w-full py-6 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 overflow-hidden">
-      <div className="flex justify-between items-center relative">
-        {/* Connecting Line */}
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 dark:bg-slate-800 -z-0" />
-        
-        {steps.map((step, index) => {
-          const isActive = activeStep === step.id;
-          const isPast = activeStep ? steps.findIndex(s => s.id === activeStep) >= index : false;
-          
-          return (
-            <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 transition-all duration-300">
-              <div 
-                className={`
-                  w-12 h-12 rounded-full flex items-center justify-center border-4 transition-all duration-500
-                  ${isActive ? `${step.bg} ${step.color} border-white dark:border-slate-700 shadow-lg scale-110 ring-4 ring-blue-100 dark:ring-blue-900/30` : ''}
-                  ${!isActive && isPast ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-600' : ''}
-                  ${!isActive && !isPast ? 'bg-white dark:bg-slate-950 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800' : ''}
-                `}
-              >
-                <step.icon className="w-5 h-5" />
-              </div>
-              <span className={`text-xs font-medium transition-colors duration-300 ${isActive ? 'text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-500 dark:text-slate-500'}`}>
-                {step.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-4 text-center h-6">
-        {activeStep && (
-          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium animate-pulse">
-            {activeStep === 'app' && 'Sending Request...'}
-            {activeStep === 'gateway' && 'Authenticating & Routing...'}
-            {activeStep === 'ingestion' && 'High-speed Event Capture...'}
-            {activeStep === 'rating' && 'Calculating Cost & Metering...'}
-            {activeStep === 'db' && 'Updating Wallet Balance...'}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-};
+import { Activity, Code } from 'lucide-react';
+import { useSandboxAuth } from '@/hooks/useSandboxAuth';
+import { useSandboxLogs } from '@/hooks/useSandboxLogs';
+import { useSandboxBalance } from '@/hooks/useSandboxBalance';
+import { Header } from '@/components/sandbox/Header';
+import { BalanceCard } from '@/components/sandbox/BalanceCard';
+import { ApiConsoleCard } from '@/components/sandbox/ApiConsoleCard';
+import { LiveLogsPanel } from '@/components/sandbox/LiveLogsPanel';
+import { IntegrationCodePanel } from '@/components/sandbox/IntegrationCodePanel';
+import { AuthPage } from '@/components/sandbox/AuthPage';
+import { API_URL, CODE_SNIPPETS } from './constants';
+import type { GenerationType } from './types';
 
 export default function SandboxPage() {
   const [activeTab, setActiveTab] = useState('llm');
-  const [balance, setBalance] = useState<number>(0);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState<string | null>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
 
-  // Auth State
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState<string | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  // Custom hooks
+  const { logs, addLog, clearLogs, logEndRef } = useSandboxLogs();
+  const { apiKey, customerName, authChecked, handleLogout, handleLoginSuccess } = useSandboxAuth(addLog);
+  const { balance, fetchBalance, handleTopUp } = useSandboxBalance(apiKey, addLog);
 
-  // --- Simulation Helpers ---
-
-  const addLog = (source: LogEntry['source'], message: string, details?: any) => {
-    setLogs(prev => [...prev, {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toLocaleTimeString(),
-      source,
-      message,
-      details
-    }]);
-  };
-
-  const scrollToBottom = () => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [logs]);
-
-  // --- Auth & Init ---
-
-  useEffect(() => {
-    const storedKey = localStorage.getItem('om_api_key');
-    const storedName = localStorage.getItem('om_customer_name');
-    
-    if (storedKey) {
-      setApiKey(storedKey);
-      setCustomerName(storedName || 'Developer');
-      addLog('APP', `Welcome back, ${storedName || 'Developer'}`);
-    }
-    setAuthChecked(true);
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('om_api_key');
-    localStorage.removeItem('om_customer_name');
-    setApiKey(null);
-    setCustomerName(null);
-    setLogs([]);
-    setBalance(0);
-  };
-
-  const handleLoginSuccess = (key: string, name: string) => {
-    setApiKey(key);
-    setCustomerName(name);
-    addLog('APP', 'Session started with new API Key');
-  };
-
-  // --- Fetching Data ---
-
-  const fetchBalance = async (silent = false) => {
-    if (!apiKey) return;
-
-    try {
-      const res = await fetch(`${API_URL}/v1/credits/balance`, {
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-      });
-      
-      if (res.status === 401) {
-        if (!silent) addLog('API', 'Authentication failed (Invalid Key)');
-        return;
-      }
-
-      const data = await res.json();
-      if (data.data) {
-        setBalance(parseInt(data.data.balance));
-        if(!silent) addLog('BILLING', 'Synced wallet balance', { balance: data.data.balance });
-      }
-    } catch (e) {
-      if (!silent) addLog('API', 'Failed to fetch balance (Is local server running?)');
-    }
-  };
-
-  const handleTopUp = async () => {
-    if (!apiKey) return;
-    
-    try {
-      // Call the top-up endpoint to add credits to the authenticated user's wallet
-      const res = await fetch(`${API_URL}/v1/apiconsole/topup`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ amount: 10000 })
-      });
-
-      if (res.ok) {
-        addLog('BILLING', 'Top-up successful: +10,000 credits');
-        fetchBalance();
-      } else {
-        addLog('API', 'Top-up failed');
-      }
-    } catch (e) {
-      console.error(e);
-      addLog('API', 'Top-up failed');
-    }
-  };
-
-  useEffect(() => {
-    if (apiKey) {
-      fetchBalance(true);
-      addLog('APP', 'OpenMonetize SDK initialized');
-    }
-  }, [apiKey]);
-
-  // --- Handlers ---
-
+  // Simulation helper
   const simulateFlow = async (step: string, duration: number) => {
     setActiveStep(step);
     await new Promise(r => setTimeout(r, duration));
   };
 
-  const handleGeneration = async (type: 'text' | 'image') => {
+  // Main generation handler
+  const handleGeneration = async (type: GenerationType) => {
     if (!apiKey) return;
     setLoading(true);
     
@@ -276,223 +104,33 @@ export default function SandboxPage() {
     setLoading(false);
   };
 
-  // --- Code Snippets ---
-
-  const snippets = {
-    llm: `// Server-Side Code (Node.js)
-import { OpenMonetize } from '@openmonetize/sdk';
-
-const client = new OpenMonetize({ 
-  apiKey: process.env.OPENMONETIZE_API_KEY 
-});
-
-// In your API Route:
-async function generateCompletion(req, res) {
-  // 1. Generate content
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [...]
-  });
-
-  // 2. Track Usage (Async)
-  // This sends the event to OpenMonetize Ingestion Service
-  await client.trackTokenUsage({
-    customer_id: req.user.id,
-    feature_id: 'ai-text-generation',
-    provider: 'OPENAI',
-    model: 'gpt-4o',
-    input_tokens: completion.usage.prompt_tokens,
-    output_tokens: completion.usage.completion_tokens
-  });
-
-  return res.json(completion);
-}`,
-    image: `// Server-Side Code (Node.js)
-import { OpenMonetize } from '@openmonetize/sdk';
-
-const client = new OpenMonetize({ 
-  apiKey: process.env.OPENMONETIZE_API_KEY 
-});
-
-// In your API Route:
-async function generateImage(req, res) {
-  // 1. Generate Image
-  const image = await openai.images.generate({
-    model: 'dall-e-3',
-    size: '1024x1024',
-    quality: 'hd'
-  });
-
-  // 2. Track Usage (Async)
-  await client.track({
-    event_type: 'IMAGE_GENERATION',
-    customer_id: req.user.id,
-    feature_id: 'image-generation',
-    properties: {
-      model: 'dall-e-3',
-      size: '1024x1024',
-      quality: 'hd',
-      count: 1
-    }
-  });
-
-  return res.json(image);
-}`,
-  };
-
+  // Show auth page if not authenticated
   if (!authChecked) return null;
+  if (!apiKey) return <AuthPage onSuccess={handleLoginSuccess} />;
 
-  // --- RENDER: Sign Up Flow ---
-  if (!apiKey) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-colors">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">OpenMonetize <span className="text-blue-600 dark:text-blue-500">Cloud</span></h1>
-          <p className="text-slate-500 dark:text-slate-400">The open-source pricing & billing infrastructure for AI.</p>
-        </div>
-        <SignUpForm onSuccess={handleLoginSuccess} />
-      </div>
-    );
-  }
-
-  // --- RENDER: Playground ---
+  // Main playground UI
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 md:p-8 font-sans transition-colors duration-300">
       
       {/* Header Section */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">OpenMonetize <span className="text-blue-600 dark:text-blue-500">Console</span></h1>
-          <div className="flex items-center gap-2 mt-2">
-             <Badge variant="secondary" className="gap-1 dark:bg-slate-800 dark:text-slate-300">
-                <User className="h-3 w-3" />
-                {customerName}
-             </Badge>
-             {apiKey && (
-               <Badge variant="outline" className="gap-1 font-mono cursor-pointer hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors" onClick={() => {
-                 navigator.clipboard.writeText(apiKey);
-                 alert('API Key copied to clipboard!');
-               }}>
-                 <Terminal className="h-3 w-3" />
-                 {apiKey.substring(0, 8)}...
-               </Badge>
-             )}
-             <button onClick={handleLogout} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1">
-                <LogOut className="h-3 w-3" /> Sign Out
-             </button>
-          </div>
-        </div>
-        
-        {/* Live Balance Badge */}
-        <div className="mt-4 md:mt-0 flex items-center gap-4">
-           {/* Docs Link */}
-           <a 
-             href="https://openmonetize-docs.vercel.app" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors mr-4"
-           >
-             <BookOpen className="h-4 w-4" />
-             Full API Docs
-           </a>
-
-           <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-colors">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400">
-              <CreditCard className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Current Balance</div>
-              <div className="text-2xl font-mono font-bold tabular-nums text-slate-900 dark:text-white">
-                {balance.toLocaleString()} <span className="text-sm text-slate-400 dark:text-slate-500 font-normal">credits</span>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="ml-2 h-8 gap-1 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700" onClick={handleTopUp}>
-              <Plus className="h-3 w-3" /> Top Up
-            </Button>
-          </div>
-        </div>
+      <Header customerName={customerName} apiKey={apiKey} onLogout={handleLogout} />
+      
+      {/* Balance Card */}
+      <div className="max-w-7xl mx-auto mb-8 flex justify-end">
+        <BalanceCard balance={balance} onTopUp={handleTopUp} />
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* LEFT COLUMN: User Interface (The "App") */}
+        {/* LEFT COLUMN: API Console */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="flex-1 border-slate-200 dark:border-slate-800 shadow-md flex flex-col h-full dark:bg-slate-900">
-            <CardHeader className="bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 pb-4">
-              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                <Terminal className="h-5 w-5 text-slate-700 dark:text-slate-400" />
-                API Console
-              </CardTitle>
-              <CardDescription className="dark:text-slate-400">
-                Test your integration with real-time metering.
-              </CardDescription>
-            </CardHeader>
-            
-            <div className="p-6 flex-1">
-              <VisualDataFlow activeStep={activeStep} />
-              
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-slate-800">
-                  <TabsTrigger value="llm" className="dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white">Chat Completion</TabsTrigger>
-                  <TabsTrigger value="image" className="dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white">Image Generation</TabsTrigger>
-                </TabsList>
-
-                {/* LLM SCENARIO */}
-                <TabsContent value="llm" className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-slate-600 dark:text-slate-300">Model</Label>
-                    <div className="p-2 bg-slate-100 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      o1-preview
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-slate-600 dark:text-slate-300">System Prompt</Label>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400 font-mono">
-                      You are a helpful AI assistant...
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-slate-600 dark:text-slate-300">User Message</Label>
-                    <Input defaultValue="Explain quantum computing in simple terms" className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2">
-                     <span>Estimated Cost: ~$0.15</span>
-                     <span>Tokens: ~1,200</span>
-                  </div>
-
-                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors" onClick={() => handleGeneration('text')} disabled={loading}>
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    Execute Request
-                  </Button>
-                </TabsContent>
-
-                {/* IMAGE SCENARIO */}
-                <TabsContent value="image" className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-slate-600 dark:text-slate-300">Model</Label>
-                    <div className="p-2 bg-slate-100 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      dall-e-3
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-slate-600 dark:text-slate-300">Prompt</Label>
-                    <Input defaultValue="A cyberpunk city with neon lights, digital art style" className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2">
-                     <span>Cost: $0.04 / image</span>
-                     <span>Size: 1024x1024</span>
-                  </div>
-
-                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors" onClick={() => handleGeneration('image')} disabled={loading}>
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                    Generate Image
-                  </Button>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </Card>
+          <ApiConsoleCard
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            activeStep={activeStep}
+            loading={loading}
+            onGenerate={handleGeneration}
+          />
         </div>
 
         {/* RIGHT COLUMN: Live Logs & Code */}
@@ -514,66 +152,11 @@ async function generateImage(req, res) {
             </div>
 
             <TabsContent value="logs" className="flex-1 h-full mt-0">
-              <Card className="h-full flex flex-col border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-slate-950 text-slate-300 font-mono text-sm">
-                <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800">
-                  <span className="text-xs text-slate-500">Output Stream</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-slate-300" onClick={() => setLogs([])}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-1">
-                    {logs.length === 0 && (
-                      <div className="text-slate-600 italic text-center mt-20">
-                        Waiting for requests...
-                      </div>
-                    )}
-                    {logs.map((log) => (
-                      <div key={log.id} className="group flex gap-3 hover:bg-slate-900/50 p-1 rounded transition-colors">
-                        <span className="text-slate-600 shrink-0 select-none w-20">{log.timestamp}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant="outline" 
-                              className={cn(
-                                "text-[10px] h-4 px-1 rounded-sm border-0 font-bold",
-                                log.source === 'API' && "bg-blue-900/30 text-blue-400",
-                                log.source === 'RATING' && "bg-purple-900/30 text-purple-400",
-                                log.source === 'BILLING' && "bg-green-900/30 text-green-400",
-                                log.source === 'APP' && "bg-slate-800 text-slate-400"
-                              )}
-                            >
-                              {log.source}
-                            </Badge>
-                            <span className="text-slate-300">{log.message}</span>
-                          </div>
-                          {log.details && (
-                            <pre className="mt-1 text-[10px] text-slate-500 overflow-x-auto bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                              {JSON.stringify(log.details, null, 2)}
-                            </pre>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={logEndRef} />
-                  </div>
-                </ScrollArea>
-              </Card>
+              <LiveLogsPanel logs={logs} onClearLogs={clearLogs} logEndRef={logEndRef} />
             </TabsContent>
 
             <TabsContent value="code" className="flex-1 h-full mt-0">
-              <Card className="h-full flex flex-col border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-[#1e1e1e] text-white">
-                 <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3e3e42]">
-                    <span className="text-xs text-slate-400">example.ts</span>
-                 </div>
-                 <ScrollArea className="flex-1">
-                    <pre className="p-4 text-sm font-mono leading-relaxed">
-                      <code className="language-typescript">
-                        {activeTab === 'llm' ? snippets.llm : snippets.image}
-                      </code>
-                    </pre>
-                 </ScrollArea>
-              </Card>
+              <IntegrationCodePanel activeTab={activeTab} snippets={CODE_SNIPPETS} />
             </TabsContent>
           </Tabs>
         </div>

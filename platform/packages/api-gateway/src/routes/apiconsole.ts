@@ -106,35 +106,37 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
 
       if (type === 'text') {
         // Calculate tokens (Simulation logic)
-        const promptTokens = Math.ceil(prompt.length / 4);
-        const completionTokens = 150; // Estimated output length
-        const totalTokens = promptTokens + completionTokens;
+        const inputTokens = Math.ceil(prompt.length / 4);
+        const outputTokens = 150; // Estimated output length
 
         event = {
-          eventType: 'LLM_COMPLETION',
-          customerId,
+          event_id: randomUUID(),
+          event_type: 'TOKEN_USAGE',
+          customer_id: customerId,
+          feature_id: 'sandbox-llm',
           provider,
           model,
-          promptTokens,
-          completionTokens,
-          totalTokens,
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
           timestamp: new Date().toISOString(),
-          properties: {
+          metadata: {
             completionId,
           }
         };
       } else {
         // Image Generation
         event = {
-          eventType: 'IMAGE_GENERATION',
-          customerId,
+          event_id: randomUUID(),
+          event_type: 'IMAGE_GENERATION',
+          customer_id: customerId,
+          feature_id: 'sandbox-image',
           provider,
           model,
+          image_count: count,
           timestamp: new Date().toISOString(),
-          properties: {
+          metadata: {
             size,
             quality,
-            count,
             completionId,
           }
         };
@@ -193,9 +195,9 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
           }
         ],
         usage: type === 'text' ? {
-          prompt_tokens: event.promptTokens,
-          completion_tokens: event.completionTokens,
-          total_tokens: event.totalTokens,
+          prompt_tokens: event.input_tokens,
+          completion_tokens: event.output_tokens,
+          total_tokens: event.input_tokens + event.output_tokens,
         } : {
           image_count: count
         },
