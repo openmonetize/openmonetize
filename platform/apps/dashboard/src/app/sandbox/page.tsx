@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck, Plus, BookOpen } from 'lucide-react';
+import { Loader2, Terminal, Play, CreditCard, Activity, Code2, LogOut, User, Server, Database, ArrowRight, Zap, ShieldCheck, Plus, BookOpen, Code, Trash2 } from 'lucide-react';
 import { SignUpForm } from '@/components/auth/SignUpForm';
+import { cn } from '@/lib/utils';
 
 // Types for our simulated logs
 type LogEntry = {
@@ -630,15 +631,15 @@ async function generateImage(req, res) {
                             </Badge>
                             <span className="text-slate-300">{log.message}</span>
                           </div>
-                          {log.data && (
+                          {log.details && (
                             <pre className="mt-1 text-[10px] text-slate-500 overflow-x-auto bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                              {JSON.stringify(log.data, null, 2)}
+                              {JSON.stringify(log.details, null, 2)}
                             </pre>
                           )}
                         </div>
                       </div>
                     ))}
-                    <div ref={logsEndRef} />
+                    <div ref={logEndRef} />
                   </div>
                 </ScrollArea>
               </Card>
