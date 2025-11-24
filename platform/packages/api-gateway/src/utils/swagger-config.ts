@@ -28,12 +28,17 @@ export function getSwaggerServers() {
   const servers: Array<{ url: string; description: string }> = [];
 
   // Primary server (production or detected URL)
-  if (config.publicUrl) {
+  servers.push({
+    url: 'https://api.openmonetize.com',
+    description: 'Production Server',
+  });
+
+  if (config.publicUrl && config.publicUrl !== 'https://api.openmonetize.com') {
     servers.push({
       url: config.publicUrl,
-      description: config.nodeEnv === 'production' ? 'Production Server' : 'API Server',
+      description: config.nodeEnv === 'production' ? 'Custom Domain' : 'API Server',
     });
-  } else {
+  } else if (!config.publicUrl) {
     // Fallback to localhost for development
     servers.push({
       url: `http://localhost:${config.port}`,
