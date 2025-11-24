@@ -23,12 +23,7 @@ import { randomUUID } from 'crypto';
 import { withCommonResponses } from '../types/schemas';
 import { authenticate } from '../middleware/auth';
 import { getPrismaClient } from '@openmonetize/common';
-import {
-  getMockTextResponse,
-  getMockImageResponse,
-  getMockTextEvent,
-  getMockImageEvent,
-} from '../constants/sandbox';
+
 
 const db = getPrismaClient();
 
@@ -103,54 +98,46 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
         count = 1
       } = request.body;
 
-      // Mock Provider Execution (In a real scenario, this would call OpenAI)
+      // Generate IDs
       const completionId = `chatcmpl-${randomUUID()}`;
       const created = Math.floor(Date.now() / 1000);
       
-      let response: any;
       let event: any;
 
       if (type === 'text') {
-        // Calculate tokens (Mock logic)
+        // Calculate tokens (Simulation logic)
         const promptTokens = Math.ceil(prompt.length / 4);
-        const completionTokens = 150; // Realistic output length for o1
+        const completionTokens = 150; // Estimated output length
         const totalTokens = promptTokens + completionTokens;
 
-        response = getMockTextResponse({
-          completionId,
-          created,
+        event = {
+          eventType: 'LLM_COMPLETION',
+          customerId,
+          provider,
           model,
           promptTokens,
           completionTokens,
           totalTokens,
-        });
-
-        event = getMockTextEvent({
-          customerId,
-          provider,
-          model,
-          promptTokens,
-          completionTokens,
-          completionId,
-        });
+          timestamp: new Date().toISOString(),
+          properties: {
+            completionId,
+          }
+        };
       } else {
         // Image Generation
-        response = getMockImageResponse({
-          completionId,
-          created,
-          model,
-          count,
-        });
-
-        event = getMockImageEvent({
+        event = {
+          eventType: 'IMAGE_GENERATION',
           customerId,
           provider,
           model,
-          size,
-          quality,
-          count,
-          completionId,
-        });
+          timestamp: new Date().toISOString(),
+          properties: {
+            size,
+            quality,
+            count,
+            completionId,
+          }
+        };
       }
 
       // Send usage event to ingestion service
@@ -158,8 +145,6 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
         const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
 
         // Extract the user's API key to authenticate with the Ingestion Service
-        // This ensures the Ingestion Service sees the request as coming from the user,
-        // matching the customer_id in the event payload.
         let userApiKey = request.headers['x-api-key'] as string;
         const authHeader = request.headers.authorization;
         if (!userApiKey && authHeader && authHeader.startsWith('Bearer ')) {
@@ -184,12 +169,37 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
             { status: ingestResponse.status, statusText: ingestResponse.statusText },
             'Failed to send sandbox event to ingestion service'
           );
+          // We still return success to the user, but log the error
         }
       } catch (error) {
         logger.error({ err: error }, 'Failed to record sandbox usage');
       }
 
-      return response;
+      // Return standardized simulation response
+      return {
+        id: completionId,
+        object: type === 'text' ? 'chat.completion' : 'image.generation',
+        created,
+        model,
+        choices: [
+          {
+            index: 0,
+            message: type === 'text' ? {
+              role: 'assistant',
+              content: 'Simulation Successful: Event metered and recorded.',
+            } : undefined,
+            url: type === 'image' ? 'https://via.placeholder.com/1024x1024.png?text=Simulation+Successful' : undefined,
+            finish_reason: 'stop',
+          }
+        ],
+        usage: type === 'text' ? {
+          prompt_tokens: event.promptTokens,
+          completion_tokens: event.completionTokens,
+          total_tokens: event.totalTokens,
+        } : {
+          image_count: count
+        },
+      };
     }
   );
 
