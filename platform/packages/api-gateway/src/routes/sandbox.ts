@@ -90,7 +90,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
       const { 
         type = 'text', 
         prompt, 
-        model = type === 'text' ? 'gpt-4' : 'dall-e-3', 
+        model = type === 'text' ? 'gpt-4o' : 'dall-e-3', 
         provider = 'openai',
         size = '1024x1024',
         quality = 'hd',
@@ -137,7 +137,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
           event_id: randomUUID(),
           customer_id: customerId, // Attribute to real user
           event_type: 'TOKEN_USAGE',
-          feature_id: 'demo-chat', // Keep feature ID consistent for now, or change to 'sandbox-chat'
+          feature_id: 'ai-text-generation', // Matches entitlement
           provider: provider.toUpperCase(),
           model: model,
           input_tokens: promptTokens,
@@ -165,7 +165,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
           event_id: randomUUID(),
           customer_id: customerId, // Attribute to real user
           event_type: 'IMAGE_GENERATION',
-          feature_id: 'demo-image',
+          feature_id: 'image-generation', // Matches Burn Table rule
           provider: provider.toUpperCase(),
           model: model,
           image_size: size,

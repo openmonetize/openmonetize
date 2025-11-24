@@ -314,7 +314,7 @@ export default function SandboxPage() {
         body: JSON.stringify({
           type,
           prompt: type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city',
-          model: type === 'text' ? 'gpt-4' : 'dall-e-3',
+          model: type === 'text' ? 'gpt-4o' : 'dall-e-3',
           // Image specific
           size: '1024x1024',
           quality: 'hd',
@@ -336,7 +336,7 @@ export default function SandboxPage() {
         // 4. RATING: Event processed
         await simulateFlow('rating', 600);
         addLog('RATING', 'Calculated cost based on Pricing Table', { 
-          model: type === 'text' ? 'gpt-4' : 'dall-e-3',
+          model: type === 'text' ? 'gpt-4o' : 'dall-e-3',
           cost: type === 'text' ? '~0.03 USD' : '0.04 USD'
         });
 
@@ -375,7 +375,7 @@ const client = new OpenMonetize({
 async function generateCompletion(req, res) {
   // 1. Generate content
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4',
+    model: 'gpt-4o',
     messages: [...]
   });
 
@@ -383,9 +383,9 @@ async function generateCompletion(req, res) {
   // This sends the event to OpenMonetize Ingestion Service
   await client.trackTokenUsage({
     customer_id: req.user.id,
-    feature_id: 'gpt-4-chat',
+    feature_id: 'ai-text-generation',
     provider: 'OPENAI',
-    model: 'gpt-4',
+    model: 'gpt-4o',
     input_tokens: completion.usage.prompt_tokens,
     output_tokens: completion.usage.completion_tokens
   });
@@ -412,7 +412,7 @@ async function generateImage(req, res) {
   await client.track({
     event_type: 'IMAGE_GENERATION',
     customer_id: req.user.id,
-    feature_id: 'dalle-gen',
+    feature_id: 'image-generation',
     properties: {
       model: 'dall-e-3',
       size: '1024x1024',
@@ -539,7 +539,7 @@ async function generateImage(req, res) {
                       <span className="font-mono">~2,100 Credits</span>
                     </div>
                     <div className="text-xs text-blue-600">
-                      Based on GPT-4 pricing (Input + Output tokens)
+                      Based on GPT-4o pricing (Input + Output tokens)
                     </div>
                   </div>
 
