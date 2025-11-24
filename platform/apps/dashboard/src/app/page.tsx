@@ -26,18 +26,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 // --- Visual Data Flow Component ---
 const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
   const steps = [
-    { id: 'app', label: 'Your App', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-100' },
-    { id: 'gateway', label: 'API Gateway', icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-100' },
-    { id: 'ingestion', label: 'Ingestion', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-100' },
-    { id: 'rating', label: 'Rating Engine', icon: Server, color: 'text-orange-500', bg: 'bg-orange-100' },
-    { id: 'db', label: 'Ledger DB', icon: Database, color: 'text-green-500', bg: 'bg-green-100' },
+    { id: 'app', label: 'Your App', icon: Activity, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/50' },
+    { id: 'gateway', label: 'API Gateway', icon: ShieldCheck, color: 'text-purple-500 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/50' },
+    { id: 'ingestion', label: 'Ingestion', icon: Zap, color: 'text-yellow-500 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/50' },
+    { id: 'rating', label: 'Rating Engine', icon: Server, color: 'text-orange-500 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/50' },
+    { id: 'db', label: 'Ledger DB', icon: Database, color: 'text-green-500 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/50' },
   ];
 
   return (
-    <div className="w-full py-6 px-4 bg-slate-50 rounded-xl border border-slate-200 mb-6 overflow-hidden">
+    <div className="w-full py-6 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 mb-6 overflow-hidden">
       <div className="flex justify-between items-center relative">
         {/* Connecting Line */}
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-0" />
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 dark:bg-slate-800 -z-0" />
         
         {steps.map((step, index) => {
           const isActive = activeStep === step.id;
@@ -48,13 +48,14 @@ const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
               <div 
                 className={`
                   w-12 h-12 rounded-full flex items-center justify-center border-4 transition-all duration-500
-                  ${isActive ? `${step.bg} ${step.color} border-white shadow-lg scale-110 ring-4 ring-blue-100` : ''}
-                  ${!isActive && isPast ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200'}
+                  ${isActive ? `${step.bg} ${step.color} border-white dark:border-slate-700 shadow-lg scale-110 ring-4 ring-blue-100 dark:ring-blue-900/30` : ''}
+                  ${!isActive && isPast ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-600' : ''}
+                  ${!isActive && !isPast ? 'bg-white dark:bg-slate-950 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800' : ''}
                 `}
               >
                 <step.icon className="w-5 h-5" />
               </div>
-              <span className={`text-xs font-medium transition-colors duration-300 ${isActive ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+              <span className={`text-xs font-medium transition-colors duration-300 ${isActive ? 'text-slate-900 dark:text-slate-100 font-bold' : 'text-slate-500 dark:text-slate-500'}`}>
                 {step.label}
               </span>
             </div>
@@ -63,7 +64,7 @@ const VisualDataFlow = ({ activeStep }: { activeStep: string | null }) => {
       </div>
       <div className="mt-4 text-center h-6">
         {activeStep && (
-          <span className="text-sm text-blue-600 font-medium animate-pulse">
+          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium animate-pulse">
             {activeStep === 'app' && 'Sending Request...'}
             {activeStep === 'gateway' && 'Authenticating & Routing...'}
             {activeStep === 'ingestion' && 'High-speed Event Capture...'}
@@ -344,10 +345,10 @@ async function generateImage(req, res) {
   // --- RENDER: Sign Up Flow ---
   if (!apiKey) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 transition-colors">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">OpenMonetize <span className="text-blue-600">Cloud</span></h1>
-          <p className="text-slate-500">The open-source pricing & billing infrastructure for AI.</p>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">OpenMonetize <span className="text-blue-600 dark:text-blue-500">Cloud</span></h1>
+          <p className="text-slate-500 dark:text-slate-400">The open-source pricing & billing infrastructure for AI.</p>
         </div>
         <SignUpForm onSuccess={handleLoginSuccess} />
       </div>
@@ -356,19 +357,19 @@ async function generateImage(req, res) {
 
   // --- RENDER: Playground ---
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 md:p-8 font-sans transition-colors duration-300">
       
       {/* Header Section */}
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">OpenMonetize <span className="text-blue-600">Console</span></h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">OpenMonetize <span className="text-blue-600 dark:text-blue-500">Console</span></h1>
           <div className="flex items-center gap-2 mt-2">
-             <Badge variant="secondary" className="gap-1">
+             <Badge variant="secondary" className="gap-1 dark:bg-slate-800 dark:text-slate-300">
                 <User className="h-3 w-3" />
                 {customerName}
              </Badge>
              {apiKey && (
-               <Badge variant="outline" className="gap-1 font-mono cursor-pointer hover:bg-slate-100" onClick={() => {
+               <Badge variant="outline" className="gap-1 font-mono cursor-pointer hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors" onClick={() => {
                  navigator.clipboard.writeText(apiKey);
                  alert('API Key copied to clipboard!');
                }}>
@@ -389,23 +390,23 @@ async function generateImage(req, res) {
              href="https://openmonetize-docs.vercel.app" 
              target="_blank" 
              rel="noopener noreferrer"
-             className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 transition-colors mr-4"
+             className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors mr-4"
            >
              <BookOpen className="h-4 w-4" />
              Full API Docs
            </a>
 
-           <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-4">
-            <div className="p-2 bg-green-100 rounded-full text-green-600">
+           <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4 transition-colors">
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400">
               <CreditCard className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Current Balance</div>
-              <div className="text-2xl font-mono font-bold tabular-nums">
-                {balance.toLocaleString()} <span className="text-sm text-slate-400 font-normal">credits</span>
+              <div className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold tracking-wider">Current Balance</div>
+              <div className="text-2xl font-mono font-bold tabular-nums text-slate-900 dark:text-white">
+                {balance.toLocaleString()} <span className="text-sm text-slate-400 dark:text-slate-500 font-normal">credits</span>
               </div>
             </div>
-            <Button size="sm" variant="outline" className="ml-2 h-8 gap-1" onClick={handleTopUp}>
+            <Button size="sm" variant="outline" className="ml-2 h-8 gap-1 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700" onClick={handleTopUp}>
               <Plus className="h-3 w-3" /> Top Up
             </Button>
           </div>
@@ -416,49 +417,51 @@ async function generateImage(req, res) {
         
         {/* LEFT COLUMN: User Interface (The "App") */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="flex-1 border-slate-200 shadow-md flex flex-col h-full">
-            <CardHeader className="bg-slate-100/50 border-b pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Terminal className="h-5 w-5 text-slate-700" />
+          <Card className="flex-1 border-slate-200 dark:border-slate-800 shadow-md flex flex-col h-full dark:bg-slate-900">
+            <CardHeader className="bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 pb-4">
+              <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                <Terminal className="h-5 w-5 text-slate-700 dark:text-slate-400" />
                 API Console
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="dark:text-slate-400">
                 Test your integration with real-time metering.
               </CardDescription>
             </CardHeader>
             
             <div className="p-6 flex-1">
+              <VisualDataFlow activeStep={activeStep} />
+              
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                  <TabsTrigger value="llm">Chat Completion</TabsTrigger>
-                  <TabsTrigger value="image">Image Generation</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-slate-800">
+                  <TabsTrigger value="llm" className="dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white">Chat Completion</TabsTrigger>
+                  <TabsTrigger value="image" className="dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white">Image Generation</TabsTrigger>
                 </TabsList>
 
                 {/* LLM SCENARIO */}
                 <TabsContent value="llm" className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-slate-600">Model</Label>
-                    <div className="p-2 bg-slate-100 rounded border text-sm font-medium text-slate-700">
+                    <Label className="text-slate-600 dark:text-slate-300">Model</Label>
+                    <div className="p-2 bg-slate-100 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300">
                       o1-preview
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-slate-600">System Prompt</Label>
-                    <div className="p-3 bg-slate-50 rounded-md border text-sm text-slate-600 font-mono">
+                    <Label className="text-slate-600 dark:text-slate-300">System Prompt</Label>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-md border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400 font-mono">
                       You are a helpful AI assistant...
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>User Message</Label>
-                    <Input defaultValue="Explain quantum computing in simple terms" />
+                    <Label className="text-slate-600 dark:text-slate-300">User Message</Label>
+                    <Input defaultValue="Explain quantum computing in simple terms" className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200" />
                   </div>
                   
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2">
                      <span>Estimated Cost: ~$0.15</span>
                      <span>Tokens: ~1,200</span>
                   </div>
 
-                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 text-white" onClick={() => handleGeneration('text')} disabled={loading}>
+                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors" onClick={() => handleGeneration('text')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                     Execute Request
                   </Button>
@@ -467,22 +470,22 @@ async function generateImage(req, res) {
                 {/* IMAGE SCENARIO */}
                 <TabsContent value="image" className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-slate-600">Model</Label>
-                    <div className="p-2 bg-slate-100 rounded border text-sm font-medium text-slate-700">
+                    <Label className="text-slate-600 dark:text-slate-300">Model</Label>
+                    <div className="p-2 bg-slate-100 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300">
                       dall-e-3
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Prompt</Label>
-                    <Input defaultValue="A cyberpunk city with neon lights, digital art style" />
+                    <Label className="text-slate-600 dark:text-slate-300">Prompt</Label>
+                    <Input defaultValue="A cyberpunk city with neon lights, digital art style" className="dark:bg-slate-950 dark:border-slate-800 dark:text-slate-200" />
                   </div>
                   
-                  <div className="flex items-center justify-between text-xs text-slate-500 pt-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2">
                      <span>Cost: $0.04 / image</span>
                      <span>Size: 1024x1024</span>
                   </div>
 
-                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 text-white" onClick={() => handleGeneration('image')} disabled={loading}>
+                  <Button size="lg" className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors" onClick={() => handleGeneration('image')} disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
                     Generate Image
                   </Button>
@@ -498,12 +501,12 @@ async function generateImage(req, res) {
           {/* TABS: Logs vs Code */}
           <Tabs defaultValue="logs" className="flex-1 flex flex-col h-full">
             <div className="flex items-center justify-between mb-2">
-              <TabsList>
-                <TabsTrigger value="logs" className="gap-2"><Activity className="h-3 w-3" /> Live Logs</TabsTrigger>
-                <TabsTrigger value="code" className="gap-2"><Code className="h-3 w-3" /> Integration Code</TabsTrigger>
+              <TabsList className="dark:bg-slate-800">
+                <TabsTrigger value="logs" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Activity className="h-3 w-3" /> Live Logs</TabsTrigger>
+                <TabsTrigger value="code" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Code className="h-3 w-3" /> Integration Code</TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">
-                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                     System Online
                  </div>
@@ -511,7 +514,7 @@ async function generateImage(req, res) {
             </div>
 
             <TabsContent value="logs" className="flex-1 h-full mt-0">
-              <Card className="h-full flex flex-col border-slate-200 shadow-md overflow-hidden bg-slate-950 text-slate-300 font-mono text-sm">
+              <Card className="h-full flex flex-col border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-slate-950 text-slate-300 font-mono text-sm">
                 <div className="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-800">
                   <span className="text-xs text-slate-500">Output Stream</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-slate-300" onClick={() => setLogs([])}>
@@ -559,7 +562,7 @@ async function generateImage(req, res) {
             </TabsContent>
 
             <TabsContent value="code" className="flex-1 h-full mt-0">
-              <Card className="h-full flex flex-col border-slate-200 shadow-md overflow-hidden bg-[#1e1e1e] text-white">
+              <Card className="h-full flex flex-col border-slate-200 dark:border-slate-800 shadow-md overflow-hidden bg-[#1e1e1e] text-white">
                  <div className="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-[#3e3e42]">
                     <span className="text-xs text-slate-400">example.ts</span>
                  </div>
