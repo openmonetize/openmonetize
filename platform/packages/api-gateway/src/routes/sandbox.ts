@@ -179,16 +179,24 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const ingestionUrl = `${config.services.ingestion.url}/v1/events/ingest`;
 
-        // We need to use a system key or the user's key if the ingestion service supports it.
-        // Typically ingestion is protected by API Key.
-        // For now, we'll use the demo key or a system key if available, 
-        // BUT the event payload carries the actual customer_id.
-        
+        // Extract the user's API key to authenticate with the Ingestion Service
+        // This ensures the Ingestion Service sees the request as coming from the user,
+        // matching the customer_id in the event payload.
+        let userApiKey = request.headers['x-api-key'] as string;
+        const authHeader = request.headers.authorization;
+        if (!userApiKey && authHeader && authHeader.startsWith('Bearer ')) {
+          userApiKey = authHeader.substring(7);
+        }
+
+        if (!userApiKey) {
+          throw new Error('User API key not found in request headers');
+        }
+
         const ingestResponse = await fetch(ingestionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': config.demo.apiKey, // Still using a system key to authorize the *ingestion call* itself
+            'x-api-key': userApiKey,
           },
           body: JSON.stringify({ events: [event] }),
         });

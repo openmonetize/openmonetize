@@ -65,11 +65,4 @@ export const config = {
   // Public API URL (for Swagger server configuration)
   publicUrl: process.env.PUBLIC_URL ||
     (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined),
-
-  // Demo Mode
-  demo: {
-    enabled: process.env.DEMO_MODE === 'true',
-    tenantId: process.env.DEMO_TENANT_ID || '11111111-1111-1111-1111-111111111111',
-    apiKey: process.env.DEMO_API_KEY || 'om_live_demo123',
-  },
 } as const;
