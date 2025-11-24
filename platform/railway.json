@@ -2,11 +2,11 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "watchPatterns": [
-      "apps/**",
-      "packages/**",
-      "pnpm-lock.yaml",
-      "package.json",
-      "turbo.json"
+      "platform/apps/**",
+      "platform/packages/**",
+      "platform/pnpm-lock.yaml",
+      "platform/package.json",
+      "platform/turbo.json"
     ]
   },
   "deploy": {}
