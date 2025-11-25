@@ -92,7 +92,7 @@ export const sandboxRoutes: FastifyPluginAsyncZod = async (app) => {
         type = 'text', 
         prompt, 
         model = type === 'text' ? 'o1-preview' : 'dall-e-3', 
-        provider = 'openai',
+        provider = 'OPENAI',
         size = '1024x1024',
         quality = 'hd',
         count = 1
