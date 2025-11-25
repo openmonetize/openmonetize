@@ -18,5 +18,4 @@
 // Service Layer Exports
 // Centralized export for all business logic services
 
-export * from './cost-calculator';
-export * from './burn-table';
+// Services have been moved to @openmonetize/common

@@ -92,9 +92,14 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         if (!wallet) {
-          return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Credit wallet not found',
+          // Return empty balance for new users instead of 404
+          return reply.send({
+            data: {
+              balance: '0',
+              reservedBalance: '0',
+              availableBalance: '0',
+              currency: 'USD', // Default currency
+            },
           });
         }
 
