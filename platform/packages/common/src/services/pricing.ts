@@ -18,8 +18,7 @@
 // Pricing Service
 // Shared business logic for pricing, burn tables, and cost calculation
 
-import { getPrismaClient } from '../database';
-import { ProviderName } from '@prisma/client';
+import { getPrismaClient, ProviderName } from '../database';
 
 
 const db = getPrismaClient();
