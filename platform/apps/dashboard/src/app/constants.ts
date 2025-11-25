@@ -1,6 +1,6 @@
 import { Activity, ShieldCheck, Zap, Server, Database } from 'lucide-react';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const VISUAL_FLOW_STEPS = [
   { id: 'app', label: 'Your App', icon: Activity, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/50' },

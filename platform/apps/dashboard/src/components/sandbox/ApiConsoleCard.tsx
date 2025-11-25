@@ -8,6 +8,7 @@ import { ImageGenerationTab } from './ImageGenerationTab';
 import type { GenerationType } from '@/app/types';
 
 interface ApiConsoleCardProps {
+  apiKey: string | null;
   activeTab: string;
   onTabChange: (value: string) => void;
   activeStep: string | null;
@@ -15,7 +16,7 @@ interface ApiConsoleCardProps {
   onGenerate: (type: GenerationType, data?: any) => void;
 }
 
-export function ApiConsoleCard({ activeTab, onTabChange, activeStep, loading, onGenerate }: ApiConsoleCardProps) {
+export function ApiConsoleCard({ apiKey, activeTab, onTabChange, activeStep, loading, onGenerate }: ApiConsoleCardProps) {
   return (
     <Card className="flex-1 border-slate-200 dark:border-slate-800 shadow-md flex flex-col h-full dark:bg-slate-900">
       <CardHeader className="bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 pb-4">
@@ -37,7 +38,7 @@ export function ApiConsoleCard({ activeTab, onTabChange, activeStep, loading, on
           </TabsList>
 
           <TabsContent value="llm">
-            <ChatCompletionTab loading={loading} onGenerate={(data) => onGenerate('text', data)} />
+            <ChatCompletionTab apiKey={apiKey} loading={loading} onGenerate={(data) => onGenerate('text', data)} />
           </TabsContent>
 
           <TabsContent value="image">

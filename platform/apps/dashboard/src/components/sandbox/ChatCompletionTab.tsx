@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Play } from 'lucide-react';
 
 interface ChatCompletionTabProps {
+  apiKey: string | null;
   loading: boolean;
   onGenerate: (data: any) => void;
 }
 
-export function ChatCompletionTab({ loading, onGenerate }: ChatCompletionTabProps) {
+export function ChatCompletionTab({ apiKey, loading, onGenerate }: ChatCompletionTabProps) {
   const [models, setModels] = useState<any[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [systemPrompt, setSystemPrompt] = useState('You are a helpful AI assistant...');
@@ -20,10 +21,12 @@ export function ChatCompletionTab({ loading, onGenerate }: ChatCompletionTabProp
   const [estimatedTokens, setEstimatedTokens] = useState<number>(0);
 
   useEffect(() => {
+    if (!apiKey) return;
+    
     // Fetch pricing
     fetch('/v1/apiconsole/pricing', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('sandbox_api_key') || ''}` // Simple hack for now, ideally passed down
+        'Authorization': `Bearer ${apiKey}`
       }
     })
       .then(res => res.json())
@@ -36,7 +39,7 @@ export function ChatCompletionTab({ loading, onGenerate }: ChatCompletionTabProp
         }
       })
       .catch(err => console.error('Failed to fetch pricing', err));
-  }, []);
+  }, [apiKey]);
 
   useEffect(() => {
     if (!selectedModel || models.length === 0) return;
@@ -65,12 +68,16 @@ export function ChatCompletionTab({ loading, onGenerate }: ChatCompletionTabProp
   }, [selectedModel, systemPrompt, userPrompt, models]);
 
   const handleGenerate = () => {
+    const modelData = models.find(m => m.model === selectedModel);
+    
     onGenerate({
       model: selectedModel,
+      provider: modelData?.provider || 'OPENAI', // Default fallback
       systemPrompt,
       userPrompt
     });
   };
+
 
   return (
     <div className="space-y-6">

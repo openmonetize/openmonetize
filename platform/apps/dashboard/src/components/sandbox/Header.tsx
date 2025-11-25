@@ -40,7 +40,7 @@ export function Header({ customerName, apiKey, balance, onLogout, onTopUp }: Hea
              {apiKey && (
                <Badge
                 variant="outline"
-                className="gap-1 font-mono cursor-pointer hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors hidden sm:flex"
+                className="gap-1 font-mono cursor-pointer hover:bg-slate-100 text-slate-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors hidden sm:flex"
                 onClick={() => {
                  navigator.clipboard.writeText(apiKey);
                  // Toast would be better here

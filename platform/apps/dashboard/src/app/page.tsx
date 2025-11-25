@@ -59,6 +59,7 @@ export default function SandboxPage() {
           type,
           prompt: requestData?.userPrompt || (type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city'),
           model: requestData?.model || (type === 'text' ? 'o1-preview' : 'dall-e-3'),
+          provider: requestData?.provider || 'OPENAI',
           // Image specific
           size: '1024x1024',
           quality: 'hd',
@@ -130,6 +131,7 @@ export default function SandboxPage() {
         {/* LEFT COLUMN: API Console (Input) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           <ApiConsoleCard
+            apiKey={apiKey}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             activeStep={activeStep}

@@ -98,7 +98,7 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
                 onClick={() => setShowManual(true)}
             >
                 <KeyRound className="mr-2 h-4 w-4" />
-                I have an API Key
+                Email Sign Up/In
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col items-center justify-center space-y-2">
