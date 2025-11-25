@@ -21,7 +21,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { getPrismaClient, ProviderName } from '@openmonetize/common';
 import { z } from 'zod';
 import { logger } from '../logger';
-import { costCalculatorService } from '../services';
+import { pricingService } from '@openmonetize/common';
 
 const db = getPrismaClient();
 
@@ -61,7 +61,7 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
         outputTokens: number;
       };
 
-      const result = await costCalculatorService.calculateCost(body);
+      const result = await pricingService.calculateCost(body);
 
       return result;
     } catch (error) {
@@ -104,7 +104,7 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
         }>;
       };
 
-      const results = await costCalculatorService.calculateBulk(
+      const results = await pricingService.calculateBulk(
         body.customerId,
         body.calculations
       );

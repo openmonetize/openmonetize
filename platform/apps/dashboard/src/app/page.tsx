@@ -32,7 +32,7 @@ export default function SandboxPage() {
   };
 
   // Main generation handler
-  const handleGeneration = async (type: GenerationType) => {
+  const handleGeneration = async (type: GenerationType, requestData?: any) => {
     if (!apiKey) return;
     setLoading(true);
     
@@ -57,8 +57,8 @@ export default function SandboxPage() {
         },
         body: JSON.stringify({
           type,
-          prompt: type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city',
-          model: type === 'text' ? 'o1-preview' : 'dall-e-3',
+          prompt: requestData?.userPrompt || (type === 'text' ? 'Explain quantum computing' : 'Cyberpunk city'),
+          model: requestData?.model || (type === 'text' ? 'o1-preview' : 'dall-e-3'),
           // Image specific
           size: '1024x1024',
           quality: 'hd',
@@ -79,8 +79,10 @@ export default function SandboxPage() {
         // 4. RATING: Event processed
         await simulateFlow('rating', 600);
         addLog('RATING', 'Calculated cost based on Pricing Table', { 
-          model: type === 'text' ? 'o1-preview' : 'dall-e-3',
-          cost: type === 'text' ? '~0.15 USD' : '0.04 USD'
+          model: data.model,
+          cost: data.usage?.estimated_cost_usd 
+            ? `$${Number(data.usage.estimated_cost_usd).toFixed(4)} USD` 
+            : (type === 'text' ? '~0.15 USD' : '0.04 USD')
         });
 
         // 5. DB: Balance updated

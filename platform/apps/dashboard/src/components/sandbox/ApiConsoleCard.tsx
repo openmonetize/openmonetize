@@ -12,7 +12,7 @@ interface ApiConsoleCardProps {
   onTabChange: (value: string) => void;
   activeStep: string | null;
   loading: boolean;
-  onGenerate: (type: GenerationType) => void;
+  onGenerate: (type: GenerationType, data?: any) => void;
 }
 
 export function ApiConsoleCard({ activeTab, onTabChange, activeStep, loading, onGenerate }: ApiConsoleCardProps) {
@@ -37,7 +37,7 @@ export function ApiConsoleCard({ activeTab, onTabChange, activeStep, loading, on
           </TabsList>
 
           <TabsContent value="llm">
-            <ChatCompletionTab loading={loading} onGenerate={() => onGenerate('text')} />
+            <ChatCompletionTab loading={loading} onGenerate={(data) => onGenerate('text', data)} />
           </TabsContent>
 
           <TabsContent value="image">
