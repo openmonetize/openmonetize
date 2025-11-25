@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Terminal } from 'lucide-react';
-import { VisualDataFlow } from './VisualDataFlow';
 import { ChatCompletionTab } from './ChatCompletionTab';
 import { ImageGenerationTab } from './ImageGenerationTab';
 import type { GenerationType } from '@/app/types';
@@ -30,7 +29,6 @@ export function ApiConsoleCard({ activeTab, onTabChange, activeStep, loading, on
       </CardHeader>
       
       <div className="p-6 flex-1">
-        <VisualDataFlow activeStep={activeStep} />
         
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8 dark:bg-slate-800">

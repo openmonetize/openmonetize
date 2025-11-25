@@ -46,6 +46,7 @@ import { creditsRoutes } from './routes/credits';
 import { entitlementsRoutes } from './routes/entitlements';
 import { analyticsRoutes } from './routes/analytics';
 import { sandboxRoutes } from './routes/apiconsole';
+import { authRoutes } from './routes/auth';
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
@@ -242,6 +243,7 @@ export async function buildApp() {
   // Register routes (order matters for proxies)
   await app.register(healthRoutes); // No prefix - health routes
   await app.register(customersRoutes); // Customer management (registration is public)
+  await app.register(authRoutes); // Authentication routes
   await app.register(creditsRoutes); // Direct routes
   await app.register(entitlementsRoutes); // Direct routes
   await app.register(analyticsRoutes); // Direct routes

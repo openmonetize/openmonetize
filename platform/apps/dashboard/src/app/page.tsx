@@ -7,11 +7,11 @@ import { useSandboxAuth } from '@/hooks/useSandboxAuth';
 import { useSandboxLogs } from '@/hooks/useSandboxLogs';
 import { useSandboxBalance } from '@/hooks/useSandboxBalance';
 import { Header } from '@/components/sandbox/Header';
-import { BalanceCard } from '@/components/sandbox/BalanceCard';
 import { ApiConsoleCard } from '@/components/sandbox/ApiConsoleCard';
 import { LiveLogsPanel } from '@/components/sandbox/LiveLogsPanel';
 import { IntegrationCodePanel } from '@/components/sandbox/IntegrationCodePanel';
 import { AuthPage } from '@/components/sandbox/AuthPage';
+import { VisualDataFlow } from '@/components/sandbox/VisualDataFlow';
 import { API_URL, CODE_SNIPPETS } from './constants';
 import type { GenerationType } from './types';
 
@@ -110,19 +110,22 @@ export default function SandboxPage() {
 
   // Main playground UI
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 md:p-8 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
-      {/* Header Section */}
-      <Header customerName={customerName} apiKey={apiKey} onLogout={handleLogout} />
-      
-      {/* Balance Card */}
-      <div className="max-w-7xl mx-auto mb-8 flex justify-end">
-        <BalanceCard balance={balance} onTopUp={handleTopUp} />
+      {/* Header Section (Compact) */}
+      <div className="px-4 md:px-8">
+        <Header
+            customerName={customerName}
+            apiKey={apiKey}
+            balance={balance}
+            onLogout={handleLogout}
+            onTopUp={handleTopUp}
+        />
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 pb-12">
         
-        {/* LEFT COLUMN: API Console */}
+        {/* LEFT COLUMN: API Console (Input) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           <ApiConsoleCard
             activeTab={activeTab}
@@ -133,32 +136,35 @@ export default function SandboxPage() {
           />
         </div>
 
-        {/* RIGHT COLUMN: Live Logs & Code */}
-        <div className="lg:col-span-7 flex flex-col gap-6 h-[600px]">
+        {/* RIGHT COLUMN: Output (Flow + Logs) */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+
+            {/* Visual Flow (Moved here) */}
+            <VisualDataFlow activeStep={activeStep} />
           
-          {/* TABS: Logs vs Code */}
-          <Tabs defaultValue="logs" className="flex-1 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-2">
-              <TabsList className="dark:bg-slate-800">
-                <TabsTrigger value="logs" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Activity className="h-3 w-3" /> Live Logs</TabsTrigger>
-                <TabsTrigger value="code" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Code className="h-3 w-3" /> Integration Code</TabsTrigger>
-              </TabsList>
-              <div className="flex items-center gap-2">
-                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    System Online
-                 </div>
-              </div>
-            </div>
+            {/* TABS: Logs vs Code */}
+            <Tabs defaultValue="logs" className="flex-1 flex flex-col h-[500px]">
+                <div className="flex items-center justify-between mb-2">
+                <TabsList className="dark:bg-slate-800">
+                    <TabsTrigger value="logs" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Activity className="h-3 w-3" /> Live Logs</TabsTrigger>
+                    <TabsTrigger value="code" className="gap-2 dark:data-[state=active]:bg-slate-700 dark:text-slate-400 dark:data-[state=active]:text-white"><Code className="h-3 w-3" /> Integration Code</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        System Online
+                    </div>
+                </div>
+                </div>
 
-            <TabsContent value="logs" className="flex-1 h-full mt-0">
-              <LiveLogsPanel logs={logs} onClearLogs={clearLogs} logEndRef={logEndRef} />
-            </TabsContent>
+                <TabsContent value="logs" className="flex-1 h-full mt-0">
+                    <LiveLogsPanel logs={logs} onClearLogs={clearLogs} logEndRef={logEndRef} />
+                </TabsContent>
 
-            <TabsContent value="code" className="flex-1 h-full mt-0">
-              <IntegrationCodePanel activeTab={activeTab} snippets={CODE_SNIPPETS} />
-            </TabsContent>
-          </Tabs>
+                <TabsContent value="code" className="flex-1 h-full mt-0">
+                    <IntegrationCodePanel activeTab={activeTab} snippets={CODE_SNIPPETS} />
+                </TabsContent>
+            </Tabs>
         </div>
       </div>
     </div>
