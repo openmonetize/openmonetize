@@ -31,7 +31,10 @@ const configSchema = z.object({
   rateLimitMax: z.number().int().positive().default(1000),
   rateLimitWindow: z.number().int().positive().default(60000),
   queueName: z.string().default('usage-events'),
-  queueConcurrency: z.number().int().positive().default(10)
+  queueConcurrency: z.number().int().positive().default(10),
+  streamKey: z.string().default('events:stream'),
+  consumerGroup: z.string().default('billing-group'),
+  dlqStreamKey: z.string().default('events:stream:dlq')
 });
 
 export const config = configSchema.parse({
@@ -43,7 +46,10 @@ export const config = configSchema.parse({
   rateLimitMax: Number(process.env.RATE_LIMIT_MAX),
   rateLimitWindow: Number(process.env.RATE_LIMIT_WINDOW_MS),
   queueName: process.env.QUEUE_NAME,
-  queueConcurrency: Number(process.env.QUEUE_CONCURRENCY)
+  queueConcurrency: Number(process.env.QUEUE_CONCURRENCY),
+  streamKey: process.env.STREAM_KEY,
+  consumerGroup: process.env.CONSUMER_GROUP,
+  dlqStreamKey: process.env.DLQ_STREAM_KEY
 });
 
 export type Config = z.infer<typeof configSchema>;

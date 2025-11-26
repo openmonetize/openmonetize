@@ -16,30 +16,55 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { getDLQ, getQueue } from '../queue';
+import Redis from 'ioredis';
+import { config } from '../config';
 import { logger } from '../logger';
 
 export async function getDLQItems(
   _request: FastifyRequest,
   reply: FastifyReply
 ) {
+  const redis = new Redis(config.redisUrl);
   try {
-    const dlq = getDLQ();
-    const counts = await dlq.getJobCounts();
-    const jobs = await dlq.getJobs(['wait', 'active', 'delayed', 'paused'], 0, 100);
+    // Get items from DLQ stream
+    const messages = await redis.xrange(config.dlqStreamKey, '-', '+', 'COUNT', 100);
+    const count = await redis.xlen(config.dlqStreamKey);
+
+    const items = messages.map(([id, fields]) => {
+      // Parse fields
+      const data: Record<string, any> = {};
+      for (let i = 0; i < fields.length; i += 2) {
+        const key = fields[i] as string;
+        const value = fields[i + 1];
+        data[key] = value;
+      }
+      
+      // Try to parse nested data
+      let parsedData = data;
+      if (data.data && typeof data.data === 'string') {
+        try {
+          parsedData = JSON.parse(data.data);
+        } catch {}
+      }
+
+      return {
+        id,
+        name: 'dlq-event',
+        data: parsedData,
+        timestamp: parseInt(id.split('-')[0] || '0'),
+        failedReason: 'Poison message'
+      };
+    });
+
+    await redis.quit();
 
     return reply.send({
-      counts,
-      items: jobs.map(j => ({
-        id: j.id,
-        name: j.name,
-        data: j.data,
-        timestamp: j.timestamp,
-        failedReason: j.failedReason
-      }))
+      counts: { active: count },
+      items
     });
   } catch (error) {
     logger.error({ error }, 'Failed to get DLQ items');
+    if (redis) await redis.quit();
     return reply.code(500).send({ error: 'Failed to retrieve DLQ items' });
   }
 }
@@ -48,59 +73,61 @@ export async function replayDLQ(
   request: FastifyRequest<{ Body: { jobIds?: string[] } }>,
   reply: FastifyReply
 ) {
+  const redis = new Redis(config.redisUrl);
   try {
-    const dlq = getDLQ();
-    const mainQueue = getQueue();
     const { jobIds } = request.body || {};
+    let messages: [string, string[]][] = [];
 
-    let jobsToReplay;
     if (jobIds && jobIds.length > 0) {
-      jobsToReplay = await Promise.all(jobIds.map(id => dlq.getJob(id)));
+      // Fetch specific messages (XRANGE for each)
+      // Redis doesn't have MGET for streams, so we loop or pipeline
+      // But XRANGE needs start/end. If we have IDs, we use ID ID.
+      const pipeline = redis.pipeline();
+      jobIds.forEach(id => pipeline.xrange(config.dlqStreamKey, id, id));
+      const results = await pipeline.exec();
+      
+      if (results) {
+        results.forEach(res => {
+           if (!res[0] && res[1]) {
+               const rangeRes = res[1] as [string, string[]][];
+               if (rangeRes && rangeRes.length > 0 && rangeRes[0]) {
+                   messages.push(rangeRes[0]);
+               }
+           }
+        });
+      }
     } else {
-      // Replay all waiting jobs
-      jobsToReplay = await dlq.getJobs(['wait'], 0, 1000);
+      // Replay all (up to 1000)
+      messages = await redis.xrange(config.dlqStreamKey, '-', '+', 'COUNT', 1000) as [string, string[]][];
     }
-
-    const validJobs = jobsToReplay.filter(j => j !== undefined && j !== null);
     
-    if (validJobs.length === 0) {
+    if (messages.length === 0) {
+      await redis.quit();
       return reply.send({ message: 'No jobs to replay', count: 0 });
     }
 
-    const replayPromises = validJobs.map(async (job) => {
-      if (!job) return;
-      
-      // Add back to main queue
-      // We strip the DLQ metadata to treat it as a fresh attempt (or keep it if we want history)
-      // Here we keep the original data but maybe reset some counters if needed
-      // But since we are adding a NEW job to the main queue, it will have a new ID or we can reuse the original ID if we want idempotency
-      
-      const originalData = { ...job.data };
-      // Remove DLQ specific metadata if we want a clean retry, or keep it for audit
-      // Let's keep it but add a replay flag
-      
-      await mainQueue.add(job.name, {
-        ...originalData,
-        _replayed_at: new Date().toISOString()
-      }, {
-        jobId: originalData._original_job_id || job.id // Try to use original ID for idempotency
-      });
-
+    const pipeline = redis.pipeline();
+    
+    for (const [id, fields] of messages) {
+      // Add back to main stream
+      pipeline.xadd(config.streamKey, '*', ...fields);
       // Remove from DLQ
-      await job.remove();
-    });
+      pipeline.xdel(config.dlqStreamKey, id);
+    }
 
-    await Promise.all(replayPromises);
+    await pipeline.exec();
+    await redis.quit();
 
-    logger.info({ count: validJobs.length }, 'Replayed DLQ jobs');
+    logger.info({ count: messages.length }, 'Replayed DLQ jobs');
 
     return reply.send({ 
       message: 'Jobs replayed successfully', 
-      count: validJobs.length 
+      count: messages.length 
     });
 
   } catch (error) {
     logger.error({ error }, 'Failed to replay DLQ jobs');
+    if (redis) await redis.quit();
     return reply.code(500).send({ error: 'Failed to replay jobs' });
   }
 }

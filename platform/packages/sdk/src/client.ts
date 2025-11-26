@@ -37,6 +37,7 @@ import type {
   UsageAnalyticsResponse,
   ApiErrorResponse,
   UsageEvent,
+  Provider,
 } from './types';
 import { OpenMonetizeError } from './types';
 
@@ -99,6 +100,9 @@ export class OpenMonetize {
         maxBatchSize: this.maxBatchSize
       });
     }
+
+    // Recover offline events
+    this.recoverOfflineEvents();
   }
 
   /**
@@ -142,8 +146,11 @@ export class OpenMonetize {
       if (!response.ok) {
         // Retry on 5xx errors or 429
         if (attempt < this.maxRetries && (response.status >= 500 || response.status === 429)) {
-          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-          if (this.debug) console.log(`[OpenMonetize] Request failed, retrying in ${delay}ms...`);
+          const baseDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          const jitter = Math.random() * 1000; // Add 0-1000ms random jitter
+          const delay = baseDelay + jitter;
+          
+          if (this.debug) console.log(`[OpenMonetize] Request failed, retrying in ${Math.round(delay)}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           return this.request<T>(method, path, body, attempt + 1);
         }
@@ -162,8 +169,11 @@ export class OpenMonetize {
 
       // Retry on network errors
       if (attempt < this.maxRetries && (error instanceof TypeError || (error as any).name === 'AbortError')) {
-         const delay = Math.pow(2, attempt) * 1000;
-         if (this.debug) console.log(`[OpenMonetize] Network error, retrying in ${delay}ms...`);
+         const baseDelay = Math.pow(2, attempt) * 1000;
+         const jitter = Math.random() * 1000;
+         const delay = baseDelay + jitter;
+
+         if (this.debug) console.log(`[OpenMonetize] Network error, retrying in ${Math.round(delay)}ms...`);
          await new Promise(resolve => setTimeout(resolve, delay));
          return this.request<T>(method, path, body, attempt + 1);
       }
@@ -231,10 +241,9 @@ export class OpenMonetize {
         console.log(`[OpenMonetize] Flushed ${batch.length} events`);
       }
     } catch (error) {
-      // On failure, put events back at the front of the queue?
-      // Or drop them? For now, we log error to avoid infinite loops
-      console.error('[OpenMonetize] Failed to flush events:', error);
-      // Optionally re-queue: this.eventBuffer.unshift(...batch);
+      // On failure, save to offline storage
+      console.error('[OpenMonetize] Failed to flush events, saving to offline storage:', error);
+      this.saveToStorage(batch);
     } finally {
       this.isFlushing = false;
       
@@ -442,4 +451,104 @@ export class OpenMonetize {
       `/v1/analytics/cost-breakdown?customer_id=${customerId}&${params.toString()}`
     );
   }
+
+
+  /**
+   * Helper to normalize usage from different AI providers
+   */
+  normalizeProviderResponse(
+    provider: Provider,
+    response: any
+  ): { input_tokens: number; output_tokens: number } {
+    let input_tokens = 0;
+    let output_tokens = 0;
+
+    if (!response) {
+      return { input_tokens, output_tokens };
+    }
+
+    switch (provider) {
+      case 'OPENAI':
+        // OpenAI: usage: { prompt_tokens, completion_tokens }
+        if (response.usage) {
+          input_tokens = response.usage.prompt_tokens || 0;
+          output_tokens = response.usage.completion_tokens || 0;
+        }
+        break;
+
+      case 'ANTHROPIC':
+        // Anthropic: usage: { input_tokens, output_tokens }
+        if (response.usage) {
+          input_tokens = response.usage.input_tokens || 0;
+          output_tokens = response.usage.output_tokens || 0;
+        }
+        break;
+
+      case 'GOOGLE':
+        // Gemini: usageMetadata: { promptTokenCount, candidatesTokenCount }
+        if (response.usageMetadata) {
+          input_tokens = response.usageMetadata.promptTokenCount || 0;
+          output_tokens = response.usageMetadata.candidatesTokenCount || 0;
+        }
+        break;
+        
+      case 'COHERE':
+        // Cohere: meta: { billed_units: { input_tokens, output_tokens } }
+        if (response.meta?.billed_units) {
+          input_tokens = response.meta.billed_units.input_tokens || 0;
+          output_tokens = response.meta.billed_units.output_tokens || 0;
+        }
+        break;
+        
+      case 'MISTRAL':
+        // Mistral: usage: { prompt_tokens, completion_tokens }
+        if (response.usage) {
+          input_tokens = response.usage.prompt_tokens || 0;
+          output_tokens = response.usage.completion_tokens || 0;
+        }
+        break;
+    }
+
+    return { input_tokens, output_tokens };
+    }
+
+  // Offline Durability
+  private readonly storageKey = 'openmonetize_offline_events';
+
+  private recoverOfflineEvents(): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+
+    try {
+      const stored = window.localStorage.getItem(this.storageKey);
+      if (stored) {
+        const events = JSON.parse(stored) as UsageEvent[];
+        if (events.length > 0) {
+          if (this.debug) console.log(`[OpenMonetize] Recovered ${events.length} offline events`);
+          this.eventBuffer.push(...events);
+          window.localStorage.removeItem(this.storageKey);
+        }
+      }
+    } catch (e) {
+      console.error('[OpenMonetize] Failed to recover offline events:', e);
+    }
+  }
+
+  private saveToStorage(events: UsageEvent[]): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+
+    try {
+      // Get existing
+      const stored = window.localStorage.getItem(this.storageKey);
+      let allEvents = events;
+      if (stored) {
+        const existing = JSON.parse(stored) as UsageEvent[];
+        allEvents = [...existing, ...events];
+      }
+      
+      window.localStorage.setItem(this.storageKey, JSON.stringify(allEvents));
+    } catch (e) {
+      console.error('[OpenMonetize] Failed to save offline events:', e);
+    }
+  }
 }
+

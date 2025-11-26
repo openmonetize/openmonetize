@@ -22,7 +22,7 @@ import rateLimit from '@fastify/rate-limit';
 import Redis from 'ioredis';
 import { config } from './config';
 import { registerRoutes } from './routes';
-import { initializeQueue, closeQueue } from './queue';
+import { initializeQueue, closeQueue, startDlqManager, stopDlqManager } from './queue';
 import { logger } from './logger';
 import { getPrismaClient } from '@openmonetize/common';
 
@@ -99,6 +99,7 @@ export async function buildServer() {
     logger.info('Shutting down gracefully...');
     await server.close();
     await closeQueue();
+    await stopDlqManager();
     await db.$disconnect();
     process.exit(0);
   };
@@ -113,6 +114,7 @@ async function start() {
   try {
     // Initialize queue
     await initializeQueue();
+    await startDlqManager();
 
     // Build and start server
     const server = await buildServer();

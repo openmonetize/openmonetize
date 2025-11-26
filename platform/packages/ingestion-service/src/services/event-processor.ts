@@ -18,40 +18,44 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getPrismaClient } from '@openmonetize/common';
 import { calculateCost } from './cost-calculator';
-import { getQueue } from '../queue';
+import Redis from 'ioredis';
+import { config } from '../config';
 import { logger } from '../logger';
 
 const db = getPrismaClient();
 
 export async function enqueueEvents(events: any[], customerId: string): Promise<string> {
-  const queue = getQueue();
+  const redis = new Redis(config.redisUrl);
   const batchId = uuidv4();
 
   try {
-    // Add events to queue with batch ID
-    const jobs = events.map(event => ({
-      name: `event-${event.event_id}`,
-      data: {
+    const pipeline = redis.pipeline();
+
+    events.forEach(event => {
+      const eventData = {
         ...event,
         batch_id: batchId,
         enqueued_at: new Date().toISOString()
-      },
-      opts: {
-        jobId: event.event_id // Use event_id as job ID for idempotency
-      }
-    }));
+      };
+      
+      // Use XADD with auto-generated ID (*)
+      // Store as 'data' field containing JSON
+      pipeline.xadd(config.streamKey, '*', 'data', JSON.stringify(eventData));
+    });
 
-    await queue.addBulk(jobs);
+    await pipeline.exec();
+    await redis.quit();
 
     logger.info({
       batchId,
       customerId,
       eventCount: events.length
-    }, 'Events enqueued successfully');
+    }, 'Events enqueued successfully to stream');
 
     return batchId;
   } catch (error) {
     logger.error({ error, batchId, customerId }, 'Failed to enqueue events');
+    if (redis) await redis.quit();
     throw error;
   }
 }
