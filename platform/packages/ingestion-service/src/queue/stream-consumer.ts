@@ -72,7 +72,7 @@ async function consumeLoop() {
       }
 
       // response format: [[streamKey, [[id, [field, value, ...]], ...]]]
-      const streamData = response[0][1] as any[];
+      const streamData = (response as any)[0][1] as any[];
 
       for (const [id, fields] of streamData) {
         await processMessage(id, fields);
