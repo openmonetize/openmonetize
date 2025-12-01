@@ -20,44 +20,97 @@
  * SOFTWARE.
  */
 
-// OpenMonetize SDK
-// Official TypeScript SDK for AI usage tracking and billing
+import ky from 'ky';
+import { PersistentQueue, QueueItem } from './queue/persistent-queue';
+import { v4 as uuidv4 } from 'uuid';
 
-export { OpenMonetize } from './client';
-export {
-  withOpenAITracking,
-  withAnthropicTracking,
-  trackUsage,
-  BatchTracker,
-  formatCredits,
-  validateConfig,
-} from './helpers';
+export interface OpenMonetizeConfig {
+  apiKey: string;
+  endpoint?: string;
+  maxRetries?: number;
+  flushIntervalMs?: number;
+}
 
-export type {
-  OpenMonetizeConfig,
-  Provider,
-  EventType,
-  TokenUsageEvent,
-  ImageGenerationEvent,
-  CustomEvent,
-  UsageEvent,
-  IngestEventsRequest,
-  IngestEventsResponse,
-  CreditBalance,
-  PurchaseCreditsRequest,
-  PurchaseCreditsResponse,
-  CreditTransaction,
-  TransactionHistoryResponse,
-  EntitlementCheckRequest,
-  EntitlementCheckResponse,
-  CalculateCostRequest,
-  CalculateCostResponse,
-  UsageAnalyticsRequest,
-  UsageAnalyticsResponse,
-  ApiErrorResponse,
-} from './types';
+export interface UsageEvent {
+  customer_id: string;
+  event_type: string;
+  feature_id: string;
+  [key: string]: any;
+}
 
-export { OpenMonetizeError } from './types';
+export class OpenMonetize {
+  private apiKey: string;
+  private endpoint: string;
+  private queue: PersistentQueue<UsageEvent>;
+  private flushInterval: NodeJS.Timeout | null = null;
+  private isFlushing: boolean = false;
 
-// Version
-export const VERSION = '0.1.0';
+  constructor(config: OpenMonetizeConfig) {
+    this.apiKey = config.apiKey;
+    this.endpoint = config.endpoint || 'https://api.openmonetize.com';
+    this.queue = new PersistentQueue();
+    
+    // Start background flush
+    const interval = config.flushIntervalMs || 5000;
+    if (typeof window !== 'undefined' || typeof global !== 'undefined') {
+       this.flushInterval = setInterval(() => this.flush(), interval);
+    }
+  }
+
+  async track(event: Omit<UsageEvent, 'event_id' | 'timestamp'>): Promise<void> {
+    const fullEvent = {
+      ...event,
+      event_id: uuidv4(),
+      timestamp: new Date().toISOString(),
+      idempotency_key: uuidv4() // Ensure idempotency at source
+    };
+
+    await this.queue.enqueue(fullEvent as unknown as UsageEvent);
+    
+    // Try to flush immediately if online
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      this.flush().catch(console.error);
+    }
+  }
+
+  async flush(): Promise<void> {
+    if (this.isFlushing) return;
+    this.isFlushing = true;
+
+    try {
+      const items = await this.queue.peek(50);
+      if (items.length === 0) return;
+
+      const events = items.map(item => item.data);
+
+      await ky.post(`${this.endpoint}/v1/events/ingest`, {
+        json: { events },
+        headers: {
+          'x-api-key': this.apiKey,
+          'Content-Type': 'application/json'
+        },
+        retry: {
+          limit: 3,
+          methods: ['post'],
+          statusCodes: [408, 413, 429, 500, 502, 503, 504]
+        },
+        timeout: 10000
+      });
+
+      // If successful, remove from queue
+      await this.queue.remove(items.map(i => i.id));
+      
+    } catch (error) {
+      console.error('OpenMonetize: Failed to flush events', error);
+      // Leave in queue for next retry
+    } finally {
+      this.isFlushing = false;
+    }
+  }
+
+  stop(): void {
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+    }
+  }
+}

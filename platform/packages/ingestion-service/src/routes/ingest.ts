@@ -21,6 +21,16 @@ import { validateApiKey } from '../middleware/auth';
 import { checkIdempotency } from '../middleware/idempotency';
 import { enqueueEvents } from '../services/event-processor';
 import { logger } from '../logger';
+import { rlsContext } from '@openmonetize/common';
+import { OpenAIParser } from '../parsers/openai';
+import { AnthropicParser } from '../parsers/anthropic';
+import { GeminiParser } from '../parsers/gemini';
+
+const parsers = [
+  new OpenAIParser(),
+  new AnthropicParser(),
+  new GeminiParser()
+];
 
 // Event schema for validation
 const eventSchema = z.object({
@@ -43,7 +53,8 @@ const eventSchema = z.object({
   quantity: z.number().positive().optional(),
   timestamp: z.string().datetime().or(z.date()),
   metadata: z.record(z.unknown()).optional(),
-  idempotency_key: z.string().optional()
+  idempotency_key: z.string().optional(),
+  provider_response: z.record(z.unknown()).optional()
 });
 
 const batchSchema = z.object({
@@ -77,6 +88,9 @@ export async function ingestEvents(
       });
     }
 
+    // Set RLS context for the request
+    rlsContext.enterWith(customer.id);
+
     // 2. Validate event batch schema
     const validation = batchSchema.safeParse(request.body);
     if (!validation.success) {
@@ -90,8 +104,33 @@ export async function ingestEvents(
 
     const { events } = validation.data;
 
+    // Process events to extract usage from provider responses if present
+    const processedEvents = events.map(event => {
+      if (event.provider && event.provider_response) {
+        const parser = parsers.find(p => p.canHandle(event.provider!));
+        if (parser) {
+          try {
+            const usage = parser.parse(event.provider_response);
+            return {
+              ...event,
+              input_tokens: event.input_tokens ?? usage.inputTokens,
+              output_tokens: event.output_tokens ?? usage.outputTokens,
+              metadata: {
+                ...event.metadata,
+                ...usage.metadata,
+                parsed_from_response: true
+              }
+            };
+          } catch (err) {
+            logger.warn({ provider: event.provider, err }, 'Failed to parse provider response');
+          }
+        }
+      }
+      return event;
+    });
+
     // 3. Verify all events belong to the authenticated customer
-    const invalidEvents = events.filter(e => e.customer_id !== customer.id);
+    const invalidEvents = processedEvents.filter(e => e.customer_id !== customer.id);
     if (invalidEvents.length > 0) {
       logger.warn(
         {
@@ -107,7 +146,7 @@ export async function ingestEvents(
     }
 
     // 4. Check idempotency
-    const { newEvents, duplicateEvents } = await checkIdempotency(events);
+    const { newEvents, duplicateEvents } = await checkIdempotency(processedEvents);
 
     if (newEvents.length === 0) {
       return reply.code(200).send({

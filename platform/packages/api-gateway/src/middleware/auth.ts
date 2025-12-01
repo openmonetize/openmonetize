@@ -17,7 +17,7 @@
 
 // Authentication middleware for API Gateway
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { getPrismaClient, hashApiKey } from '@openmonetize/common';
+import { getPrismaClient, hashApiKey, rlsContext } from '@openmonetize/common';
 import { logger } from '../logger';
 
 const db = getPrismaClient();
@@ -84,6 +84,10 @@ export async function authenticate(
 
     // Attach customer to request
     request.customer = customer;
+
+    // Set RLS context for the duration of the request
+    // This ensures all subsequent database queries in this async scope use the correct tenant ID
+    rlsContext.enterWith(customer.id);
 
     logger.debug({ customerId: customer.id }, 'Request authenticated');
   } catch (error) {

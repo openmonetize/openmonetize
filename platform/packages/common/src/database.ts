@@ -22,7 +22,18 @@ import { PrismaClient } from './generated/client';
 /**
  * Global Prisma Client instance (singleton pattern)
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+/**
+ * Global Prisma Client instance (singleton pattern)
+ */
 let prisma: PrismaClient | undefined;
+let extendedPrisma: any | undefined;
+
+/**
+ * AsyncLocalStorage context for RLS
+ */
+export const rlsContext = new AsyncLocalStorage<string>();
 
 /**
  * Get or create Prisma Client instance
@@ -42,7 +53,28 @@ export function getPrismaClient(): PrismaClient {
     });
   }
 
-  return prisma;
+  if (!extendedPrisma) {
+    extendedPrisma = prisma.$extends({
+      query: {
+        $allModels: {
+          async $allOperations({ model, operation, args, query }) {
+            const tenantId = rlsContext.getStore();
+            if (tenantId) {
+              // Wrap in transaction to ensure RLS context is set for the connection
+              return prisma!.$transaction(async (tx) => {
+                await tx.$executeRaw`SELECT set_config('app.current_customer_id', ${tenantId}, true)`;
+                // Execute the original operation on the transaction client
+                return (tx as any)[model][operation](args);
+              });
+            }
+            return query(args);
+          }
+        }
+      }
+    });
+  }
+
+  return extendedPrisma as PrismaClient;
 }
 
 /**

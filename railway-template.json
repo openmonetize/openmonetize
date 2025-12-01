@@ -1,5 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
+  "name": "OpenMonetize",
+  "description": "Open-source AI usage metering and billing platform. Track tokens, manage credits, and bill for LLM usage (OpenAI, Anthropic, Gemini).",
+  "repositoryUrl": "https://github.com/openmonetize/openmonetize",
+  "imageUrl": "https://openmonetize.com/logo.png",
+  "codeUrl": "https://github.com/openmonetize/openmonetize",
+  "demoUrl": "https://demo.openmonetize.com",
   "services": {
     "postgres": {
       "image": "postgres:16-alpine",
