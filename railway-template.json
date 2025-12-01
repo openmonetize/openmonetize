@@ -10,17 +10,51 @@
     "postgres": {
       "image": "postgres:16-alpine",
       "variables": {
-        "POSTGRES_USER": "postgres",
-        "POSTGRES_PASSWORD": "${{POSTGRES_PASSWORD}}",
-        "POSTGRES_DB": "railway",
-        "DATABASE_URL": "postgresql://${{POSTGRES_USER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{POSTGRES_DB}}"
+        "POSTGRES_USER": {
+          "description": "The PostgreSQL user",
+          "defaultValue": "postgres"
+        },
+        "POSTGRES_PASSWORD": {
+          "description": "The PostgreSQL password",
+          "defaultValue": "${{POSTGRES_PASSWORD}}"
+        },
+        "POSTGRES_DB": {
+          "description": "The PostgreSQL database name",
+          "defaultValue": "railway"
+        },
+        "DATABASE_URL": {
+          "description": "The connection string for the PostgreSQL database",
+          "defaultValue": "postgresql://${{POSTGRES_USER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{POSTGRES_DB}}"
+        },
+        "PGDATA": {
+          "description": "The directory where PostgreSQL stores data",
+          "defaultValue": "/var/lib/postgresql/data"
+        },
+        "PGPORT": {
+          "description": "The port PostgreSQL listens on",
+          "defaultValue": "5432"
+        }
       }
     },
     "redis": {
       "image": "redis:7-alpine",
       "variables": {
-        "REDIS_PASSWORD": "${{REDIS_PASSWORD}}",
-        "REDIS_URL": "redis://:${{REDIS_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:6379"
+        "REDIS_PASSWORD": {
+          "description": "The Redis password",
+          "defaultValue": "${{REDIS_PASSWORD}}"
+        },
+        "REDIS_URL": {
+          "description": "The connection string for Redis",
+          "defaultValue": "redis://:${{REDIS_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:6379"
+        },
+        "REDISPORT": {
+          "description": "The port Redis listens on",
+          "defaultValue": "6379"
+        },
+        "REDISUSER": {
+          "description": "The Redis user",
+          "defaultValue": "default"
+        }
       }
     },
     "api-gateway": {
@@ -40,14 +74,46 @@
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
         "NODE_ENV": "production",
-        "PORT": "3000",
-        "HOST": "0.0.0.0",
-        "DATABASE_URL": "${{postgres.DATABASE_URL}}",
-        "REDIS_URL": "${{redis.REDIS_URL}}",
-        "INGESTION_SERVICE_URL": "http://${{ingestion-service.HOST}}:${{ingestion-service.PORT}}",
-        "RATING_ENGINE_URL": "http://${{rating-engine.HOST}}:${{rating-engine.PORT}}",
-        "RATE_LIMIT_MAX": "60",
-        "RATE_LIMIT_WINDOW": "1 minute"
+        "PORT": {
+          "description": "The port the API Gateway listens on",
+          "defaultValue": "3000"
+        },
+        "HOST": {
+          "description": "The host the API Gateway binds to",
+          "defaultValue": "0.0.0.0"
+        },
+        "DATABASE_URL": {
+          "description": "The connection string for the PostgreSQL database",
+          "defaultValue": "${{postgres.DATABASE_URL}}"
+        },
+        "REDIS_URL": {
+          "description": "The connection string for Redis",
+          "defaultValue": "${{redis.REDIS_URL}}"
+        },
+        "INGESTION_SERVICE_URL": {
+          "description": "The internal URL of the Ingestion Service",
+          "defaultValue": "http://${{ingestion-service.HOST}}:${{ingestion-service.PORT}}"
+        },
+        "RATING_ENGINE_URL": {
+          "description": "The internal URL of the Rating Engine",
+          "defaultValue": "http://${{rating-engine.HOST}}:${{rating-engine.PORT}}"
+        },
+        "RATE_LIMIT_MAX": {
+          "description": "Maximum number of requests per window",
+          "defaultValue": "60"
+        },
+        "RATE_LIMIT_WINDOW": {
+          "description": "Time window for rate limiting",
+          "defaultValue": "1 minute"
+        },
+        "LOG_LEVEL": {
+          "description": "Logging level (debug, info, warn, error)",
+          "defaultValue": "info"
+        },
+        "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+          "description": "Time to wait for connections to drain during deployment",
+          "defaultValue": "30"
+        }
       }
     },
     "ingestion-service": {
@@ -66,14 +132,38 @@
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
         "NODE_ENV": "production",
-        "PORT": "8081",
-        "HOST": "0.0.0.0",
-        "DATABASE_URL": "${{postgres.DATABASE_URL}}",
-        "REDIS_URL": "${{redis.REDIS_URL}}",
-        "RATE_LIMIT_MAX": "1000",
-        "RATE_LIMIT_WINDOW_MS": "60000",
-        "QUEUE_NAME": "usage-events",
-        "QUEUE_CONCURRENCY": "10"
+        "PORT": {
+          "description": "The port the Ingestion Service listens on",
+          "defaultValue": "8081"
+        },
+        "HOST": {
+          "description": "The host the Ingestion Service binds to",
+          "defaultValue": "0.0.0.0"
+        },
+        "DATABASE_URL": {
+          "description": "The connection string for the PostgreSQL database",
+          "defaultValue": "${{postgres.DATABASE_URL}}"
+        },
+        "REDIS_URL": {
+          "description": "The connection string for Redis",
+          "defaultValue": "${{redis.REDIS_URL}}"
+        },
+        "RATE_LIMIT_MAX": {
+          "description": "Maximum number of requests per window",
+          "defaultValue": "1000"
+        },
+        "RATE_LIMIT_WINDOW_MS": {
+          "description": "Time window for rate limiting in milliseconds",
+          "defaultValue": "60000"
+        },
+        "QUEUE_NAME": {
+          "description": "Name of the Redis queue for usage events",
+          "defaultValue": "usage-events"
+        },
+        "QUEUE_CONCURRENCY": {
+          "description": "Number of concurrent queue consumers",
+          "defaultValue": "10"
+        }
       }
     },
     "rating-engine": {
@@ -92,11 +182,26 @@
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
         "NODE_ENV": "production",
-        "PORT": "3002",
-        "HOST": "0.0.0.0",
-        "DATABASE_URL": "${{postgres.DATABASE_URL}}",
-        "OPENAI_API_KEY": "",
-        "ANTHROPIC_API_KEY": ""
+        "PORT": {
+          "description": "The port the Rating Engine listens on",
+          "defaultValue": "3002"
+        },
+        "HOST": {
+          "description": "The host the Rating Engine binds to",
+          "defaultValue": "0.0.0.0"
+        },
+        "DATABASE_URL": {
+          "description": "The connection string for the PostgreSQL database",
+          "defaultValue": "${{postgres.DATABASE_URL}}"
+        },
+        "OPENAI_API_KEY": {
+          "description": "OpenAI API Key for cost calculation (optional)",
+          "defaultValue": ""
+        },
+        "ANTHROPIC_API_KEY": {
+          "description": "Anthropic API Key for cost calculation (optional)",
+          "defaultValue": ""
+        }
       }
     },
     "dashboard": {
@@ -115,8 +220,46 @@
       "variables": {
         "NIXPACKS_PROVIDERS": "node",
         "NODE_ENV": "production",
-        "PORT": "3000",
-        "NEXT_PUBLIC_API_URL": "https://${{api-gateway.RAILWAY_PUBLIC_DOMAIN}}"
+        "PORT": {
+          "description": "The port the Dashboard listens on",
+          "defaultValue": "3000"
+        },
+        "HOST": {
+          "description": "The host the Dashboard binds to",
+          "defaultValue": "0.0.0.0"
+        },
+        "NEXT_PUBLIC_API_URL": {
+          "description": "The public URL of the API Gateway",
+          "defaultValue": "https://${{api-gateway.RAILWAY_PUBLIC_DOMAIN}}"
+        },
+        "NEXTAUTH_SECRET": {
+          "description": "Secret used to encrypt session data",
+          "defaultValue": "${{NEXTAUTH_SECRET}}"
+        },
+        "GOOGLE_CLIENT_ID": {
+          "description": "Google OAuth Client ID",
+          "defaultValue": ""
+        },
+        "GOOGLE_CLIENT_SECRET": {
+          "description": "Google OAuth Client Secret",
+          "defaultValue": ""
+        },
+        "DEMO_MODE": {
+          "description": "Enable demo mode features",
+          "defaultValue": "false"
+        },
+        "DEMO_API_KEY": {
+          "description": "API Key for demo purposes",
+          "defaultValue": ""
+        },
+        "DEMO_TENANT_ID": {
+          "description": "Tenant ID for demo purposes",
+          "defaultValue": ""
+        },
+        "PUBLIC_DOCS_URL": {
+          "description": "URL to public documentation",
+          "defaultValue": "https://docs.openmonetize.com"
+        }
       }
     }
   }
