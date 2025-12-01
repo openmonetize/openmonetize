@@ -3,9 +3,7 @@
 **The "Smart Meter" for AI Consumption.**
 
 Open Source Pricing & Billing Infrastructure to track tokens, manage credits, and bill for actual usage.
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/n-FzAg?referralCode=2UryDH&utm_medium=integration&utm_source=template&utm_campaign=github)
-
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/gJR76w?referralCode=2UryDH&utm_medium=integration&utm_source=template&utm_campaign=generic)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)](https://nodejs.org/)
