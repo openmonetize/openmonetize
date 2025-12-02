@@ -41,7 +41,7 @@
       "variables": {
         "REDIS_PASSWORD": {
           "description": "The Redis password",
-          "defaultValue": "${{REDIS_PASSWORD}}"
+          "defaultValue": "${{x_PASSWORD}}"
         },
         "REDIS_URL": {
           "description": "The connection string for Redis",
