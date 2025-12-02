@@ -94,7 +94,7 @@
           "description": "The internal URL of the Ingestion Service",
           "defaultValue": "http://${{ingestion-service.HOST}}:${{ingestion-service.PORT}}"
         },
-        "RATING_ENGINE_URL": {
+        "RATING_SERVICE_URL": {
           "description": "The internal URL of the Rating Engine",
           "defaultValue": "http://${{rating-engine.HOST}}:${{rating-engine.PORT}}"
         },
@@ -103,7 +103,7 @@
           "defaultValue": "60"
         },
         "RATE_LIMIT_WINDOW": {
-          "description": "Time window for rate limiting",
+          "description": "Time window for rate limiting (e.g. '1 minute')",
           "defaultValue": "1 minute"
         },
         "LOG_LEVEL": {
@@ -152,9 +152,9 @@
           "description": "Maximum number of requests per window",
           "defaultValue": "1000"
         },
-        "RATE_LIMIT_WINDOW_MS": {
-          "description": "Time window for rate limiting in milliseconds",
-          "defaultValue": "60000"
+        "RATE_LIMIT_WINDOW": {
+          "description": "Time window for rate limiting (e.g. '1 minute')",
+          "defaultValue": "1 minute"
         },
         "QUEUE_NAME": {
           "description": "Name of the Redis queue for usage events",
@@ -193,14 +193,6 @@
         "DATABASE_URL": {
           "description": "The connection string for the PostgreSQL database",
           "defaultValue": "${{postgres.DATABASE_URL}}"
-        },
-        "OPENAI_API_KEY": {
-          "description": "OpenAI API Key for cost calculation (optional)",
-          "defaultValue": ""
-        },
-        "ANTHROPIC_API_KEY": {
-          "description": "Anthropic API Key for cost calculation (optional)",
-          "defaultValue": ""
         }
       }
     },
