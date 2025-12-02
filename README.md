@@ -18,7 +18,7 @@ Don't just read about it. Here is how you integrate OpenMonetize into your AI ap
 
 ### 1. The Setup
 
-You wrap your LLM calls (OpenAI, Anthropic, etc.) with our lightweight SDK.
+You wrap your LLM calls (OpenAI, Anthropic, Google Gemini, etc.) with our lightweight SDK.
 
 ```typescript
 import { OpenMonetize } from '@openmonetize/sdk';

@@ -40,7 +40,7 @@ await client.trackTokenUsage({
 ## Features
 
 - ✅ **Type-Safe** - Full TypeScript support with comprehensive type definitions
-- ✅ **Easy Integration** - Drop-in helpers for OpenAI, Anthropic, and more
+- ✅ **Easy Integration** - Drop-in helpers for OpenAI, Anthropic, Google Gemini, and more
 - ✅ **Real-Time Tracking** - Track AI usage as it happens
 - ✅ **Credit Management** - Check balances, purchase credits, view transactions
 - ✅ **Entitlements** - Gate features based on credit balance
@@ -101,7 +101,37 @@ const response = await withAnthropicTracking(
 );
 ```
 
-### 3. Check Credit Balance Before API Call
+### 3. Google (Gemini) Integration
+
+```typescript
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { OpenMonetize, trackUsage } from '@openmonetize/sdk';
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
+
+const response = await trackUsage(
+  monitor,
+  async () => {
+    const result = await model.generateContent("Write a story about a magic backpack.");
+    return result.response;
+  },
+  {
+    customerId: 'legalai-corp',
+    userId: 'law-firm-a',
+    featureId: 'story-generation',
+    provider: 'GOOGLE',
+    model: 'gemini-pro',
+    inputTokens: 10, // You can calculate this using tiktoken or similar
+    outputTokens: 100 // You can calculate this using tiktoken or similar
+  }
+);
+
+console.log(response.text());
+```
+
+### 4. Check Credit Balance Before API Call
 
 ```typescript
 // Check if user has enough credits
@@ -118,7 +148,7 @@ if (balance.available < 100) {
 await openai.chat.completions.create({...});
 ```
 
-### 4. Real-Time Entitlement Check
+### 5. Real-Time Entitlement Check
 
 ```typescript
 // Check if user can perform an action BEFORE executing it
@@ -150,7 +180,7 @@ if (!entitlement.allowed) {
 await openai.chat.completions.create({...});
 ```
 
-### 5. Batch Event Tracking
+### 6. Batch Event Tracking
 
 ```typescript
 import { BatchTracker } from '@openmonetize/sdk';
@@ -183,7 +213,7 @@ await tracker.flush();
 console.log(`Tracked ${tracker.pending} events`);
 ```
 
-### 6. Purchase Credits
+### 7. Purchase Credits
 
 ```typescript
 // Top up user's credit balance
@@ -198,7 +228,7 @@ console.log(`Transaction ID: ${result.transaction_id}`);
 console.log(`New balance: ${result.new_balance} credits`);
 ```
 
-### 7. Get Usage Analytics
+### 8. Get Usage Analytics
 
 ```typescript
 const analytics = await client.getUsageAnalytics('legalai-corp', {
@@ -221,7 +251,7 @@ Object.entries(analytics.by_model).forEach(([model, stats]) => {
 });
 ```
 
-### 8. Calculate Cost Before Execution
+### 9. Calculate Cost Before Execution
 
 ```typescript
 // Preview cost before making the API call
@@ -243,7 +273,7 @@ if (await confirmWithUser(cost.credits)) {
 }
 ```
 
-### 9. Transaction History
+### 10. Transaction History
 
 ```typescript
 const history = await client.getTransactionHistory(
