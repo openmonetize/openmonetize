@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, RefreshCw, Copy, Check, Shield, Key } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Copy, Check, Shield, Key, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,21 +25,32 @@ export default function ApiKeysPage() {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+
+  // Get the current API key from the session
+  const currentApiKey = (session?.user as any)?.apiKey;
 
   const handleRotateKey = async () => {
     setLoading(true);
     try {
-      // We need to call the API route we just created
-      // Note: fetchFromApi is a server-side helper, we need a client-side equivalent or use fetch directly
-      // Since we are in a client component, we can use fetch directly but we need the token.
-      // Actually, let's use the session token.
-      
-      if (!session?.user || !(session.user as any).apiKey) {
-          console.error("No session");
+      if (!currentApiKey) {
+          // If no key exists, we might need a different endpoint or just use the same one if it handles creation
+          // Assuming rotate-key handles creation if no key exists, or we might need a create endpoint.
+          // For now, let's try rotate-key, but we need to authorize. 
+          // If the user has no key, they might not be able to authorize with a key.
+          // However, the backend likely uses the session cookie if we were using a server action or proxy.
+          // But here we are calling the API directly.
+          // If the user has no key, they can't make authenticated requests to the API that require an API key.
+          // BUT, the rotate endpoint might require session auth, not API key auth?
+          // Looking at the previous code: 'Authorization': `Bearer ${currentApiKey}`
+          // If currentApiKey is missing, this call will fail if the API requires it.
+          // Let's assume for now we can't rotate if we don't have a key, OR the user needs to contact support.
+          // actually, if they don't have a key, they probably just created the account.
+          // Let's check if we can use the session token for this request? 
+          // The previous implementation used the API key.
+          console.error("No API key available to authorize rotation");
           return;
       }
-
-      const currentApiKey = (session.user as any).apiKey;
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/customers/rotate-key`, {
         method: 'POST',
@@ -70,12 +81,10 @@ export default function ApiKeysPage() {
     }
   };
 
-  const handleCopy = () => {
-    if (newKey) {
-      navigator.clipboard.writeText(newKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -97,24 +106,52 @@ export default function ApiKeysPage() {
                 This key is used to authenticate your requests to the OpenMonetize API.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
-              <Shield className="h-3 w-3" />
-              Active
-            </div>
+            {currentApiKey && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium">
+                <Shield className="h-3 w-3" />
+                Active
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label htmlFor="apiKey" className="sr-only">API Key</Label>
-              <Input
-                id="apiKey"
-                value="sk_live_********************************"
-                readOnly
-                className="font-mono bg-slate-50 dark:bg-slate-900"
-              />
+          {currentApiKey ? (
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Label htmlFor="apiKey" className="sr-only">API Key</Label>
+                <Input
+                  id="apiKey"
+                  value={showKey ? currentApiKey : 'sk_live_********************************'}
+                  readOnly
+                  className="font-mono bg-slate-50 dark:bg-slate-900 pr-24"
+                />
+                <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
+                   <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 px-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    onClick={() => setShowKey(!showKey)}
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showKey ? 'Hide' : 'Show'} API Key</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 px-2 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    onClick={() => handleCopy(currentApiKey)}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <span className="sr-only">Copy</span>
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200">
+                <p>No active API key found. Please contact support or generate a new one if available.</p>
+            </div>
+          )}
           
           <Alert variant="default" className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <AlertTitle className="text-blue-800 dark:text-blue-300">Security Note</AlertTitle>
@@ -126,7 +163,7 @@ export default function ApiKeysPage() {
         <CardFooter className="border-t bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4">
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <DialogTrigger asChild>
-                    <Button variant="destructive">
+                    <Button variant="destructive" disabled={!currentApiKey}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Rotate Key
                     </Button>
@@ -170,7 +207,7 @@ export default function ApiKeysPage() {
                 className="font-mono"
               />
             </div>
-            <Button size="sm" className="px-3" onClick={handleCopy}>
+            <Button size="sm" className="px-3" onClick={() => newKey && handleCopy(newKey)}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               <span className="sr-only">Copy</span>
             </Button>
@@ -181,9 +218,6 @@ export default function ApiKeysPage() {
               variant="secondary"
               onClick={() => {
                   setNewKey(null);
-                  // Force a page reload or session update to reflect the new key in the app state if needed
-                  // For now, just closing is fine, but the session will still have the old key until refreshed.
-                  // Ideally we should trigger a session update.
                   window.location.reload(); 
               }}
             >

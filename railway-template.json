@@ -224,6 +224,10 @@
           "description": "The public URL of the API Gateway",
           "defaultValue": "https://${{api-gateway.RAILWAY_PUBLIC_DOMAIN}}"
         },
+        "NEXTAUTH_URL": {
+          "description": "The canonical URL of the site",
+          "defaultValue": "https://${{RAILWAY_PUBLIC_DOMAIN}}"
+        },
         "NEXTAUTH_SECRET": {
           "description": "Secret used to encrypt session data",
           "defaultValue": "${{NEXTAUTH_SECRET}}"
