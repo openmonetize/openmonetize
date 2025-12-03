@@ -2,9 +2,9 @@
 name = "OpenMonetize"
 description = "Open-source AI usage metering and billing platform. Track tokens, manage credits, and bill for LLM usage (OpenAI, Anthropic, Gemini)."
 repositoryUrl = "https://github.com/openmonetize/openmonetize"
-imageUrl = "https://openmonetize.com/logo.png" # Placeholder, user should update
+imageUrl = "https://openmonetize.io/logo.png" # Placeholder, user should update
 codeUrl = "https://github.com/openmonetize/openmonetize"
-demoUrl = "https://demo.openmonetize.com"
+demoUrl = "https://demo.openmonetize.io"
 
 [build]
 builder = "dockerfile"

@@ -48,6 +48,22 @@ await client.trackTokenUsage({
 - ✅ **Batch Processing** - Efficient bulk event tracking
 - ✅ **Error Handling** - Proper error types and retry logic
 
+## Testing with Sandbox
+
+The easiest way to verify your integration is using the OpenMonetize Sandbox. It visualizes the flow of data and helps you debug issues in real-time.
+
+### Local Development
+If you are running the platform locally:
+1.  Go to `http://localhost:3002/sandbox`.
+2.  Use the **Integration Code** tab to copy the snippet for your specific use case.
+3.  Run your code and watch the **Live Logs** in the sandbox to see the event travel through the system.
+
+### Cloud Sandbox
+If you are using the managed OpenMonetize cloud:
+1.  Log in to the [Console](https://console.openmonetize.io).
+2.  Navigate to the **Sandbox** tab.
+3.  Use your production API key to test events against the live system.
+
 ## Usage Examples
 
 ### 1. OpenAI Integration

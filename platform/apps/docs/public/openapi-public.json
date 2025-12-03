@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "OpenMonetize API Gateway",
-    "description": "Open-source AI monetization infrastructure\n\n## Authentication\n\nAll API endpoints require authentication using Bearer token format:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\nOr using the X-API-Key header:\n\nX-API-Key: YOUR_API_KEY\n```\n\n## How to get an API Key\n\nYou have two options to get started:\n\n1. **Self-Hosted (Free & Private)**: Run the platform locally or on your own infrastructure. You are the admin and can generate keys for yourself.\n2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.\n\n### Getting a Key (Sandbox)\n1. Go to the [OpenMonetize Console](https://console.openmonetize.com).\n2. Navigate to the **Sandbox** or **API Keys** section.\n3. Generate a new API key.\n4. Use this key in the \"Authorize\" button above.\n\n## Rate Limiting\n\nAPI requests are rate-limited to 100 requests per 1 minute per API key.",
+    "description": "Open-source AI monetization infrastructure\n\n## Authentication\n\nAll API endpoints require authentication using Bearer token format:\n\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\nOr using the X-API-Key header:\n\nX-API-Key: YOUR_API_KEY\n```\n\n## How to get an API Key\n\nYou have two options to get started:\n\n1. **Self-Hosted (Free & Private)**: Run the platform locally or on your own infrastructure. You are the admin and can generate keys for yourself.\n2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.\n\n### Getting a Key (Sandbox)\n1. Go to the [OpenMonetize Console](https://app.openmonetize.io).\n2. Navigate to the **Sandbox** or **API Keys** section.\n3. Generate a new API key.\n4. Use this key in the \"Authorize\" button above.\n\n## Rate Limiting\n\nAPI requests are rate-limited to 100 requests per 1 minute per API key.",
     "version": "0.1.0",
     "contact": {
       "name": "OpenMonetize",
@@ -4113,7 +4113,7 @@
   },
   "servers": [
     {
-      "url": "https://api.openmonetize.com",
+      "url": "https://api.openmonetize.io",
       "description": "Production Server"
     },
     {

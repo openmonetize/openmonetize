@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LogEntry } from '@/app/types';
+import type { LogEntry } from '@/app/(dashboard)/sandbox/types';
 import type { RefObject } from 'react';
 
 interface LiveLogsPanelProps {

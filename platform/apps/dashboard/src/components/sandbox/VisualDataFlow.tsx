@@ -1,6 +1,6 @@
 'use client';
 
-import { VISUAL_FLOW_STEPS } from '@/app/constants';
+import { VISUAL_FLOW_STEPS } from '@/app/(dashboard)/sandbox/constants';
 
 interface VisualDataFlowProps {
   activeStep: string | null;

@@ -74,7 +74,7 @@ export function Header({ customerName, apiKey, balance, onLogout, onTopUp }: Hea
            <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
 
            <a
-             href="https://openmonetize-docs.vercel.app"
+             href="https://docs.openmonetize.io"
              target="_blank"
              rel="noopener noreferrer"
              className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"

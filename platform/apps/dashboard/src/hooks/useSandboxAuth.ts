@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import type { LogEntry } from '@/app/types';
+import type { LogEntry } from '@/app/(dashboard)/sandbox/types';
 
 export function useSandboxAuth(addLog: (source: LogEntry['source'], message: string, details?: any) => void) {
   const { data: session, status } = useSession();

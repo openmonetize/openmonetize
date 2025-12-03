@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_URL } from '@/app/constants';
-import type { LogEntry } from '@/app/types';
+import { API_URL } from '@/app/(dashboard)/sandbox/constants';
+import type { LogEntry } from '@/app/(dashboard)/sandbox/types';
 
 export function useSandboxBalance(
   apiKey: string | null,

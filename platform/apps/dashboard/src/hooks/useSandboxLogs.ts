@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { LogEntry } from '@/app/types';
+import type { LogEntry } from '@/app/(dashboard)/sandbox/types';
 
 export function useSandboxLogs() {
   const [logs, setLogs] = useState<LogEntry[]>([]);

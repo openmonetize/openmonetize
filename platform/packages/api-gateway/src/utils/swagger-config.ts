@@ -29,7 +29,7 @@ export function getSwaggerServers() {
 
   // Primary server (production or detected URL)
   servers.push({
-    url: 'https://api.openmonetize.com',
+    url: 'https://api.openmonetize.io',
     description: 'Production Server',
   });
 
@@ -89,7 +89,7 @@ You have two options to get started:
 2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.
 
 ### Getting a Key (Sandbox)
-1. Go to the [OpenMonetize Console](https://console.openmonetize.com).
+1. Go to the [OpenMonetize Console](https://app.openmonetize.io).
 2. Navigate to the **Sandbox** or **API Keys** section.
 3. Generate a new API key.
 4. Use this key in the "Authorize" button above.
@@ -123,7 +123,7 @@ You have two options to get started:
 2. **Sandbox (Quick Start)**: Use our hosted sandbox environment to try the API immediately without installation.
 
 ### Getting a Key (Sandbox)
-1. Go to the [OpenMonetize Console](https://console.openmonetize.com).
+1. Go to the [OpenMonetize Console](https://app.openmonetize.io).
 2. Navigate to the **Sandbox** or **API Keys** section.
 3. Generate a new API key.
 4. Use this key in the "Authorize" button above.

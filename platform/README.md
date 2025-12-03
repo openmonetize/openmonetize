@@ -69,7 +69,10 @@ DATABASE_URL="postgresql://admin:dev_password_change_in_production@localhost:543
 npm run db:seed
 
 # Start development
+# Start development (Backend + Dashboard)
 npm run dev
+
+# Dashboard will be available at http://localhost:3002
 ```
 
 ### Environment Variables
@@ -94,6 +97,8 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 
 ```
 platform/
+├── apps/
+│   └── dashboard/           # Customer Dashboard & Sandbox
 ├── packages/
 │   ├── common/              # Shared types, DB client, utilities
 │   ├── api-gateway/         # Fastify API gateway
@@ -118,6 +123,19 @@ platform/
 | **Cache** | Redis 7 | Sub-ms latency, data structures |
 | **Validation** | Zod | Runtime type checking |
 | **Build** | Turborepo | Fast, efficient monorepo builds |
+
+## Dashboard & Sandbox
+
+OpenMonetize comes with a built-in **Customer Dashboard** (`apps/dashboard`) that serves two purposes:
+
+1.  **Customer Portal**: A full-featured dashboard for your users to view their usage, manage API keys, and check their credit balance.
+2.  **Developer Sandbox**: A powerful testing tool that visualizes the entire flow of an API request—from the app, through the gateway, ingestion, rating engine, and finally to the database.
+
+### Using the Sandbox
+When running locally, visit `http://localhost:3002/sandbox` to access the Sandbox. It allows you to:
+-   Simulate API requests (Text Generation, Image Generation).
+-   See real-time logs from all system components.
+-   View the exact code snippets needed to integrate the SDK.
 
 ## Features
 
