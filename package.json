@@ -5,7 +5,17 @@
   "scripts": {
     "postinstall": "cd platform && pnpm install",
     "build": "cd platform && pnpm build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint-staged": {
+      "*.{ts,tsx}": [
+        "eslint --fix",
+        "prettier --write",
+        "tsc-files --noEmit"
+      ],
+      "*.{json,md,yml}": [
+        "prettier --write"
+      ]
+    }
   },
   "engines": {
     "node": ">=18"
@@ -17,6 +27,8 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7"
   }

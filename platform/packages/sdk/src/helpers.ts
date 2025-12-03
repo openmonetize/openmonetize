@@ -23,6 +23,7 @@
 // OpenMonetize SDK Helper Functions
 import type { OpenMonetize } from './client';
 import type { Provider } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * OpenAI Integration Helper
@@ -144,6 +145,68 @@ export async function withAnthropicTracking<T extends {
 }
 
 /**
+ * Google (Gemini) Integration Helper
+ *
+ * @example
+ * ```typescript
+ * import { GoogleGenerativeAI } from '@google/generative-ai';
+ * import { OpenMonetize, withGoogleTracking } from '@openmonetize/sdk';
+ *
+ * const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+ * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+ * const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
+ *
+ * const result = await withGoogleTracking(
+ *   monitor,
+ *   () => model.generateContent('Hello'),
+ *   {
+ *     customerId: 'legalai-corp',
+ *     userId: 'law-firm-a',
+ *     featureId: 'legal-research',
+ *     model: 'gemini-pro'
+ *   }
+ * );
+ * ```
+ */
+export async function withGoogleTracking<T extends {
+  response: {
+    usageMetadata?: {
+      promptTokenCount: number;
+      candidatesTokenCount: number;
+      totalTokenCount: number;
+    };
+  };
+}>(
+  client: OpenMonetize,
+  fn: () => Promise<T>,
+  context: {
+    customerId: string;
+    userId: string;
+    featureId: string;
+    model: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<T> {
+  const result = await fn();
+  const usage = result.response.usageMetadata;
+
+  if (usage) {
+    // Track usage (automatically batched)
+    client.trackTokenUsage({
+      user_id: context.userId,
+      feature_id: context.featureId,
+      provider: 'GOOGLE',
+      model: context.model,
+      input_tokens: usage.promptTokenCount || 0,
+      output_tokens: usage.candidatesTokenCount || 0,
+      metadata: context.metadata,
+    });
+  }
+
+  return result;
+}
+
+/**
  * Generic tracking helper for any AI provider
  *
  * @example
@@ -238,7 +301,7 @@ export class BatchTracker {
 
     await this.client.ingestEvents({
       events: this.events.map(event => ({
-        event_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        event_id: uuidv4(),
         customer_id: event.customerId,
         user_id: event.userId,
         event_type: 'TOKEN_USAGE' as const,

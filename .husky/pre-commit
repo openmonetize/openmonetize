@@ -1,1 +1,11 @@
-npx lint-staged
+npx #!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 1. Run lint-staged (Formatted code + Type checks)
+pnpm exec lint-staged
+
+# 2. (Optional but Recommended) Secret Scanning
+# Requires installing gitleaks or similar: brew install gitleaks
+if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks protect --staged --redact --verbose
+fi
