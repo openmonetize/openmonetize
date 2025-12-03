@@ -121,7 +121,7 @@ export default function ApiKeysPage() {
                 <Label htmlFor="apiKey" className="sr-only">API Key</Label>
                 <Input
                   id="apiKey"
-                  value={showKey ? currentApiKey : 'sk_live_********************************'}
+                  value={showKey ? currentApiKey : 'om_live_********************************'}
                   readOnly
                   className="font-mono bg-slate-50 dark:bg-slate-900 pr-24"
                 />

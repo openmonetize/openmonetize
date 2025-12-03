@@ -40,6 +40,7 @@ import type {
   Provider,
 } from './types';
 import { OpenMonetizeError } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * OpenMonetize SDK Client
@@ -282,7 +283,7 @@ export class OpenMonetize {
     metadata?: Record<string, unknown>;
   }): void {
     // Generate event ID
-    const event_id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const event_id = uuidv4();
 
     // Get customer ID from context or require it
     const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
@@ -312,7 +313,7 @@ export class OpenMonetize {
     quantity: number;
     metadata?: Record<string, unknown>;
   }): void {
-    const event_id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const event_id = uuidv4();
     const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
 
     this.enqueueEvent({

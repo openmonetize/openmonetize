@@ -86,6 +86,7 @@ describe('OpenMonetize SDK Batching', () => {
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.events).toHaveLength(3);
     expect(body.events[0].user_id).toBe('user-1');
+    expect(body.events[0].event_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
     expect(body.events[2].user_id).toBe('user-3');
   });
 
@@ -163,8 +164,8 @@ describe('OpenMonetize SDK Batching', () => {
     // Flush manually
     const flushPromise = client.flush();
 
-    // Advance time for backoff (2s + buffer)
-    await vi.advanceTimersByTimeAsync(2100);
+    // Advance time for backoff (2s + buffer + jitter max 1s)
+    await vi.advanceTimersByTimeAsync(3100);
 
     await flushPromise;
 
