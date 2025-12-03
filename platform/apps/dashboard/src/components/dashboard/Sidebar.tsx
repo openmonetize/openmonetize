@@ -9,7 +9,7 @@ import { useSandboxAuth } from '@/hooks/useSandboxAuth';
 
 const navigation = [
   { name: 'Overview', href: '/', icon: LayoutDashboard },
-  { name: 'Sandbox', href: '/sandbox', icon: Box },
+  { name: 'Playground', href: '/sandbox', icon: Box },
   { name: 'API Keys', href: '/api-keys', icon: Key },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

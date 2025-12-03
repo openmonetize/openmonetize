@@ -190,4 +190,56 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
       }
     }
   );
+  // Rotate API Key (authenticated)
+  app.post(
+    '/v1/customers/rotate-key',
+    {
+      preHandler: authenticate,
+      schema: {
+        tags: ['Customers'],
+        'x-visibility': 'internal',
+        description: 'Rotate API key for the current customer. Invalidates the old key.',
+        security: [{ bearerAuth: [] }],
+        response: withCommonResponses({
+          200: z.object({
+            data: z.object({
+              apiKey: z.string().describe('New API key - only shown once!'),
+            }),
+          }),
+        }, [401, 500]),
+      },
+    },
+    async (request, reply) => {
+      try {
+        if (!request.customer) {
+          return reply.status(401).send({
+            error: 'Unauthorized',
+            message: 'Authentication required',
+          });
+        }
+
+        // Generate new key
+        const apiKey = generateApiKey('om_live');
+        const apiKeyHash = hashApiKey(apiKey);
+
+        // Update customer
+        await db.customer.update({
+          where: { id: request.customer.id },
+          data: { apiKeyHash },
+        });
+
+        logger.info({ customerId: request.customer.id }, 'API Key rotated');
+
+        return reply.send({
+          data: { apiKey },
+        });
+      } catch (error) {
+        logger.error({ err: error }, 'Error rotating API key');
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Failed to rotate API key',
+        });
+      }
+    }
+  );
 };

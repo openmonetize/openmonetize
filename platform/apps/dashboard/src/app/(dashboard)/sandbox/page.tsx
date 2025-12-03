@@ -10,7 +10,7 @@ import { Header } from '@/components/sandbox/Header';
 import { ApiConsoleCard } from '@/components/sandbox/ApiConsoleCard';
 import { LiveLogsPanel } from '@/components/sandbox/LiveLogsPanel';
 import { IntegrationCodePanel } from '@/components/sandbox/IntegrationCodePanel';
-import { AuthPage } from '@/components/sandbox/AuthPage';
+// import { AuthPage } from '@/components/sandbox/AuthPage';
 import { VisualDataFlow } from '@/components/sandbox/VisualDataFlow';
 import { API_URL, CODE_SNIPPETS } from './constants';
 import type { GenerationType } from './types';
@@ -109,7 +109,7 @@ export default function SandboxPage() {
 
   // Show auth page if not authenticated
   if (!authChecked) return null;
-  if (!apiKey) return <AuthPage onSuccess={handleLoginSuccess} />;
+  // if (!apiKey) return <AuthPage onSuccess={handleLoginSuccess} />; // REMOVED: Main app handles auth now
 
   // Main playground UI
   return (

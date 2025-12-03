@@ -36,8 +36,7 @@ const mockOpenAI = {
 
 // Initialize OpenMonetize client
 const monitor = new OpenMonetize({
-  apiKey: process.env.OPENMONETIZE_API_KEY || 'om_dev_test_key',
-  baseUrl: 'http://localhost:3000',  // Use local API Gateway for testing
+  apiKey: process.env.OPENMONETIZE_API_KEY,
   debug: true,
 });
 
