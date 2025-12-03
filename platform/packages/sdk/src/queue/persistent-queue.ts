@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-import localforage from 'localforage';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface QueueItem<T> {
@@ -30,17 +29,129 @@ export interface QueueItem<T> {
   retryCount: number;
 }
 
+interface StorageDriver {
+  setItem<T>(key: string, value: T): Promise<T>;
+  iterate<T, U>(iteratee: (value: T, key: string, iterationNumber: number) => U): Promise<U>;
+  removeItem(key: string): Promise<void>;
+  length(): Promise<number>;
+  clear(): Promise<void>;
+}
+
+class InMemoryStorage implements StorageDriver {
+  private storage = new Map<string, any>();
+
+  async setItem<T>(key: string, value: T): Promise<T> {
+    this.storage.set(key, value);
+    return value;
+  }
+
+  async iterate<T, U>(iteratee: (value: T, key: string, iterationNumber: number) => U): Promise<U> {
+    let i = 0;
+    for (const [key, value] of this.storage) {
+      const result = iteratee(value, key, i++);
+      if (result !== undefined) return result;
+    }
+    return undefined as unknown as U;
+  }
+
+  async removeItem(key: string): Promise<void> {
+    this.storage.delete(key);
+  }
+
+  async length(): Promise<number> {
+    return this.storage.size;
+  }
+
+  async clear(): Promise<void> {
+    this.storage.clear();
+  }
+}
+
+class BrowserStorage implements StorageDriver {
+  private prefix: string;
+
+  constructor(name: string) {
+    this.prefix = `${name}/`;
+  }
+
+  private getKey(key: string): string {
+    return this.prefix + key;
+  }
+
+  async setItem<T>(key: string, value: T): Promise<T> {
+    try {
+      window.localStorage.setItem(this.getKey(key), JSON.stringify(value));
+      return value;
+    } catch (e) {
+      console.warn('[OpenMonetize] Failed to save to localStorage:', e);
+      return value;
+    }
+  }
+
+  async iterate<T, U>(iteratee: (value: T, key: string, iterationNumber: number) => U): Promise<U> {
+    let iterationNumber = 0;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(this.prefix)) {
+        const valueStr = window.localStorage.getItem(key);
+        if (valueStr) {
+          try {
+            const value = JSON.parse(valueStr);
+            // Remove prefix for the callback
+            const originalKey = key.slice(this.prefix.length);
+            const result = iteratee(value, originalKey, iterationNumber++);
+            if (result !== undefined) return result;
+          } catch (e) {
+            // Ignore corrupted items
+          }
+        }
+      }
+    }
+    return undefined as unknown as U;
+  }
+
+  async removeItem(key: string): Promise<void> {
+    window.localStorage.removeItem(this.getKey(key));
+  }
+
+  async length(): Promise<number> {
+    let count = 0;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(this.prefix)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  async clear(): Promise<void> {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(this.prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => window.localStorage.removeItem(key));
+  }
+}
+
 export class PersistentQueue<T> {
-  private store: LocalForage;
+  private store: StorageDriver;
   private isProcessing: boolean = false;
   private queueName: string;
 
   constructor(name: string = 'om_events_queue') {
     this.queueName = name;
-    this.store = localforage.createInstance({
-      name: 'OpenMonetize',
-      storeName: name
-    });
+    
+    // Check if we are in a browser environment with storage support
+    if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+      this.store = new BrowserStorage(name);
+    } else {
+      // Fallback to in-memory storage for Node.js or environments without storage
+      this.store = new InMemoryStorage();
+    }
   }
 
   async enqueue(data: T): Promise<string> {
