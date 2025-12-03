@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
-    signIn: '/', // Custom sign-in page (we handle it in AuthPage)
+    signIn: '/login',
   },
   session: {
     strategy: 'jwt',
