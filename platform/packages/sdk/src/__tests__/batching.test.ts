@@ -52,6 +52,7 @@ describe('OpenMonetize SDK Batching', () => {
     // Track 3 events
     client.trackTokenUsage({
       user_id: 'user-1',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',
@@ -60,6 +61,7 @@ describe('OpenMonetize SDK Batching', () => {
     });
     client.trackTokenUsage({
       user_id: 'user-2',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',
@@ -68,6 +70,7 @@ describe('OpenMonetize SDK Batching', () => {
     });
     client.trackTokenUsage({
       user_id: 'user-3',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',
@@ -105,6 +108,7 @@ describe('OpenMonetize SDK Batching', () => {
     // Track 1st event
     client.trackTokenUsage({
       user_id: 'user-1',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',
@@ -116,6 +120,7 @@ describe('OpenMonetize SDK Batching', () => {
     // Track 2nd event (hits maxBatchSize)
     client.trackTokenUsage({
       user_id: 'user-2',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',
@@ -154,6 +159,7 @@ describe('OpenMonetize SDK Batching', () => {
 
     client.trackTokenUsage({
       user_id: 'user-1',
+      customer_id: 'cust-1',
       feature_id: 'feat-1',
       provider: 'OPENAI',
       model: 'gpt-4',

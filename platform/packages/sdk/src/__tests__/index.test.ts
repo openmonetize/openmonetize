@@ -20,5 +20,27 @@
  * SOFTWARE.
  */
 
-export * from './client';
-export * from './types';
+
+import { describe, it, expect } from 'vitest';
+import { OpenMonetize } from '../index';
+import { OpenMonetize as ClientOpenMonetize } from '../client';
+
+describe('SDK Entry Point', () => {
+  it('should export OpenMonetize class', () => {
+    expect(OpenMonetize).toBeDefined();
+    expect(OpenMonetize).toBe(ClientOpenMonetize);
+  });
+
+  it('should be instantiable', () => {
+    const client = new OpenMonetize({ apiKey: 'test' });
+    expect(client).toBeInstanceOf(OpenMonetize);
+    expect(client).toBeInstanceOf(ClientOpenMonetize);
+  });
+
+  it('should have expected methods', () => {
+    const client = new OpenMonetize({ apiKey: 'test' });
+    expect(typeof client.trackTokenUsage).toBe('function');
+    expect(typeof client.flush).toBe('function');
+    expect(typeof client.ingestEvents).toBe('function');
+  });
+});

@@ -275,8 +275,9 @@ export class OpenMonetize {
    */
   trackTokenUsage(params: {
     user_id: string;
+    customer_id: string;
     feature_id: string;
-    provider: 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL';
+    provider: string;
     model: string;
     input_tokens: number;
     output_tokens: number;
@@ -285,19 +286,48 @@ export class OpenMonetize {
     // Generate event ID
     const event_id = uuidv4();
 
-    // Get customer ID from context or require it
-    const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
-
     this.enqueueEvent({
       event_id,
-      customer_id,
+      customer_id: params.customer_id,
       user_id: params.user_id,
       event_type: 'TOKEN_USAGE',
       feature_id: params.feature_id,
-      provider: params.provider,
+      provider: params.provider.toUpperCase() as any,
       model: params.model,
       input_tokens: params.input_tokens,
       output_tokens: params.output_tokens,
+      timestamp: new Date().toISOString(),
+      metadata: params.metadata,
+    });
+  }
+
+  /**
+   * Track image generation usage
+   */
+  trackImageGeneration(params: {
+    user_id: string;
+    customer_id: string;
+    feature_id: string;
+    provider: string;
+    model: string;
+    image_count: number;
+    image_size?: string;
+    quality?: string;
+    metadata?: Record<string, unknown>;
+  }): void {
+    const event_id = uuidv4();
+
+    this.enqueueEvent({
+      event_id,
+      customer_id: params.customer_id,
+      user_id: params.user_id,
+      event_type: 'IMAGE_GENERATION',
+      feature_id: params.feature_id,
+      provider: params.provider.toUpperCase() as any,
+      model: params.model,
+      image_count: params.image_count,
+      image_size: params.image_size,
+      quality: params.quality,
       timestamp: new Date().toISOString(),
       metadata: params.metadata,
     });
@@ -308,17 +338,17 @@ export class OpenMonetize {
    */
   trackCustomEvent(params: {
     user_id: string;
+    customer_id: string;
     feature_id: string;
     unit_type: string;
     quantity: number;
     metadata?: Record<string, unknown>;
   }): void {
     const event_id = uuidv4();
-    const customer_id = this.customerId || 'CUSTOMER_ID_REQUIRED';
 
     this.enqueueEvent({
       event_id,
-      customer_id,
+      customer_id: params.customer_id,
       user_id: params.user_id,
       event_type: 'CUSTOM',
       feature_id: params.feature_id,

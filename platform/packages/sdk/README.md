@@ -29,6 +29,7 @@ const client = new OpenMonetize({
 // Track token usage
 await client.trackTokenUsage({
   user_id: 'law-firm-a',
+  customer_id: 'legalai-corp',
   feature_id: 'legal-research',
   provider: 'OPENAI',
   model: 'gpt-4',

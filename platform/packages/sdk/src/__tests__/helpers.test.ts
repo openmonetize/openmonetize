@@ -62,6 +62,7 @@ describe('OpenMonetize SDK Helpers', () => {
       expect(result).toBe(mockGoogleResponse);
       expect(trackSpy).toHaveBeenCalledWith({
         user_id: 'user-1',
+        customer_id: 'cust-1',
         feature_id: 'feat-1',
         provider: 'GOOGLE',
         model: 'gemini-pro',

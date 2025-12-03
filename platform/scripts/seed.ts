@@ -159,6 +159,29 @@ async function main() {
         validFrom: new Date('2025-01-01')
       }
     }),
+    // o1-preview (Early access)
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'o1-preview',
+        costType: CostType.INPUT_TOKEN,
+        costPerUnit: 15.00,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-01-01')
+      }
+    }),
+    prisma.providerCost.create({
+      data: {
+        provider: ProviderName.OPENAI,
+        model: 'o1-preview',
+        costType: CostType.OUTPUT_TOKEN,
+        costPerUnit: 60.00,
+        unitSize: 1000000,
+        currency: 'USD',
+        validFrom: new Date('2025-01-01')
+      }
+    }),
     // gpt-4o (Legacy Flagship)
     prisma.providerCost.create({
       data: {
@@ -478,6 +501,11 @@ async function main() {
           per_unit: 1000000
         },
         'o1': {
+          input_tokens: 15.0,
+          output_tokens: 60.0,
+          per_unit: 1000000
+        },
+        'o1-preview': {
           input_tokens: 15.0,
           output_tokens: 60.0,
           per_unit: 1000000

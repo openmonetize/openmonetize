@@ -74,6 +74,7 @@ export async function withOpenAITracking<T extends {
     // Track usage (automatically batched)
     client.trackTokenUsage({
       user_id: context.userId,
+      customer_id: context.customerId,
       feature_id: context.featureId,
       provider: 'OPENAI',
       model: response.model,
@@ -133,6 +134,7 @@ export async function withAnthropicTracking<T extends {
   // Track usage (automatically batched)
   client.trackTokenUsage({
     user_id: context.userId,
+    customer_id: context.customerId,
     feature_id: context.featureId,
     provider: 'ANTHROPIC',
     model: response.model,
@@ -194,6 +196,7 @@ export async function withGoogleTracking<T extends {
     // Track usage (automatically batched)
     client.trackTokenUsage({
       user_id: context.userId,
+      customer_id: context.customerId,
       feature_id: context.featureId,
       provider: 'GOOGLE',
       model: context.model,
@@ -245,8 +248,9 @@ export async function trackUsage<T>(
   // Track usage (automatically batched)
   client.trackTokenUsage({
     user_id: tracking.userId,
+    customer_id: tracking.customerId,
     feature_id: tracking.featureId,
-    provider: tracking.provider as any,
+    provider: tracking.provider.toUpperCase() as any,
     model: tracking.model,
     input_tokens: tracking.inputTokens,
     output_tokens: tracking.outputTokens,
