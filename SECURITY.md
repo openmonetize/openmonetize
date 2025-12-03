@@ -8,7 +8,7 @@ We take the security of OpenMonetize seriously. If you believe you have found a 
 
 ### How to Report
 
-**Email**: security@openmonetize.com
+**Email**: security@openmonetize.io
 
 **PGP Key**: Available on request
 
@@ -179,8 +179,8 @@ We use the following security tools:
 
 ## Contact
 
-- **Security Issues**: security@openmonetize.com
-- **General Support**: support@openmonetize.com
+- **Security Issues**: security@openmonetize.io
+- **General Support**: support@openmonetize.io
 - **GitHub Discussions**: https://github.com/openmonetize/openmonetize/discussions
 
 ---

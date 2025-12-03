@@ -47,7 +47,7 @@ export class OpenMonetize {
 
   constructor(config: OpenMonetizeConfig) {
     this.apiKey = config.apiKey;
-    this.endpoint = config.endpoint || 'https://api.openmonetize.com';
+    this.endpoint = config.endpoint || 'https://api.openmonetize.io';
     this.queue = new PersistentQueue();
     
     // Start background flush

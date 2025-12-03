@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Terminal } from 'lucide-react';
 import { ChatCompletionTab } from './ChatCompletionTab';
 import { ImageGenerationTab } from './ImageGenerationTab';
-import type { GenerationType } from '@/app/(dashboard)/sandbox/types';
+import type { GenerationType } from '@/app/(dashboard)/playground/types';
 
 interface ApiConsoleCardProps {
   apiKey: string | null;

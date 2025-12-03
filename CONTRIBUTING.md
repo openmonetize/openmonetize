@@ -416,7 +416,7 @@ Any other relevant information
 **Do NOT open public issues for security vulnerabilities!**
 
 Please report security issues privately via:
-- Email: security@openmonetize.com
+- Email: security@openmonetize.io
 - See [SECURITY.md](SECURITY.md) for details
 
 ## 📞 Getting Help
@@ -424,7 +424,7 @@ Please report security issues privately via:
 - **Questions**: [GitHub Discussions](https://github.com/openmonetize/openmonetize/discussions)
 - **Chat**: [Discord](https://discord.gg/openmonetize) (coming soon)
 - **Documentation**: [docs/](docs/)
-- **Email**: support@openmonetize.com
+- **Email**: support@openmonetize.io
 
 ## 🙏 Recognition
 

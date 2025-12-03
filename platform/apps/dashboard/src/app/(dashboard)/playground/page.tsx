@@ -6,16 +6,16 @@ import { Activity, Code } from 'lucide-react';
 import { useSandboxAuth } from '@/hooks/useSandboxAuth';
 import { useSandboxLogs } from '@/hooks/useSandboxLogs';
 import { useSandboxBalance } from '@/hooks/useSandboxBalance';
-import { Header } from '@/components/sandbox/Header';
-import { ApiConsoleCard } from '@/components/sandbox/ApiConsoleCard';
-import { LiveLogsPanel } from '@/components/sandbox/LiveLogsPanel';
-import { IntegrationCodePanel } from '@/components/sandbox/IntegrationCodePanel';
+import { Header } from '@/components/playground/Header';
+import { ApiConsoleCard } from '@/components/playground/ApiConsoleCard';
+import { LiveLogsPanel } from '@/components/playground/LiveLogsPanel';
+import { IntegrationCodePanel } from '@/components/playground/IntegrationCodePanel';
 // import { AuthPage } from '@/components/sandbox/AuthPage';
-import { VisualDataFlow } from '@/components/sandbox/VisualDataFlow';
+import { VisualDataFlow } from '@/components/playground/VisualDataFlow';
 import { API_URL, CODE_SNIPPETS } from './constants';
 import type { GenerationType } from './types';
 
-export default function SandboxPage() {
+export default function PlaygroundPage() {
   const [activeTab, setActiveTab] = useState('llm');
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState<string | null>(null);

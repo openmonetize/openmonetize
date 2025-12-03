@@ -33,7 +33,7 @@ export function getSwaggerServers() {
     description: 'Production Server',
   });
 
-  if (config.publicUrl && config.publicUrl !== 'https://api.openmonetize.com') {
+  if (config.publicUrl && config.publicUrl !== 'https://api.openmonetize.io') {
     servers.push({
       url: config.publicUrl,
       description: config.nodeEnv === 'production' ? 'Custom Domain' : 'API Server',

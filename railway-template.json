@@ -3,9 +3,9 @@
   "name": "OpenMonetize",
   "description": "Open-source AI usage metering and billing platform. Track tokens, manage credits, and bill for LLM usage (OpenAI, Anthropic, Gemini).",
   "repositoryUrl": "https://github.com/openmonetize/openmonetize",
-  "imageUrl": "https://openmonetize.com/logo.png",
+  "imageUrl": "https://openmonetize.io/logo.png",
   "codeUrl": "https://github.com/openmonetize/openmonetize",
-  "demoUrl": "https://demo.openmonetize.com",
+  "demoUrl": "https://demo.openmonetize.io",
   "services": {
     "postgres": {
       "image": "postgres:16-alpine",
@@ -250,7 +250,7 @@
         },
         "PUBLIC_DOCS_URL": {
           "description": "URL to public documentation",
-          "defaultValue": "https://docs.openmonetize.com"
+          "defaultValue": "https://docs.openmonetize.io"
         }
       }
     }

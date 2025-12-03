@@ -139,7 +139,7 @@ See [Contributing Guide](../CONTRIBUTING.md) for detailed instructions.
 
 - **Questions**: [GitHub Discussions](https://github.com/openmonetize/openmonetize/discussions)
 - **Bug Reports**: [GitHub Issues](https://github.com/openmonetize/openmonetize/issues)
-- **Email**: support@openmonetize.com
+- **Email**: support@openmonetize.io
 - **Discord**: [Join our community](https://discord.gg/openmonetize) (coming soon)
 
 ---

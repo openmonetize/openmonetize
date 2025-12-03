@@ -106,7 +106,7 @@ export async function buildApp() {
 
     // Redirect public docs to CDN
     app.get('/docs', async (_request, reply) => {
-      const publicDocsUrl = process.env.PUBLIC_DOCS_URL || 'https://docs.openmonetize.com';
+      const publicDocsUrl = process.env.PUBLIC_DOCS_URL || 'https://docs.openmonetize.io';
       return reply.redirect(publicDocsUrl, 301);
     });
 
