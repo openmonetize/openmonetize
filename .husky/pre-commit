@@ -1,5 +1,4 @@
-npx #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+
 
 # 1. Run lint-staged (Formatted code + Type checks)
 pnpm exec lint-staged
