@@ -121,7 +121,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         // Inject customerId from authenticated customer
         const body = { ...request.body, customerId: request.customer!.id };
         const response = await fetch(
-          `${config.services.rating.url}/calculate`,
+          `${config.services.rating.url}/v1/rating/calculate`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -162,7 +162,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         // Inject customerId from authenticated customer
         const body = { ...request.body, customerId: request.customer!.id };
         const response = await fetch(
-          `${config.services.rating.url}/calculate/bulk`,
+          `${config.services.rating.url}/v1/rating/calculate/bulk`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -198,7 +198,9 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (_request, reply) => {
       try {
-        const response = await fetch(`${config.services.rating.url}/pricing`);
+        const response = await fetch(
+          `${config.services.rating.url}/v1/rating/pricing`,
+        );
         const data = await response.json();
         return reply.status(response.status).send(data);
       } catch (error) {
@@ -236,7 +238,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         const params = new URLSearchParams(request.query as any);
         params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables?${params.toString()}`,
+          `${config.services.rating.url}/v1/rating/burn-tables?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -267,7 +269,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const { id } = request.params as { id: string };
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables/${id}`,
+          `${config.services.rating.url}/v1/rating/burn-tables/${id}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -297,7 +299,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       try {
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables`,
+          `${config.services.rating.url}/v1/rating/burn-tables`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -334,7 +336,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const { id } = request.params as { id: string };
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables/${id}`,
+          `${config.services.rating.url}/v1/rating/burn-tables/${id}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -370,7 +372,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const { id } = request.params as { id: string };
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables/${id}`,
+          `${config.services.rating.url}/v1/rating/burn-tables/${id}`,
           {
             method: "DELETE",
           },
@@ -406,7 +408,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const customerId = request.customer!.id;
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables/customer/${customerId}/active`,
+          `${config.services.rating.url}/v1/rating/burn-tables/customer/${customerId}/active`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -444,7 +446,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         const params = new URLSearchParams(request.query as any);
         params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/cost-breakdown?${params.toString()}`,
+          `${config.services.rating.url}/v1/rating/analytics/cost-breakdown?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -479,7 +481,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         const params = new URLSearchParams(request.query as any);
         params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/usage-trends?${params.toString()}`,
+          `${config.services.rating.url}/v1/rating/analytics/usage-trends?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -518,7 +520,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         const params = new URLSearchParams(request.query as any);
         params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/burn-forecast?${params.toString()}`,
+          `${config.services.rating.url}/v1/rating/analytics/burn-forecast?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -553,7 +555,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const customerId = request.customer!.id;
         const response = await fetch(
-          `${config.services.rating.url}/analytics/summary/${customerId}`,
+          `${config.services.rating.url}/v1/rating/analytics/summary/${customerId}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);

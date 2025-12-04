@@ -46,6 +46,7 @@ await client.flush();
 - ✅ **Type-Safe** - Full TypeScript support with comprehensive type definitions
 - ✅ **Easy Integration** - Drop-in helpers for OpenAI, Anthropic, Google Gemini, and more
 - ✅ **Real-Time Tracking** - Track AI usage as it happens
+- ✅ **No Redundant IDs** - API key determines customer identity automatically
 - ✅ **Credit Management** - Check balances, purchase credits, view transactions
 - ✅ **Entitlements** - Gate features based on credit balance
 - ✅ **Analytics** - Get usage insights and cost breakdowns
@@ -188,7 +189,7 @@ client.trackCustomEvent({
 
 ```typescript
 // Check if user has enough credits
-const balance = await client.getCreditBalance('legalai-corp', 'law-firm-a');
+const balance = await client.getCreditBalance('user-123');
 
 if (balance.available < 100) {
   console.log('Insufficient credits!');
@@ -205,8 +206,8 @@ await openai.chat.completions.create({...});
 
 ```typescript
 // Check if user can perform an action BEFORE executing it
-const entitlement = await client.checkEntitlement('legalai-corp', {
-  user_id: 'law-firm-a',
+const entitlement = await client.checkEntitlement({
+  user_id: 'user-123',
   feature_id: 'legal-research',
   action: {
     type: 'token_usage',
@@ -274,8 +275,8 @@ console.log(`Tracked ${tracker.pending} events`);
 
 ```typescript
 // Top up user's credit balance
-const result = await client.purchaseCredits("legalai-corp", {
-  user_id: "law-firm-a",
+const result = await client.purchaseCredits({
+  user_id: "user-123",
   amount: 10000,
   purchase_price: 99.99,
   expires_at: "2025-12-31T23:59:59Z", // Optional
@@ -288,8 +289,8 @@ console.log(`New balance: ${result.new_balance} credits`);
 ### 11. Get Usage Analytics
 
 ```typescript
-const analytics = await client.getUsageAnalytics("legalai-corp", {
-  user_id: "law-firm-a",
+const analytics = await client.getUsageAnalytics({
+  user_id: "user-123", // Optional: filter by user
   start_date: "2025-01-01T00:00:00Z",
   end_date: "2025-01-31T23:59:59Z",
 });
@@ -313,7 +314,6 @@ Object.entries(analytics.by_model).forEach(([model, stats]) => {
 ```typescript
 // Preview cost before making the API call
 const cost = await client.calculateCost({
-  customerId: 'legalai-corp',
   provider: 'OPENAI',
   model: 'gpt-4',
   input_tokens: 1000,
@@ -334,14 +334,10 @@ if (await confirmWithUser(cost.credits)) {
 ### 13. Transaction History
 
 ```typescript
-const history = await client.getTransactionHistory(
-  "legalai-corp",
-  "law-firm-a",
-  {
-    limit: 50,
-    offset: 0,
-  },
-);
+const history = await client.getTransactionHistory("user-123", {
+  limit: 50,
+  offset: 0,
+});
 
 history.data.forEach((tx) => {
   console.log(`${tx.transaction_type}: ${tx.amount} credits`);
@@ -458,21 +454,21 @@ await client.trackTokenUsage({...}); // Don't block on tracking!
 
 ### Client Methods
 
-| Method                                               | Description                                       |
-| ---------------------------------------------------- | ------------------------------------------------- |
-| `trackTokenUsage(params)`                            | Track LLM token consumption (sync, auto-batched)  |
-| `trackImageGeneration(params)`                       | Track image generation usage (sync, auto-batched) |
-| `trackCustomEvent(params)`                           | Track custom usage events (sync, auto-batched)    |
-| `flush()`                                            | Flush pending events to API (returns Promise)     |
-| `ingestEvents(request)`                              | Directly ingest batch of events (returns Promise) |
-| `getCreditBalance(customerId, userId)`               | Get user's credit balance                         |
-| `purchaseCredits(customerId, request)`               | Purchase credits for a user                       |
-| `getTransactionHistory(customerId, userId, options)` | Get transaction history                           |
-| `checkEntitlement(customerId, request)`              | Check if user can perform an action               |
-| `calculateCost(request)`                             | Preview operation cost before execution           |
-| `getUsageAnalytics(customerId, request)`             | Get usage analytics                               |
-| `getCostBreakdown(customerId, startDate, endDate)`   | Get cost breakdown by provider/model              |
-| `normalizeProviderResponse(provider, response)`      | Extract token counts from provider responses      |
+| Method                                          | Description                                       |
+| ----------------------------------------------- | ------------------------------------------------- |
+| `trackTokenUsage(params)`                       | Track LLM token consumption (sync, auto-batched)  |
+| `trackImageGeneration(params)`                  | Track image generation usage (sync, auto-batched) |
+| `trackCustomEvent(params)`                      | Track custom usage events (sync, auto-batched)    |
+| `flush()`                                       | Flush pending events to API (returns Promise)     |
+| `ingestEvents(request)`                         | Directly ingest batch of events (returns Promise) |
+| `getCreditBalance(userId)`                      | Get user's credit balance                         |
+| `purchaseCredits(request)`                      | Purchase credits for a user                       |
+| `getTransactionHistory(userId, options?)`       | Get transaction history                           |
+| `checkEntitlement(request)`                     | Check if user can perform an action               |
+| `calculateCost(request)`                        | Preview operation cost before execution           |
+| `getUsageAnalytics(request)`                    | Get usage analytics                               |
+| `getCostBreakdown(startDate, endDate)`          | Get cost breakdown by provider/model              |
+| `normalizeProviderResponse(provider, response)` | Extract token counts from provider responses      |
 
 ### Helper Functions
 
