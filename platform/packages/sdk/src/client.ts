@@ -43,7 +43,7 @@ import { OpenMonetizeError } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 /** SDK version - keep in sync with package.json */
-const SDK_VERSION = "0.6.2";
+const SDK_VERSION = "0.7.0";
 
 /**
  * OpenMonetize SDK Client
@@ -462,11 +462,13 @@ export class OpenMonetize {
   async calculateCost(
     request: CalculateCostRequest,
   ): Promise<CalculateCostResponse> {
-    return this.request<CalculateCostResponse>(
-      "POST",
-      "/v1/rating/calculate",
-      request,
-    );
+    return this.request<CalculateCostResponse>("POST", "/v1/rating/calculate", {
+      customerId: request.customerId,
+      provider: request.provider,
+      model: request.model,
+      inputTokens: request.input_tokens,
+      outputTokens: request.output_tokens,
+    });
   }
 
   /**
@@ -477,6 +479,7 @@ export class OpenMonetize {
     request: UsageAnalyticsRequest,
   ): Promise<UsageAnalyticsResponse> {
     const params = new URLSearchParams({
+      customerId,
       start_date: request.start_date,
       end_date: request.end_date,
     });
@@ -486,7 +489,7 @@ export class OpenMonetize {
 
     return this.request<UsageAnalyticsResponse>(
       "GET",
-      `/v1/analytics/usage/${customerId}?${params.toString()}`,
+      `/v1/analytics/usage?${params.toString()}`,
     );
   }
 

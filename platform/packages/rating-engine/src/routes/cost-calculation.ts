@@ -17,41 +17,41 @@
 
 // Cost Calculation Routes (Refactored with Service Layer)
 
-import { FastifyPluginAsync } from 'fastify';
-import { getPrismaClient, ProviderName } from '@openmonetize/common';
-import { z } from 'zod';
-import { logger } from '../logger';
-import { pricingService } from '@openmonetize/common';
+import { FastifyPluginAsync } from "fastify";
+import { getPrismaClient, ProviderName } from "@openmonetize/common";
+import { z } from "zod";
+import { logger } from "../logger";
+import { pricingService } from "@openmonetize/common";
 
 const db = getPrismaClient();
 
 // Validation schemas
 const calculateCostSchema = z.object({
-  customerId: z.string().uuid(),
+  customerId: z.string().min(1),
   provider: z.nativeEnum(ProviderName),
   model: z.string().min(1),
   inputTokens: z.number().int().nonnegative(),
-  outputTokens: z.number().int().nonnegative()
+  outputTokens: z.number().int().nonnegative(),
 });
 
 const bulkCalculateSchema = z.object({
-  customerId: z.string().uuid(),
+  customerId: z.string().min(1),
   calculations: z
     .array(
       z.object({
         provider: z.nativeEnum(ProviderName),
         model: z.string().min(1),
         inputTokens: z.number().int().nonnegative(),
-        outputTokens: z.number().int().nonnegative()
-      })
+        outputTokens: z.number().int().nonnegative(),
+      }),
     )
     .min(1)
-    .max(100)
+    .max(100),
 });
 
 export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
   // Calculate cost for a single operation
-  app.post('/calculate', async (request, reply) => {
+  app.post("/calculate", async (request, reply) => {
     try {
       const body = calculateCostSchema.parse(request.body) as {
         customerId: string;
@@ -68,31 +68,34 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
       if (error instanceof z.ZodError) {
         reply.code(400);
         return {
-          error: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: error.errors
+          error: "VALIDATION_ERROR",
+          message: "Invalid request body",
+          details: error.errors,
         };
       }
 
-      if (error instanceof Error && error.message.includes('No cost data found')) {
+      if (
+        error instanceof Error &&
+        error.message.includes("No cost data found")
+      ) {
         reply.code(404);
         return {
-          error: 'PROVIDER_NOT_FOUND',
-          message: error.message
+          error: "PROVIDER_NOT_FOUND",
+          message: error.message,
         };
       }
 
-      logger.error({ error }, 'Failed to calculate cost');
+      logger.error({ error }, "Failed to calculate cost");
       reply.code(500);
       return {
-        error: 'INTERNAL_ERROR',
-        message: 'Failed to calculate cost'
+        error: "INTERNAL_ERROR",
+        message: "Failed to calculate cost",
       };
     }
   });
 
   // Bulk cost calculation
-  app.post('/calculate/bulk', async (request, reply) => {
+  app.post("/calculate/bulk", async (request, reply) => {
     try {
       const body = bulkCalculateSchema.parse(request.body) as {
         customerId: string;
@@ -106,41 +109,41 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
 
       const results = await pricingService.calculateBulk(
         body.customerId,
-        body.calculations
+        body.calculations,
       );
 
       return {
         customerId: body.customerId,
         results,
-        total: results.length
+        total: results.length,
       };
     } catch (error) {
       if (error instanceof z.ZodError) {
         reply.code(400);
         return {
-          error: 'VALIDATION_ERROR',
-          message: 'Invalid request body',
-          details: error.errors
+          error: "VALIDATION_ERROR",
+          message: "Invalid request body",
+          details: error.errors,
         };
       }
 
-      logger.error({ error }, 'Failed to calculate bulk costs');
+      logger.error({ error }, "Failed to calculate bulk costs");
       reply.code(500);
       return {
-        error: 'INTERNAL_ERROR',
-        message: 'Failed to calculate bulk costs'
+        error: "INTERNAL_ERROR",
+        message: "Failed to calculate bulk costs",
       };
     }
   });
 
   // Get all provider pricing
-  app.get('/pricing', async (_request, reply) => {
+  app.get("/pricing", async (_request, reply) => {
     try {
       const providers = await db.providerCost.findMany({
         where: {
-          OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }]
+          OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
         },
-        orderBy: [{ provider: 'asc' }, { model: 'asc' }, { costType: 'asc' }]
+        orderBy: [{ provider: "asc" }, { model: "asc" }, { costType: "asc" }],
       });
 
       interface PricingInfo {
@@ -156,44 +159,50 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Group by provider and model
-      const grouped = providers.reduce((acc: Record<string, GroupedPricing>, cost: typeof providers[number]) => {
-        const key = `${cost.provider}:${cost.model}`;
-        if (!acc[key]) {
-          acc[key] = {
-            provider: cost.provider,
-            model: cost.model,
-            pricing: {}
+      const grouped = providers.reduce(
+        (
+          acc: Record<string, GroupedPricing>,
+          cost: (typeof providers)[number],
+        ) => {
+          const key = `${cost.provider}:${cost.model}`;
+          if (!acc[key]) {
+            acc[key] = {
+              provider: cost.provider,
+              model: cost.model,
+              pricing: {},
+            };
+          }
+
+          const costTypeKey =
+            cost.costType === "INPUT_TOKEN"
+              ? "input_token"
+              : cost.costType === "OUTPUT_TOKEN"
+                ? "output_token"
+                : cost.costType.toLowerCase();
+
+          acc[key].pricing[costTypeKey] = {
+            costPerUnit: Number(cost.costPerUnit),
+            unitSize: Number(cost.unitSize),
+            currency: cost.currency,
           };
-        }
 
-        const costTypeKey =
-          cost.costType === 'INPUT_TOKEN'
-            ? 'input_token'
-            : cost.costType === 'OUTPUT_TOKEN'
-            ? 'output_token'
-            : cost.costType.toLowerCase();
-
-        acc[key].pricing[costTypeKey] = {
-          costPerUnit: Number(cost.costPerUnit),
-          unitSize: Number(cost.unitSize),
-          currency: cost.currency
-        };
-
-        return acc;
-      }, {} as Record<string, GroupedPricing>);
+          return acc;
+        },
+        {} as Record<string, GroupedPricing>,
+      );
 
       const data = Object.values(grouped);
 
       return {
         data,
-        total: data.length
+        total: data.length,
       };
     } catch (error) {
-      logger.error({ error }, 'Failed to get pricing');
+      logger.error({ error }, "Failed to get pricing");
       reply.code(500);
       return {
-        error: 'INTERNAL_ERROR',
-        message: 'Failed to get pricing'
+        error: "INTERNAL_ERROR",
+        message: "Failed to get pricing",
       };
     }
   });

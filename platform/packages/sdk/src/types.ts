@@ -48,22 +48,22 @@ export interface OpenMonetizeConfig {
  * AI Provider Types
  */
 export type Provider =
-  | 'OPENAI'
-  | 'ANTHROPIC'
-  | 'GOOGLE'
-  | 'COHERE'
-  | 'MISTRAL'
-  | 'CUSTOM';
+  | "OPENAI"
+  | "ANTHROPIC"
+  | "GOOGLE"
+  | "COHERE"
+  | "MISTRAL"
+  | "CUSTOM";
 
 /**
  * Event Types
  */
 export type EventType =
-  | 'TOKEN_USAGE'           // LLM token consumption
-  | 'IMAGE_GENERATION'      // Image generation (DALL-E, Midjourney, etc.)
-  | 'EMBEDDING_GENERATION'  // Embedding generation
-  | 'AUDIO_TRANSCRIPTION'   // Audio/video transcription
-  | 'CUSTOM';               // Custom event type
+  | "TOKEN_USAGE" // LLM token consumption
+  | "IMAGE_GENERATION" // Image generation (DALL-E, Midjourney, etc.)
+  | "EMBEDDING_GENERATION" // Embedding generation
+  | "AUDIO_TRANSCRIPTION" // Audio/video transcription
+  | "CUSTOM"; // Custom event type
 
 /**
  * Token Usage Event
@@ -76,7 +76,7 @@ export interface TokenUsageEvent {
   /** End user ID (your customer) */
   user_id: string;
   /** Event type */
-  event_type: 'TOKEN_USAGE';
+  event_type: "TOKEN_USAGE";
   /** Feature identifier */
   feature_id: string;
   /** AI provider */
@@ -100,7 +100,7 @@ export interface ImageGenerationEvent {
   event_id: string;
   customer_id: string;
   user_id: string;
-  event_type: 'IMAGE_GENERATION';
+  event_type: "IMAGE_GENERATION";
   feature_id: string;
   provider: Provider;
   model: string;
@@ -121,7 +121,7 @@ export interface CustomEvent {
   event_id: string;
   customer_id: string;
   user_id: string;
-  event_type: 'CUSTOM';
+  event_type: "CUSTOM";
   feature_id: string;
   /** Custom unit of measurement */
   unit_type: string;
@@ -134,10 +134,7 @@ export interface CustomEvent {
 /**
  * Union type for all event types
  */
-export type UsageEvent =
-  | TokenUsageEvent
-  | ImageGenerationEvent
-  | CustomEvent;
+export type UsageEvent = TokenUsageEvent | ImageGenerationEvent | CustomEvent;
 
 /**
  * Batch event ingestion request
@@ -202,7 +199,7 @@ export interface PurchaseCreditsResponse {
  */
 export interface CreditTransaction {
   id: string;
-  transaction_type: 'PURCHASE' | 'BURN' | 'REFUND' | 'EXPIRATION';
+  transaction_type: "PURCHASE" | "BURN" | "REFUND" | "EXPIRATION";
   amount: number;
   balance_before: number;
   balance_after: number;
@@ -232,7 +229,7 @@ export interface EntitlementCheckRequest {
   feature_id: string;
   /** Action to perform */
   action: {
-    type: 'token_usage' | 'image_generation' | 'api_call' | 'custom';
+    type: "token_usage" | "image_generation" | "api_call" | "custom";
     provider?: string;
     model?: string;
     estimated_input_tokens?: number;
@@ -266,6 +263,8 @@ export interface EntitlementCheckResponse {
  * Cost calculation request
  */
 export interface CalculateCostRequest {
+  /** Your customer ID */
+  customerId: string;
   provider: Provider;
   model: string;
   input_tokens: number;
@@ -305,21 +304,30 @@ export interface UsageAnalyticsRequest {
 export interface UsageAnalyticsResponse {
   total_credits: number;
   total_cost_usd: number;
-  by_provider: Record<string, {
-    credits: number;
-    cost_usd: number;
-    percentage: number;
-  }>;
-  by_model: Record<string, {
-    credits: number;
-    cost_usd: number;
-    percentage: number;
-  }>;
-  by_feature: Record<string, {
-    credits: number;
-    cost_usd: number;
-    percentage: number;
-  }>;
+  by_provider: Record<
+    string,
+    {
+      credits: number;
+      cost_usd: number;
+      percentage: number;
+    }
+  >;
+  by_model: Record<
+    string,
+    {
+      credits: number;
+      cost_usd: number;
+      percentage: number;
+    }
+  >;
+  by_feature: Record<
+    string,
+    {
+      credits: number;
+      cost_usd: number;
+      percentage: number;
+    }
+  >;
 }
 
 /**
@@ -338,9 +346,9 @@ export class OpenMonetizeError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
-    public response?: ApiErrorResponse
+    public response?: ApiErrorResponse,
   ) {
     super(message);
-    this.name = 'OpenMonetizeError';
+    this.name = "OpenMonetizeError";
   }
 }

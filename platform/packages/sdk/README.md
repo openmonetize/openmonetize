@@ -313,6 +313,7 @@ Object.entries(analytics.by_model).forEach(([model, stats]) => {
 ```typescript
 // Preview cost before making the API call
 const cost = await client.calculateCost({
+  customerId: 'legalai-corp',
   provider: 'OPENAI',
   model: 'gpt-4',
   input_tokens: 1000,
