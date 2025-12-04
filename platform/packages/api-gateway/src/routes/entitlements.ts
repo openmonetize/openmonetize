@@ -27,7 +27,6 @@ const db = getPrismaClient();
 
 // Request schema
 const EntitlementCheckSchema = z.object({
-  customerId: z.string().min(1),
   userId: z.string().min(1),
   featureId: z.string(),
   action: z.object({
@@ -77,16 +76,10 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const startTime = Date.now();
       try {
-        const { customerId, userId, featureId, action } =
-          request.body as z.infer<typeof EntitlementCheckSchema>;
-
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const { userId, featureId, action } = request.body as z.infer<
+          typeof EntitlementCheckSchema
+        >;
+        const customerId = request.customer!.id;
 
         // 1. Check if feature is enabled for customer
         const entitlement = await db.entitlement.findFirst({
@@ -279,7 +272,6 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         "x-visibility": "public",
         description: "Create a new entitlement for a customer or user",
         body: z.object({
-          customerId: z.string().min(1),
           userId: z.string().min(1).optional(),
           featureId: z.string(),
           limitType: z.enum(["HARD", "SOFT", "NONE"]),
@@ -304,23 +296,9 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const {
-          customerId,
-          userId,
-          featureId,
-          limitType,
-          limitValue,
-          period,
-          metadata,
-        } = request.body as any;
-
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const { userId, featureId, limitType, limitValue, period, metadata } =
+          request.body as any;
+        const customerId = request.customer!.id;
 
         // Create entitlement
         const entitlement = await db.entitlement.create({
@@ -520,17 +498,14 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
   );
 
-  // List entitlements for a customer
+  // List entitlements for the authenticated customer
   app.get(
-    "/v1/customers/:customerId/entitlements",
+    "/v1/entitlements",
     {
       schema: {
         tags: ["Entitlements"],
         "x-visibility": "public",
-        description: "List all entitlements for a customer",
-        params: z.object({
-          customerId: z.string().min(1),
-        }),
+        description: "List all entitlements for the authenticated customer",
         response: withCommonResponses(
           {
             200: z.object({
@@ -551,15 +526,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params as { customerId: string };
-
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const customerId = request.customer!.id;
 
         const entitlements = await db.entitlement.findMany({
           where: {

@@ -32,13 +32,11 @@ import type {
 const db = getPrismaClient();
 
 // Request schemas
-const CreditBalanceSchema = z.object({
-  customerId: z.string().min(1),
+const UserIdSchema = z.object({
   userId: z.string().min(1),
 });
 
 const CreditPurchaseSchema = z.object({
-  customerId: z.string().min(1),
   userId: z.string().min(1),
   amount: z.number().positive(),
   purchasePrice: z.number().positive(),
@@ -132,13 +130,13 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // Get credit balance for a user
   app.get<GetUserCreditBalanceRoute>(
-    "/v1/customers/:customerId/users/:userId/credits",
+    "/v1/users/:userId/credits",
     {
       schema: {
         tags: ["Credits"],
         "x-visibility": "public",
         description: "Get credit balance for a specific user",
-        params: CreditBalanceSchema,
+        params: UserIdSchema,
         response: withCommonResponses(
           {
             200: z.object({
@@ -156,17 +154,9 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId, userId } = request.params;
+        const { userId } = request.params;
 
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
-
-        // Get credit wallet
+        // Get credit wallet (uses RLS via authenticated customer context)
         const wallet = await db.creditWallet.findFirst({
           where: {
             userId,
@@ -230,16 +220,8 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId, userId, amount, purchasePrice, expiresAt } =
-          request.body;
-
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const { userId, amount, purchasePrice, expiresAt } = request.body;
+        const customerId = request.customer!.id;
 
         // Find or create credit wallet
         let wallet = await db.creditWallet.findFirst({
@@ -317,7 +299,6 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         description:
           "Grant credits to a customer, user, or team (admin operation)",
         body: z.object({
-          customerId: z.string().min(1),
           userId: z.string().min(1).optional(),
           teamId: z.string().min(1).optional(),
           amount: z.number().min(1),
@@ -344,7 +325,6 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       try {
         const {
-          customerId,
           userId,
           teamId,
           amount,
@@ -353,14 +333,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           idempotencyKey,
           expiresAt,
         } = request.body;
-
-        // Verify customer access (must be same customer or admin)
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const customerId = request.customer!.id;
 
         // Check for duplicate grant using idempotency key
         if (idempotencyKey) {
@@ -507,16 +480,13 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
 
   // Get credit transaction history
   app.get<GetCreditTransactionsRoute>(
-    "/v1/customers/:customerId/users/:userId/transactions",
+    "/v1/users/:userId/transactions",
     {
       schema: {
         tags: ["Credits"],
         "x-visibility": "public",
         description: "Get credit transaction history for a user",
-        params: z.object({
-          customerId: z.string().min(1),
-          userId: z.string().min(1),
-        }),
+        params: UserIdSchema,
         querystring: z.object({
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
@@ -548,16 +518,9 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId, userId } = request.params;
+        const { userId } = request.params;
         const { limit, offset } = request.query;
-
-        // Verify customer access
-        if (customerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const customerId = request.customer!.id;
 
         // Get transactions
         const [transactions, total] = await Promise.all([

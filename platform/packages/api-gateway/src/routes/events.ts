@@ -39,7 +39,6 @@ export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
         "x-visibility": "public",
         description: "Get usage events history",
         querystring: z.object({
-          customerId: z.string().min(1).optional(),
           limit: z.coerce.number().min(1).max(100).default(50),
           offset: z.coerce.number().min(0).default(0),
         }),
@@ -74,30 +73,20 @@ export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId, limit, offset } = request.query;
-
-        // Use authenticated customer's ID if customerId not provided
-        const targetCustomerId = customerId || request.customer!.id;
-
-        // Verify customer access
-        if (targetCustomerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const { limit, offset } = request.query;
+        const customerId = request.customer!.id;
 
         // Get total count
         const total = await db.usageEvent.count({
           where: {
-            customerId: targetCustomerId,
+            customerId,
           },
         });
 
         // Get events
         const events = await db.usageEvent.findMany({
           where: {
-            customerId: targetCustomerId,
+            customerId,
           },
           orderBy: {
             timestamp: "desc",

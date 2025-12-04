@@ -33,7 +33,6 @@ const ProviderEnum = z.enum([
 ]);
 
 const CalculateCostSchema = z.object({
-  customerId: z.string().min(1),
   provider: ProviderEnum,
   model: z.string().min(1),
   inputTokens: z.number().int().nonnegative(),
@@ -41,7 +40,6 @@ const CalculateCostSchema = z.object({
 });
 
 const BulkCalculateSchema = z.object({
-  customerId: z.string().min(1),
   calculations: z
     .array(
       z.object({
@@ -56,7 +54,6 @@ const BulkCalculateSchema = z.object({
 });
 
 const CreateBurnTableSchema = z.object({
-  customerId: z.string().min(1).optional(),
   name: z.string().min(1).max(255),
   rules: z.record(
     z.string(),
@@ -88,7 +85,6 @@ const UpdateBurnTableSchema = z.object({
 });
 
 const AnalyticsQuerySchema = z.object({
-  customerId: z.string().min(1),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   groupBy: z.enum(["day", "week", "month"]).optional().default("day"),
@@ -122,12 +118,14 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
+        // Inject customerId from authenticated customer
+        const body = { ...request.body, customerId: request.customer!.id };
         const response = await fetch(
           `${config.services.rating.url}/calculate`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(request.body),
+            body: JSON.stringify(body),
           },
         );
         const data = await response.json();
@@ -161,12 +159,14 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
+        // Inject customerId from authenticated customer
+        const body = { ...request.body, customerId: request.customer!.id };
         const response = await fetch(
           `${config.services.rating.url}/calculate/bulk`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(request.body),
+            body: JSON.stringify(body),
           },
         );
         const data = await response.json();
@@ -218,7 +218,6 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         "x-visibility": "public",
         description: "List all burn tables",
         querystring: z.object({
-          customerId: z.string().min(1).optional(),
           isActive: z.string().optional(), // Query params are strings
         }),
         response: withCommonResponses(
@@ -234,9 +233,10 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const query = new URLSearchParams(request.query as any).toString();
+        const params = new URLSearchParams(request.query as any);
+        params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/burn-tables?${query}`,
+          `${config.services.rating.url}/burn-tables?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -385,13 +385,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
-    "/v1/burn-tables/customer/:customerId/active",
+    "/v1/burn-tables/active",
     {
       schema: {
         tags: ["Burn Tables"],
         "x-visibility": "public",
-        description: "Get active burn table for a customer",
-        params: z.object({ customerId: z.string().min(1) }),
+        description: "Get active burn table for the authenticated customer",
         response: withCommonResponses(
           {
             200: z.object({
@@ -405,7 +404,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params as { customerId: string };
+        const customerId = request.customer!.id;
         const response = await fetch(
           `${config.services.rating.url}/burn-tables/customer/${customerId}/active`,
         );
@@ -442,9 +441,10 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const query = new URLSearchParams(request.query as any).toString();
+        const params = new URLSearchParams(request.query as any);
+        params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/cost-breakdown?${query}`,
+          `${config.services.rating.url}/analytics/cost-breakdown?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -476,9 +476,10 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const query = new URLSearchParams(request.query as any).toString();
+        const params = new URLSearchParams(request.query as any);
+        params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/usage-trends?${query}`,
+          `${config.services.rating.url}/analytics/usage-trends?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -497,7 +498,6 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         "x-visibility": "public",
         description: "Credit burn forecasting",
         querystring: z.object({
-          customerId: z.string().min(1),
           days: z.string().optional(), // Query params are strings
         }),
         response: withCommonResponses(
@@ -515,9 +515,10 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const query = new URLSearchParams(request.query as any).toString();
+        const params = new URLSearchParams(request.query as any);
+        params.set("customerId", request.customer!.id);
         const response = await fetch(
-          `${config.services.rating.url}/analytics/burn-forecast?${query}`,
+          `${config.services.rating.url}/analytics/burn-forecast?${params.toString()}`,
         );
         const data = await response.json();
         return reply.status(response.status).send(data);
@@ -529,13 +530,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
-    "/v1/analytics/summary/:customerId",
+    "/v1/analytics/summary",
     {
       schema: {
         tags: ["Analytics"],
         "x-visibility": "public",
         description: "Get customer summary statistics",
-        params: z.object({ customerId: z.string().min(1) }),
         response: withCommonResponses(
           {
             200: z.object({
@@ -551,7 +551,7 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        const { customerId } = request.params as { customerId: string };
+        const customerId = request.customer!.id;
         const response = await fetch(
           `${config.services.rating.url}/analytics/summary/${customerId}`,
         );

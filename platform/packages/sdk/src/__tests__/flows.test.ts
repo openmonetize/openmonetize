@@ -159,7 +159,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
   });
 
   describe("getCreditBalance with String IDs", () => {
-    it("should correctly call API with string customer/user IDs", async () => {
+    it("should correctly call API with string user ID", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         autoFlush: false,
@@ -177,22 +177,19 @@ describe("OpenMonetize SDK Flow Tests", () => {
         }),
       });
 
-      const balance = await client.getCreditBalance(
-        "legalai-corp",
-        "law-firm-a",
-      );
+      const balance = await client.getCreditBalance("law-firm-a");
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch.mock.calls[0][0]).toContain(
-        "/v1/customers/legalai-corp/users/law-firm-a/credits",
+        "/v1/users/law-firm-a/credits",
       );
       expect(balance.balance).toBe(10000);
       expect(balance.available).toBe(9500);
     });
   });
 
-  describe("calculateCost with customerId", () => {
-    it("should include customerId in request body", async () => {
+  describe("calculateCost API", () => {
+    it("should make correct API call", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         autoFlush: false,
@@ -214,7 +211,6 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       const cost = await client.calculateCost({
-        customerId: "my-company-id",
         provider: "OPENAI",
         model: "gpt-4",
         input_tokens: 100,
@@ -223,9 +219,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      // Verify the request body includes customerId and uses camelCase
+      // Verify the request body uses camelCase
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.customerId).toBe("my-company-id");
       expect(body.provider).toBe("OPENAI");
       expect(body.model).toBe("gpt-4");
       expect(body.inputTokens).toBe(100);
@@ -234,7 +229,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
       expect(cost.credits).toBe(150);
     });
 
-    it("should accept non-UUID customerId", async () => {
+    it("should accept any provider string", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         autoFlush: false,
@@ -249,7 +244,6 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       await client.calculateCost({
-        customerId: "acme-corp-2024",
         provider: "ANTHROPIC",
         model: "claude-3-sonnet",
         input_tokens: 50,
@@ -257,12 +251,12 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.customerId).toBe("acme-corp-2024");
+      expect(body.provider).toBe("ANTHROPIC");
     });
   });
 
-  describe("getUsageAnalytics with Query Parameter", () => {
-    it("should use customerId as query parameter, not path parameter", async () => {
+  describe("getUsageAnalytics API", () => {
+    it("should call API with date range parameters", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         autoFlush: false,
@@ -279,7 +273,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
         }),
       });
 
-      await client.getUsageAnalytics("my-customer", {
+      await client.getUsageAnalytics({
         start_date: "2025-01-01T00:00:00Z",
         end_date: "2025-01-31T23:59:59Z",
       });
@@ -287,11 +281,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       const url = mockFetch.mock.calls[0][0];
-      // Should NOT be /v1/analytics/usage/my-customer (path parameter)
-      // Should be /v1/analytics/usage?customerId=my-customer (query parameter)
-      expect(url).not.toContain("/v1/analytics/usage/my-customer");
       expect(url).toContain("/v1/analytics/usage?");
-      expect(url).toContain("customerId=my-customer");
       expect(url).toContain("start_date=");
       expect(url).toContain("end_date=");
     });
@@ -307,14 +297,13 @@ describe("OpenMonetize SDK Flow Tests", () => {
         json: async () => ({ total_credits: 1000 }),
       });
 
-      await client.getUsageAnalytics("customer-123", {
+      await client.getUsageAnalytics({
         start_date: "2025-01-01T00:00:00Z",
         end_date: "2025-01-31T23:59:59Z",
         user_id: "specific-user",
       });
 
       const url = mockFetch.mock.calls[0][0];
-      expect(url).toContain("customerId=customer-123");
       expect(url).toContain("user_id=specific-user");
     });
   });
@@ -419,7 +408,6 @@ describe("OpenMonetize SDK Flow Tests", () => {
 
       await expect(
         client.calculateCost({
-          customerId: "test",
           provider: "OPENAI",
           model: "gpt-4",
           input_tokens: 100,
@@ -445,7 +433,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       try {
-        await client.getCreditBalance("non-existent", "user");
+        await client.getCreditBalance("user");
         expect.fail("Should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(OpenMonetizeError);

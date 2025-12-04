@@ -388,13 +388,10 @@ export class OpenMonetize {
   /**
    * Get credit balance for a user
    */
-  async getCreditBalance(
-    customerId: string,
-    userId: string,
-  ): Promise<CreditBalance> {
+  async getCreditBalance(userId: string): Promise<CreditBalance> {
     const response = await this.request<{ data: CreditBalance }>(
       "GET",
-      `/v1/customers/${customerId}/users/${userId}/credits`,
+      `/v1/users/${userId}/credits`,
     );
     return response.data;
   }
@@ -403,15 +400,16 @@ export class OpenMonetize {
    * Purchase credits for a user (top-up)
    */
   async purchaseCredits(
-    customerId: string,
     request: PurchaseCreditsRequest,
   ): Promise<PurchaseCreditsResponse> {
     const response = await this.request<{ data: PurchaseCreditsResponse }>(
       "POST",
       "/v1/credits/purchase",
       {
-        customerId,
-        ...request,
+        userId: request.user_id,
+        amount: request.amount,
+        purchasePrice: request.purchase_price,
+        expiresAt: request.expires_at,
       },
     );
     return response.data;
@@ -421,7 +419,6 @@ export class OpenMonetize {
    * Get transaction history for a user
    */
   async getTransactionHistory(
-    customerId: string,
     userId: string,
     options?: {
       limit?: number;
@@ -435,7 +432,7 @@ export class OpenMonetize {
     const query = params.toString() ? `?${params.toString()}` : "";
     return this.request<TransactionHistoryResponse>(
       "GET",
-      `/v1/customers/${customerId}/users/${userId}/transactions${query}`,
+      `/v1/users/${userId}/transactions${query}`,
     );
   }
 
@@ -443,16 +440,12 @@ export class OpenMonetize {
    * Check if user is entitled to perform an action
    */
   async checkEntitlement(
-    customerId: string,
     request: EntitlementCheckRequest,
   ): Promise<EntitlementCheckResponse> {
     return this.request<EntitlementCheckResponse>(
       "POST",
       "/v1/entitlements/check",
-      {
-        customerId,
-        ...request,
-      },
+      request,
     );
   }
 
@@ -463,7 +456,6 @@ export class OpenMonetize {
     request: CalculateCostRequest,
   ): Promise<CalculateCostResponse> {
     return this.request<CalculateCostResponse>("POST", "/v1/rating/calculate", {
-      customerId: request.customerId,
       provider: request.provider,
       model: request.model,
       inputTokens: request.input_tokens,
@@ -475,11 +467,9 @@ export class OpenMonetize {
    * Get usage analytics
    */
   async getUsageAnalytics(
-    customerId: string,
     request: UsageAnalyticsRequest,
   ): Promise<UsageAnalyticsResponse> {
     const params = new URLSearchParams({
-      customerId,
       start_date: request.start_date,
       end_date: request.end_date,
     });
@@ -497,7 +487,6 @@ export class OpenMonetize {
    * Get cost breakdown analytics
    */
   async getCostBreakdown(
-    customerId: string,
     startDate: string,
     endDate: string,
   ): Promise<{
@@ -512,7 +501,7 @@ export class OpenMonetize {
 
     return this.request(
       "GET",
-      `/v1/analytics/cost-breakdown?customer_id=${customerId}&${params.toString()}`,
+      `/v1/analytics/cost-breakdown?${params.toString()}`,
     );
   }
 

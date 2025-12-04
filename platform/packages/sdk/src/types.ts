@@ -263,8 +263,6 @@ export interface EntitlementCheckResponse {
  * Cost calculation request
  */
 export interface CalculateCostRequest {
-  /** Your customer ID */
-  customerId: string;
   provider: Provider;
   model: string;
   input_tokens: number;
