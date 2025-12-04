@@ -170,15 +170,7 @@ export async function withAnthropicTracking<T extends {
  * );
  * ```
  */
-export async function withGoogleTracking<T extends {
-  response: {
-    usageMetadata?: {
-      promptTokenCount: number;
-      candidatesTokenCount: number;
-      totalTokenCount: number;
-    };
-  };
-}>(
+export async function withGoogleTracking<T>(
   client: OpenMonetize,
   fn: () => Promise<T>,
   context: {
@@ -190,9 +182,37 @@ export async function withGoogleTracking<T extends {
   }
 ): Promise<T> {
   const result = await fn();
-  const usage = result.response.usageMetadata;
+  
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let hasUsage = false;
 
-  if (usage) {
+  try {
+    const response = result as any;
+    
+    // Handle @google/genai response structure (v0.1.0+)
+    if (response?.usageMetadata) {
+      inputTokens = response.usageMetadata.promptTokenCount || 0;
+      outputTokens = response.usageMetadata.candidatesTokenCount || 0;
+      hasUsage = true;
+    } 
+    // Handle @google/generative-ai response structure (v0.1.0+)
+    else if (response?.response?.usageMetadata) {
+      inputTokens = response.response.usageMetadata.promptTokenCount || 0;
+      outputTokens = response.response.usageMetadata.candidatesTokenCount || 0;
+      hasUsage = true;
+    }
+    // Handle older/legacy response structures
+    else if (response?.usage) {
+      inputTokens = response.usage.promptTokens || 0;
+      outputTokens = response.usage.completionTokens || 0;
+      hasUsage = true;
+    }
+  } catch (e) {
+    // Ignore extraction errors
+  }
+
+  if (hasUsage) {
     // Track usage (automatically batched)
     client.trackTokenUsage({
       user_id: context.userId,
@@ -200,8 +220,8 @@ export async function withGoogleTracking<T extends {
       feature_id: context.featureId,
       provider: 'GOOGLE',
       model: context.model,
-      input_tokens: usage.promptTokenCount || 0,
-      output_tokens: usage.candidatesTokenCount || 0,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
       metadata: context.metadata,
     });
   }

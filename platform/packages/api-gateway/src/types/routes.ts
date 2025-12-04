@@ -26,6 +26,14 @@
 // Analytics Routes
 // ============================================================================
 
+export interface GetEventsRoute {
+  Querystring: {
+    customerId?: string;
+    limit?: number;
+    offset?: number;
+  };
+}
+
 export interface GetUsageAnalyticsRoute {
   Querystring: {
     customerId?: string;

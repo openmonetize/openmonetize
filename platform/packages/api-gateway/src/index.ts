@@ -47,6 +47,7 @@ import { entitlementsRoutes } from './routes/entitlements';
 import { analyticsRoutes } from './routes/analytics';
 import { sandboxRoutes } from './routes/apiconsole';
 import { authRoutes } from './routes/auth';
+import { eventsRoutes } from './routes/events';
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
@@ -250,6 +251,7 @@ export async function buildApp() {
   await app.register(ingestionRoutes); // Proxy routes (must be after direct routes)
   await app.register(ratingRoutes); // Proxy routes (must be after direct routes)
   await app.register(sandboxRoutes); // Sandbox routes
+  await app.register(eventsRoutes); // Events routes
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {

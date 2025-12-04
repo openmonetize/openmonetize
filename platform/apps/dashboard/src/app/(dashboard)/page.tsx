@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 // Actually, let's use a simple client component for the chart if Recharts is used.
 // Since this is a server component, we should extract the chart to a client component.
 import { OverviewChart } from '@/components/dashboard/OverviewChart';
+import { ActivityHistory } from '@/components/activity-history';
 
 export default async function DashboardPage() {
   let usageData = null;
@@ -96,28 +97,7 @@ export default async function DashboardPage() {
              <OverviewChart data={timeline} />
           </CardContent>
         </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Usage by Provider</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-                {byProvider.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No usage data available.</div>
-                ) : (
-                    byProvider.map((item: any, i: number) => (
-                        <div key={i} className="flex items-center">
-                            <div className="ml-4 space-y-1">
-                                <p className="text-sm font-medium leading-none">{item.provider}</p>
-                                <p className="text-sm text-muted-foreground">{item.model}</p>
-                            </div>
-                            <div className="ml-auto font-medium">{item.eventCount} calls</div>
-                        </div>
-                    ))
-                )}
-            </div>
-          </CardContent>
-        </Card>
+        <ActivityHistory />
       </div>
     </div>
   );

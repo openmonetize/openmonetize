@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenMonetize } from '../client';
 import { withGoogleTracking, BatchTracker } from '../helpers';
 
@@ -34,17 +34,15 @@ describe('OpenMonetize SDK Helpers', () => {
   });
 
   describe('withGoogleTracking', () => {
-    it('should track usage from Google response', async () => {
+    it('should track usage from Google response (v0.1.0+ structure)', async () => {
       const client = new OpenMonetize({ apiKey: 'test-key' });
       const trackSpy = vi.spyOn(client, 'trackTokenUsage');
 
       const mockGoogleResponse = {
-        response: {
-          usageMetadata: {
-            promptTokenCount: 10,
-            candidatesTokenCount: 20,
-            totalTokenCount: 30,
-          },
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 20,
+          totalTokenCount: 30,
         },
       };
 
@@ -72,7 +70,80 @@ describe('OpenMonetize SDK Helpers', () => {
       });
     });
 
-    it('should handle missing usage metadata', async () => {
+    it('should track usage from Google response (nested response structure)', async () => {
+      const client = new OpenMonetize({ apiKey: 'test-key' });
+      const trackSpy = vi.spyOn(client, 'trackTokenUsage');
+
+      const mockGoogleResponse = {
+        response: {
+          usageMetadata: {
+            promptTokenCount: 15,
+            candidatesTokenCount: 25,
+            totalTokenCount: 40,
+          },
+        },
+      };
+
+      const result = await withGoogleTracking(
+        client,
+        async () => mockGoogleResponse,
+        {
+          customerId: 'cust-1',
+          userId: 'user-1',
+          featureId: 'feat-1',
+          model: 'gemini-pro',
+        }
+      );
+
+      expect(result).toBe(mockGoogleResponse);
+      expect(trackSpy).toHaveBeenCalledWith({
+        user_id: 'user-1',
+        customer_id: 'cust-1',
+        feature_id: 'feat-1',
+        provider: 'GOOGLE',
+        model: 'gemini-pro',
+        input_tokens: 15,
+        output_tokens: 25,
+        metadata: undefined,
+      });
+    });
+
+    it('should track usage from Google response (legacy usage structure)', async () => {
+      const client = new OpenMonetize({ apiKey: 'test-key' });
+      const trackSpy = vi.spyOn(client, 'trackTokenUsage');
+
+      const mockGoogleResponse = {
+        usage: {
+          promptTokens: 5,
+          completionTokens: 8,
+        },
+      };
+
+      const result = await withGoogleTracking(
+        client,
+        async () => mockGoogleResponse,
+        {
+          customerId: 'cust-1',
+          userId: 'user-1',
+          featureId: 'feat-1',
+          model: 'gemini-pro',
+        }
+      );
+
+      expect(result).toBe(mockGoogleResponse);
+      expect(trackSpy).toHaveBeenCalledWith({
+        user_id: 'user-1',
+        customer_id: 'cust-1',
+        feature_id: 'feat-1',
+        provider: 'GOOGLE',
+        model: 'gemini-pro',
+        input_tokens: 5,
+        output_tokens: 8,
+        metadata: undefined,
+      });
+    });
+
+    it('should handle missing usage metadata gracefully', async () => {
       const client = new OpenMonetize({ apiKey: 'test-key' });
       const trackSpy = vi.spyOn(client, 'trackTokenUsage');
 
