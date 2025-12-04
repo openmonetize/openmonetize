@@ -1,6 +1,6 @@
 {
   "name": "@openmonetize/sdk",
-  "version": "0.6.3",
+  "version": "0.6.31",
   "publishConfig": {
     "access": "public"
   },
