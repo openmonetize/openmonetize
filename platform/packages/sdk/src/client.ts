@@ -38,9 +38,12 @@ import type {
   ApiErrorResponse,
   UsageEvent,
   Provider,
-} from './types';
-import { OpenMonetizeError } from './types';
-import { v4 as uuidv4 } from 'uuid';
+} from "./types";
+import { OpenMonetizeError } from "./types";
+import { v4 as uuidv4 } from "uuid";
+
+/** SDK version - keep in sync with package.json */
+const SDK_VERSION = "0.6.2";
 
 /**
  * OpenMonetize SDK Client
@@ -56,6 +59,7 @@ import { v4 as uuidv4 } from 'uuid';
  * // Track token usage (automatically batched)
  * client.trackTokenUsage({
  *   user_id: 'law-firm-a',
+ *   customer_id: 'legalai-corp',
  *   feature_id: 'legal-research',
  *   provider: 'OPENAI',
  *   model: 'gpt-4',
@@ -84,21 +88,21 @@ export class OpenMonetize {
 
   constructor(config: OpenMonetizeConfig) {
     this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl || 'https://api.openmonetize.io';
+    this.baseUrl = config.baseUrl || "https://api.openmonetize.io";
     this.timeout = config.timeout || 30000;
     this.debug = config.debug || false;
-    
+
     this.autoFlush = config.autoFlush ?? true;
     this.flushInterval = config.flushInterval || 500;
     this.maxBatchSize = config.maxBatchSize || 100;
     this.maxRetries = config.maxRetries || 3;
 
     if (this.debug) {
-      console.log('[OpenMonetize] Initialized with config:', {
+      console.log("[OpenMonetize] Initialized with config:", {
         baseUrl: this.baseUrl,
         autoFlush: this.autoFlush,
         flushInterval: this.flushInterval,
-        maxBatchSize: this.maxBatchSize
+        maxBatchSize: this.maxBatchSize,
       });
     }
 
@@ -113,7 +117,7 @@ export class OpenMonetize {
     method: string,
     path: string,
     body?: unknown,
-    attempt = 1
+    attempt = 1,
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const controller = new AbortController();
@@ -121,15 +125,18 @@ export class OpenMonetize {
 
     try {
       if (this.debug) {
-        console.log(`[OpenMonetize] ${method} ${path} (Attempt ${attempt})`, body);
+        console.log(
+          `[OpenMonetize] ${method} ${path} (Attempt ${attempt})`,
+          body,
+        );
       }
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'User-Agent': '@openmonetize/sdk/0.1.0',
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          "User-Agent": `@openmonetize/sdk/${SDK_VERSION}`,
         },
         body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
@@ -146,21 +153,27 @@ export class OpenMonetize {
 
       if (!response.ok) {
         // Retry on 5xx errors or 429
-        if (attempt < this.maxRetries && (response.status >= 500 || response.status === 429)) {
+        if (
+          attempt < this.maxRetries &&
+          (response.status >= 500 || response.status === 429)
+        ) {
           const baseDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
           const jitter = Math.random() * 1000; // Add 0-1000ms random jitter
           const delay = baseDelay + jitter;
-          
-          if (this.debug) console.log(`[OpenMonetize] Request failed, retrying in ${Math.round(delay)}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+
+          if (this.debug)
+            console.log(
+              `[OpenMonetize] Request failed, retrying in ${Math.round(delay)}ms...`,
+            );
+          await new Promise((resolve) => setTimeout(resolve, delay));
           return this.request<T>(method, path, body, attempt + 1);
         }
 
         const errorData = data as ApiErrorResponse;
         throw new OpenMonetizeError(
-          errorData.message || 'API request failed',
+          errorData.message || "API request failed",
           response.status,
-          errorData
+          errorData,
         );
       }
 
@@ -169,14 +182,20 @@ export class OpenMonetize {
       clearTimeout(timeoutId);
 
       // Retry on network errors
-      if (attempt < this.maxRetries && (error instanceof TypeError || (error as any).name === 'AbortError')) {
-         const baseDelay = Math.pow(2, attempt) * 1000;
-         const jitter = Math.random() * 1000;
-         const delay = baseDelay + jitter;
+      if (
+        attempt < this.maxRetries &&
+        (error instanceof TypeError || (error as any).name === "AbortError")
+      ) {
+        const baseDelay = Math.pow(2, attempt) * 1000;
+        const jitter = Math.random() * 1000;
+        const delay = baseDelay + jitter;
 
-         if (this.debug) console.log(`[OpenMonetize] Network error, retrying in ${Math.round(delay)}ms...`);
-         await new Promise(resolve => setTimeout(resolve, delay));
-         return this.request<T>(method, path, body, attempt + 1);
+        if (this.debug)
+          console.log(
+            `[OpenMonetize] Network error, retrying in ${Math.round(delay)}ms...`,
+          );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.request<T>(method, path, body, attempt + 1);
       }
 
       if (error instanceof OpenMonetizeError) {
@@ -184,13 +203,13 @@ export class OpenMonetize {
       }
 
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new OpenMonetizeError('Request timeout');
+        if (error.name === "AbortError") {
+          throw new OpenMonetizeError("Request timeout");
         }
         throw new OpenMonetizeError(error.message);
       }
 
-      throw new OpenMonetizeError('Unknown error occurred');
+      throw new OpenMonetizeError("Unknown error occurred");
     }
   }
 
@@ -202,13 +221,15 @@ export class OpenMonetize {
 
     if (this.autoFlush) {
       if (this.eventBuffer.length >= this.maxBatchSize) {
-        this.flush().catch(err => {
-          if (this.debug) console.error('[OpenMonetize] Failed to flush batch:', err);
+        this.flush().catch((err) => {
+          if (this.debug)
+            console.error("[OpenMonetize] Failed to flush batch:", err);
         });
       } else if (!this.flushTimer) {
         this.flushTimer = setTimeout(() => {
-          this.flush().catch(err => {
-            if (this.debug) console.error('[OpenMonetize] Failed to flush batch:', err);
+          this.flush().catch((err) => {
+            if (this.debug)
+              console.error("[OpenMonetize] Failed to flush batch:", err);
           });
         }, this.flushInterval);
         // Unref timer so it doesn't block process exit
@@ -243,15 +264,18 @@ export class OpenMonetize {
       }
     } catch (error) {
       // On failure, save to offline storage
-      console.error('[OpenMonetize] Failed to flush events, saving to offline storage:', error);
+      console.error(
+        "[OpenMonetize] Failed to flush events, saving to offline storage:",
+        error,
+      );
       this.saveToStorage(batch);
     } finally {
       this.isFlushing = false;
-      
+
       // If more events came in while flushing, schedule another flush
       if (this.eventBuffer.length > 0 && this.autoFlush) {
-         this.flushTimer = setTimeout(() => this.flush(), this.flushInterval);
-         if (this.flushTimer.unref) this.flushTimer.unref();
+        this.flushTimer = setTimeout(() => this.flush(), this.flushInterval);
+        if (this.flushTimer.unref) this.flushTimer.unref();
       }
     }
   }
@@ -259,17 +283,19 @@ export class OpenMonetize {
   /**
    * Ingest usage events directly (bypasses buffer if called directly, but used by flush)
    */
-  async ingestEvents(request: IngestEventsRequest): Promise<IngestEventsResponse> {
+  async ingestEvents(
+    request: IngestEventsRequest,
+  ): Promise<IngestEventsResponse> {
     return this.request<IngestEventsResponse>(
-      'POST',
-      '/v1/events/ingest',
-      request
+      "POST",
+      "/v1/events/ingest",
+      request,
     );
   }
 
   /**
    * Track token usage
-   * 
+   *
    * This method is now non-blocking by default (queues event).
    * To force immediate send, call flush() afterwards or configure autoFlush: false.
    */
@@ -290,7 +316,7 @@ export class OpenMonetize {
       event_id,
       customer_id: params.customer_id,
       user_id: params.user_id,
-      event_type: 'TOKEN_USAGE',
+      event_type: "TOKEN_USAGE",
       feature_id: params.feature_id,
       provider: params.provider.toUpperCase() as any,
       model: params.model,
@@ -321,7 +347,7 @@ export class OpenMonetize {
       event_id,
       customer_id: params.customer_id,
       user_id: params.user_id,
-      event_type: 'IMAGE_GENERATION',
+      event_type: "IMAGE_GENERATION",
       feature_id: params.feature_id,
       provider: params.provider.toUpperCase() as any,
       model: params.model,
@@ -350,7 +376,7 @@ export class OpenMonetize {
       event_id,
       customer_id: params.customer_id,
       user_id: params.user_id,
-      event_type: 'CUSTOM',
+      event_type: "CUSTOM",
       feature_id: params.feature_id,
       unit_type: params.unit_type,
       quantity: params.quantity,
@@ -364,11 +390,11 @@ export class OpenMonetize {
    */
   async getCreditBalance(
     customerId: string,
-    userId: string
+    userId: string,
   ): Promise<CreditBalance> {
     const response = await this.request<{ data: CreditBalance }>(
-      'GET',
-      `/v1/customers/${customerId}/users/${userId}/credits`
+      "GET",
+      `/v1/customers/${customerId}/users/${userId}/credits`,
     );
     return response.data;
   }
@@ -378,15 +404,15 @@ export class OpenMonetize {
    */
   async purchaseCredits(
     customerId: string,
-    request: PurchaseCreditsRequest
+    request: PurchaseCreditsRequest,
   ): Promise<PurchaseCreditsResponse> {
     const response = await this.request<{ data: PurchaseCreditsResponse }>(
-      'POST',
-      '/v1/credits/purchase',
+      "POST",
+      "/v1/credits/purchase",
       {
         customerId,
         ...request,
-      }
+      },
     );
     return response.data;
   }
@@ -400,16 +426,16 @@ export class OpenMonetize {
     options?: {
       limit?: number;
       offset?: number;
-    }
+    },
   ): Promise<TransactionHistoryResponse> {
     const params = new URLSearchParams();
-    if (options?.limit) params.set('limit', options.limit.toString());
-    if (options?.offset) params.set('offset', options.offset.toString());
+    if (options?.limit) params.set("limit", options.limit.toString());
+    if (options?.offset) params.set("offset", options.offset.toString());
 
-    const query = params.toString() ? `?${params.toString()}` : '';
+    const query = params.toString() ? `?${params.toString()}` : "";
     return this.request<TransactionHistoryResponse>(
-      'GET',
-      `/v1/customers/${customerId}/users/${userId}/transactions${query}`
+      "GET",
+      `/v1/customers/${customerId}/users/${userId}/transactions${query}`,
     );
   }
 
@@ -418,15 +444,15 @@ export class OpenMonetize {
    */
   async checkEntitlement(
     customerId: string,
-    request: EntitlementCheckRequest
+    request: EntitlementCheckRequest,
   ): Promise<EntitlementCheckResponse> {
     return this.request<EntitlementCheckResponse>(
-      'POST',
-      '/v1/entitlements/check',
+      "POST",
+      "/v1/entitlements/check",
       {
         customerId,
         ...request,
-      }
+      },
     );
   }
 
@@ -434,12 +460,12 @@ export class OpenMonetize {
    * Calculate cost for an operation
    */
   async calculateCost(
-    request: CalculateCostRequest
+    request: CalculateCostRequest,
   ): Promise<CalculateCostResponse> {
     return this.request<CalculateCostResponse>(
-      'POST',
-      '/v1/rating/calculate',
-      request
+      "POST",
+      "/v1/rating/calculate",
+      request,
     );
   }
 
@@ -448,19 +474,19 @@ export class OpenMonetize {
    */
   async getUsageAnalytics(
     customerId: string,
-    request: UsageAnalyticsRequest
+    request: UsageAnalyticsRequest,
   ): Promise<UsageAnalyticsResponse> {
     const params = new URLSearchParams({
       start_date: request.start_date,
       end_date: request.end_date,
     });
     if (request.user_id) {
-      params.set('user_id', request.user_id);
+      params.set("user_id", request.user_id);
     }
 
     return this.request<UsageAnalyticsResponse>(
-      'GET',
-      `/v1/analytics/usage/${customerId}?${params.toString()}`
+      "GET",
+      `/v1/analytics/usage/${customerId}?${params.toString()}`,
     );
   }
 
@@ -470,26 +496,29 @@ export class OpenMonetize {
   async getCostBreakdown(
     customerId: string,
     startDate: string,
-    endDate: string
-  ): Promise<any> {
+    endDate: string,
+  ): Promise<{
+    total_cost_usd: number;
+    by_provider: Record<string, { cost_usd: number; percentage: number }>;
+    by_model: Record<string, { cost_usd: number; percentage: number }>;
+  }> {
     const params = new URLSearchParams({
       start_date: startDate,
       end_date: endDate,
     });
 
     return this.request(
-      'GET',
-      `/v1/analytics/cost-breakdown?customer_id=${customerId}&${params.toString()}`
+      "GET",
+      `/v1/analytics/cost-breakdown?customer_id=${customerId}&${params.toString()}`,
     );
   }
-
 
   /**
    * Helper to normalize usage from different AI providers
    */
   normalizeProviderResponse(
     provider: Provider,
-    response: any
+    response: any,
   ): { input_tokens: number; output_tokens: number } {
     let input_tokens = 0;
     let output_tokens = 0;
@@ -499,7 +528,7 @@ export class OpenMonetize {
     }
 
     switch (provider) {
-      case 'OPENAI':
+      case "OPENAI":
         // OpenAI: usage: { prompt_tokens, completion_tokens }
         if (response.usage) {
           input_tokens = response.usage.prompt_tokens || 0;
@@ -507,7 +536,7 @@ export class OpenMonetize {
         }
         break;
 
-      case 'ANTHROPIC':
+      case "ANTHROPIC":
         // Anthropic: usage: { input_tokens, output_tokens }
         if (response.usage) {
           input_tokens = response.usage.input_tokens || 0;
@@ -515,23 +544,23 @@ export class OpenMonetize {
         }
         break;
 
-      case 'GOOGLE':
+      case "GOOGLE":
         // Gemini: usageMetadata: { promptTokenCount, candidatesTokenCount }
         if (response.usageMetadata) {
           input_tokens = response.usageMetadata.promptTokenCount || 0;
           output_tokens = response.usageMetadata.candidatesTokenCount || 0;
         }
         break;
-        
-      case 'COHERE':
+
+      case "COHERE":
         // Cohere: meta: { billed_units: { input_tokens, output_tokens } }
         if (response.meta?.billed_units) {
           input_tokens = response.meta.billed_units.input_tokens || 0;
           output_tokens = response.meta.billed_units.output_tokens || 0;
         }
         break;
-        
-      case 'MISTRAL':
+
+      case "MISTRAL":
         // Mistral: usage: { prompt_tokens, completion_tokens }
         if (response.usage) {
           input_tokens = response.usage.prompt_tokens || 0;
@@ -541,31 +570,34 @@ export class OpenMonetize {
     }
 
     return { input_tokens, output_tokens };
-    }
+  }
 
   // Offline Durability
-  private readonly storageKey = 'openmonetize_offline_events';
+  private readonly storageKey = "openmonetize_offline_events";
 
   private recoverOfflineEvents(): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === "undefined" || !window.localStorage) return;
 
     try {
       const stored = window.localStorage.getItem(this.storageKey);
       if (stored) {
         const events = JSON.parse(stored) as UsageEvent[];
         if (events.length > 0) {
-          if (this.debug) console.log(`[OpenMonetize] Recovered ${events.length} offline events`);
+          if (this.debug)
+            console.log(
+              `[OpenMonetize] Recovered ${events.length} offline events`,
+            );
           this.eventBuffer.push(...events);
           window.localStorage.removeItem(this.storageKey);
         }
       }
     } catch (e) {
-      console.error('[OpenMonetize] Failed to recover offline events:', e);
+      console.error("[OpenMonetize] Failed to recover offline events:", e);
     }
   }
 
   private saveToStorage(events: UsageEvent[]): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (typeof window === "undefined" || !window.localStorage) return;
 
     try {
       // Get existing
@@ -575,11 +607,10 @@ export class OpenMonetize {
         const existing = JSON.parse(stored) as UsageEvent[];
         allEvents = [...existing, ...events];
       }
-      
+
       window.localStorage.setItem(this.storageKey, JSON.stringify(allEvents));
     } catch (e) {
-      console.error('[OpenMonetize] Failed to save offline events:', e);
+      console.error("[OpenMonetize] Failed to save offline events:", e);
     }
   }
 }
-

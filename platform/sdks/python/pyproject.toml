@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/GIT_USER_ID/GIT_REPO_ID"
+Repository = "https://github.com/openmonetize/python-sdk"
 
 [tool.setuptools.dynamic]
 version = {attr = "openmonetize.__version__"}

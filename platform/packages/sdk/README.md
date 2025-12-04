@@ -4,7 +4,7 @@ Official TypeScript/JavaScript SDK for OpenMonetize - AI usage tracking and cons
 
 [![npm version](https://badge.fury.io/js/@openmonetize%2Fsdk.svg)](https://www.npmjs.com/package/@openmonetize/sdk)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Installation
 
@@ -26,8 +26,8 @@ const client = new OpenMonetize({
   apiKey: process.env.OPENMONETIZE_API_KEY!,
 });
 
-// Track token usage
-await client.trackTokenUsage({
+// Track token usage (automatically batched)
+client.trackTokenUsage({
   user_id: "law-firm-a",
   customer_id: "legalai-corp",
   feature_id: "legal-research",
@@ -36,6 +36,9 @@ await client.trackTokenUsage({
   input_tokens: 1000,
   output_tokens: 500,
 });
+
+// Flush events before process exit (optional, events are auto-flushed)
+await client.flush();
 ```
 
 ## Features
@@ -454,24 +457,33 @@ await client.trackTokenUsage({...}); // Don't block on tracking!
 
 ### Client Methods
 
-- `trackTokenUsage(params)` - Track token consumption
-- `ingestEvents(request)` - Batch event ingestion
-- `getCreditBalance(customerId, userId)` - Get credit balance
-- `purchaseCredits(customerId, request)` - Purchase credits
-- `getTransactionHistory(customerId, userId, options)` - Get transaction history
-- `checkEntitlement(customerId, request)` - Check feature access
-- `calculateCost(request)` - Preview operation cost
-- `getUsageAnalytics(customerId, request)` - Get usage analytics
-- `getCostBreakdown(customerId, startDate, endDate)` - Get cost breakdown
+| Method                                               | Description                                       |
+| ---------------------------------------------------- | ------------------------------------------------- |
+| `trackTokenUsage(params)`                            | Track LLM token consumption (sync, auto-batched)  |
+| `trackImageGeneration(params)`                       | Track image generation usage (sync, auto-batched) |
+| `trackCustomEvent(params)`                           | Track custom usage events (sync, auto-batched)    |
+| `flush()`                                            | Flush pending events to API (returns Promise)     |
+| `ingestEvents(request)`                              | Directly ingest batch of events (returns Promise) |
+| `getCreditBalance(customerId, userId)`               | Get user's credit balance                         |
+| `purchaseCredits(customerId, request)`               | Purchase credits for a user                       |
+| `getTransactionHistory(customerId, userId, options)` | Get transaction history                           |
+| `checkEntitlement(customerId, request)`              | Check if user can perform an action               |
+| `calculateCost(request)`                             | Preview operation cost before execution           |
+| `getUsageAnalytics(customerId, request)`             | Get usage analytics                               |
+| `getCostBreakdown(customerId, startDate, endDate)`   | Get cost breakdown by provider/model              |
+| `normalizeProviderResponse(provider, response)`      | Extract token counts from provider responses      |
 
 ### Helper Functions
 
-- `withOpenAITracking(client, fn, context)` - OpenAI integration
-- `withAnthropicTracking(client, fn, context)` - Anthropic integration
-- `trackUsage(client, fn, tracking)` - Generic tracking
-- `BatchTracker` - Batch event processing
-- `formatCredits` - Credit formatting utilities
-- `validateConfig(config)` - Config validation
+| Function                                     | Description                                                |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| `withOpenAITracking(client, fn, context)`    | Wrap OpenAI calls with automatic tracking                  |
+| `withAnthropicTracking(client, fn, context)` | Wrap Anthropic calls with automatic tracking               |
+| `withGoogleTracking(client, fn, context)`    | Wrap Google Gemini calls with automatic tracking           |
+| `trackUsage(client, fn, tracking)`           | Generic tracking wrapper for any provider                  |
+| `BatchTracker`                               | Manual batch event processing class                        |
+| `formatCredits`                              | Credit formatting utilities (`number`, `withLabel`, `usd`) |
+| `validateConfig(config)`                     | Validate environment configuration                         |
 
 ## Support
 
