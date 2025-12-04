@@ -15,10 +15,18 @@
     "platform/**/*.{ts,tsx,py}": [
       "pnpm -C platform license:check"
     ],
-    "*.{ts,tsx}": [
-      "eslint --fix",
+    "platform/apps/dashboard/**/*.{ts,tsx}": [
+      "pnpm -C platform --filter dashboard exec eslint --config eslint.config.mjs --fix",
       "prettier --write",
-      "tsc-files --noEmit"
+      "tsc-files --noEmit -p platform/apps/dashboard/tsconfig.json"
+    ],
+    "platform/packages/**/*.{ts,tsx}": [
+      "prettier --write",
+      "tsc-files --noEmit -p platform/tsconfig.json"
+    ],
+    "scripts/**/*.{ts,tsx}": [
+      "prettier --write",
+      "tsc-files --noEmit -p platform/tsconfig.json"
     ],
     "*.{json,md,yml}": [
       "prettier --write"
@@ -28,6 +36,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "tsc-files": "^1.1.4"
   }
 }

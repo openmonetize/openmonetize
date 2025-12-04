@@ -1,17 +1,25 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Box, Key, Settings, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useSandboxAuth } from '@/hooks/useSandboxAuth';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Box,
+  Key,
+  Settings,
+  LogOut,
+  Activity,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useSandboxAuth } from "@/hooks/useSandboxAuth";
 
 const navigation = [
-  { name: 'Overview', href: '/', icon: LayoutDashboard },
-  { name: 'Playground', href: '/playground', icon: Box },
-  { name: 'API Keys', href: '/api-keys', icon: Key },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: "Overview", href: "/", icon: LayoutDashboard },
+  { name: "Activity", href: "/activity", icon: Activity },
+  { name: "Playground", href: "/playground", icon: Box },
+  { name: "API Keys", href: "/api-keys", icon: Key },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -25,7 +33,7 @@ export function Sidebar() {
           OpenMonetize
         </span>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
           {navigation.map((item) => {
@@ -35,16 +43,18 @@ export function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? "bg-slate-800 text-white"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white",
                 )}
               >
                 <item.icon
                   className={cn(
-                    'mr-3 h-5 w-5 flex-shrink-0',
-                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'
+                    "mr-3 h-5 w-5 flex-shrink-0",
+                    isActive
+                      ? "text-white"
+                      : "text-slate-400 group-hover:text-white",
                   )}
                 />
                 {item.name}
@@ -57,24 +67,22 @@ export function Sidebar() {
       <div className="border-t border-slate-800 p-4">
         <div className="flex items-center gap-3 mb-4 px-2">
           <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
-            {customerName ? customerName.substring(0, 2).toUpperCase() : 'US'}
+            {customerName ? customerName.substring(0, 2).toUpperCase() : "US"}
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-white">
-              {customerName || 'User'}
+              {customerName || "User"}
             </p>
-            <p className="truncate text-xs text-slate-400">
-              Free Plan
-            </p>
+            <p className="truncate text-xs text-slate-400">Free Plan</p>
           </div>
         </div>
-        <Button 
-            variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
-            onClick={handleLogout}
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+          onClick={handleLogout}
         >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign out
         </Button>
       </div>
     </div>

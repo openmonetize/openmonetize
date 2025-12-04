@@ -19,22 +19,22 @@ pnpm add @openmonetize/sdk
 ## Quick Start
 
 ```typescript
-import { OpenMonetize } from '@openmonetize/sdk';
+import { OpenMonetize } from "@openmonetize/sdk";
 
 // Initialize the client
 const client = new OpenMonetize({
-  apiKey: process.env.OPENMONETIZE_API_KEY!
+  apiKey: process.env.OPENMONETIZE_API_KEY!,
 });
 
 // Track token usage
 await client.trackTokenUsage({
-  user_id: 'law-firm-a',
-  customer_id: 'legalai-corp',
-  feature_id: 'legal-research',
-  provider: 'OPENAI',
-  model: 'gpt-4',
+  user_id: "law-firm-a",
+  customer_id: "legalai-corp",
+  feature_id: "legal-research",
+  provider: "OPENAI",
+  model: "gpt-4",
   input_tokens: 1000,
-  output_tokens: 500
+  output_tokens: 500,
 });
 ```
 
@@ -54,13 +54,17 @@ await client.trackTokenUsage({
 The easiest way to verify your integration is using the OpenMonetize Sandbox. It visualizes the flow of data and helps you debug issues in real-time.
 
 ### Local Development
+
 If you are running the platform locally:
+
 1.  Go to `http://localhost:3002/sandbox`.
 2.  Use the **Integration Code** tab to copy the snippet for your specific use case.
 3.  Run your code and watch the **Live Logs** in the sandbox to see the event travel through the system.
 
 ### Cloud Sandbox
+
 If you are using the managed OpenMonetize cloud:
+
 1.  Log in to the [Console](https://console.openmonetize.io).
 2.  Navigate to the **Sandbox** tab.
 3.  Use your production API key to test events against the live system.
@@ -70,8 +74,8 @@ If you are using the managed OpenMonetize cloud:
 ### 1. OpenAI Integration
 
 ```typescript
-import OpenAI from 'openai';
-import { OpenMonetize, withOpenAITracking } from '@openmonetize/sdk';
+import OpenAI from "openai";
+import { OpenMonetize, withOpenAITracking } from "@openmonetize/sdk";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
@@ -79,15 +83,16 @@ const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
 // Wrap OpenAI calls with automatic tracking
 const response = await withOpenAITracking(
   monitor,
-  () => openai.chat.completions.create({
-    model: 'gpt-4',
-    messages: [{ role: 'user', content: 'Write a legal brief' }]
-  }),
+  () =>
+    openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: "Write a legal brief" }],
+    }),
   {
-    customerId: 'legalai-corp',
-    userId: 'law-firm-a',
-    featureId: 'legal-research'
-  }
+    customerId: "legalai-corp",
+    userId: "law-firm-a",
+    featureId: "legal-research",
+  },
 );
 
 // Usage is automatically tracked!
@@ -97,24 +102,25 @@ console.log(response.choices[0].message.content);
 ### 2. Anthropic Integration
 
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
-import { OpenMonetize, withAnthropicTracking } from '@openmonetize/sdk';
+import Anthropic from "@anthropic-ai/sdk";
+import { OpenMonetize, withAnthropicTracking } from "@openmonetize/sdk";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
 
 const response = await withAnthropicTracking(
   monitor,
-  () => anthropic.messages.create({
-    model: 'claude-3-sonnet-20240229',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: 'Analyze this contract' }]
-  }),
+  () =>
+    anthropic.messages.create({
+      model: "claude-3-sonnet-20240229",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: "Analyze this contract" }],
+    }),
   {
-    customerId: 'legalai-corp',
-    userId: 'law-firm-a',
-    featureId: 'contract-analysis'
-  }
+    customerId: "legalai-corp",
+    userId: "law-firm-a",
+    featureId: "contract-analysis",
+  },
 );
 ```
 
@@ -122,33 +128,60 @@ const response = await withAnthropicTracking(
 
 ```typescript
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { OpenMonetize, trackUsage } from '@openmonetize/sdk';
+import { OpenMonetize, withGoogleTracking } from "@openmonetize/sdk";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 const monitor = new OpenMonetize({ apiKey: process.env.OPENMONETIZE_API_KEY });
 
-const response = await trackUsage(
+const response = await withGoogleTracking(
   monitor,
-  async () => {
-    const result = await model.generateContent("Write a story about a magic backpack.");
-    return result.response;
-  },
+  () => model.generateContent("Write a story about a magic backpack."),
   {
-    customerId: 'legalai-corp',
-    userId: 'law-firm-a',
-    featureId: 'story-generation',
-    provider: 'GOOGLE',
-    model: 'gemini-pro',
-    inputTokens: 10, // You can calculate this using tiktoken or similar
-    outputTokens: 100 // You can calculate this using tiktoken or similar
-  }
+    customerId: "legalai-corp",
+    userId: "law-firm-a",
+    featureId: "story-generation",
+    model: "gemini-pro",
+  },
 );
 
-console.log(response.text());
+console.log(response.response.text());
 ```
 
-### 4. Check Credit Balance Before API Call
+### 4. Image Generation Tracking
+
+```typescript
+// Track usage for image generation models like DALL-E 3 or Midjourney
+client.trackImageGeneration({
+  user_id: "law-firm-a",
+  customer_id: "legalai-corp",
+  feature_id: "marketing-assets",
+  provider: "OPENAI",
+  model: "dall-e-3",
+  image_count: 1,
+  image_size: "1024x1024",
+  quality: "hd",
+});
+```
+
+### 5. Custom Event Tracking
+
+```typescript
+// Track any custom unit for outcome-based metering
+client.trackCustomEvent({
+  user_id: "law-firm-a",
+  customer_id: "legalai-corp",
+  feature_id: "video-transcription",
+  unit_type: "minutes",
+  quantity: 15.5,
+  metadata: {
+    file_id: "vid_123",
+    language: "en-US",
+  },
+});
+```
+
+### 6. Check Credit Balance Before API Call
 
 ```typescript
 // Check if user has enough credits
@@ -165,7 +198,7 @@ if (balance.available < 100) {
 await openai.chat.completions.create({...});
 ```
 
-### 5. Real-Time Entitlement Check
+### 7. Real-Time Entitlement Check
 
 ```typescript
 // Check if user can perform an action BEFORE executing it
@@ -197,32 +230,36 @@ if (!entitlement.allowed) {
 await openai.chat.completions.create({...});
 ```
 
-### 6. Batch Event Tracking
+### 8. Batch Event Tracking
+
+> **Note:** All tracking methods (`trackTokenUsage`, `trackImageGeneration`, etc.) are automatically batched by default to optimize performance. You only need to use `BatchTracker` if you want manual control over the batching process.
+
+### 9. Manual Batching
 
 ```typescript
-import { BatchTracker } from '@openmonetize/sdk';
+import { BatchTracker } from "@openmonetize/sdk";
 
 const tracker = new BatchTracker(client);
 
 // Add multiple events
 tracker.add({
-  customerId: 'legalai-corp',
-  userId: 'law-firm-a',
-  featureId: 'document-review',
-  provider: 'OPENAI',
-  model: 'gpt-4',
+  customerId: "legalai-corp",
+  userId: "law-firm-a",
+  featureId: "document-review",
+  provider: "OPENAI",
+  model: "gpt-4",
   inputTokens: 1000,
-  outputTokens: 500
+  outputTokens: 500,
 });
 
 tracker.add({
-  customerId: 'legalai-corp',
-  userId: 'law-firm-b',
-  featureId: 'contract-analysis',
-  provider: 'ANTHROPIC',
-  model: 'claude-3-sonnet',
+  customerId: "legalai-corp",
+  userId: "law-firm-b",
+  featureId: "contract-analysis",
+  provider: "ANTHROPIC",
+  model: "claude-3-sonnet",
   inputTokens: 2000,
-  outputTokens: 1000
+  outputTokens: 1000,
 });
 
 // Flush all events at once
@@ -230,28 +267,28 @@ await tracker.flush();
 console.log(`Tracked ${tracker.pending} events`);
 ```
 
-### 7. Purchase Credits
+### 10. Purchase Credits
 
 ```typescript
 // Top up user's credit balance
-const result = await client.purchaseCredits('legalai-corp', {
-  user_id: 'law-firm-a',
+const result = await client.purchaseCredits("legalai-corp", {
+  user_id: "law-firm-a",
   amount: 10000,
   purchase_price: 99.99,
-  expires_at: '2025-12-31T23:59:59Z' // Optional
+  expires_at: "2025-12-31T23:59:59Z", // Optional
 });
 
 console.log(`Transaction ID: ${result.transaction_id}`);
 console.log(`New balance: ${result.new_balance} credits`);
 ```
 
-### 8. Get Usage Analytics
+### 11. Get Usage Analytics
 
 ```typescript
-const analytics = await client.getUsageAnalytics('legalai-corp', {
-  user_id: 'law-firm-a',
-  start_date: '2025-01-01T00:00:00Z',
-  end_date: '2025-01-31T23:59:59Z'
+const analytics = await client.getUsageAnalytics("legalai-corp", {
+  user_id: "law-firm-a",
+  start_date: "2025-01-01T00:00:00Z",
+  end_date: "2025-01-31T23:59:59Z",
 });
 
 console.log(`Total credits used: ${analytics.total_credits}`);
@@ -268,7 +305,7 @@ Object.entries(analytics.by_model).forEach(([model, stats]) => {
 });
 ```
 
-### 9. Calculate Cost Before Execution
+### 12. Calculate Cost Before Execution
 
 ```typescript
 // Preview cost before making the API call
@@ -290,19 +327,19 @@ if (await confirmWithUser(cost.credits)) {
 }
 ```
 
-### 10. Transaction History
+### 13. Transaction History
 
 ```typescript
 const history = await client.getTransactionHistory(
-  'legalai-corp',
-  'law-firm-a',
+  "legalai-corp",
+  "law-firm-a",
   {
     limit: 50,
-    offset: 0
-  }
+    offset: 0,
+  },
 );
 
-history.data.forEach(tx => {
+history.data.forEach((tx) => {
   console.log(`${tx.transaction_type}: ${tx.amount} credits`);
   console.log(`Balance: ${tx.balance_before} → ${tx.balance_after}`);
   console.log(`Date: ${tx.created_at}`);
@@ -327,10 +364,10 @@ OPENMONETIZE_BASE_URL=http://localhost:3000  # Default: https://api.openmonetize
 
 ```typescript
 const client = new OpenMonetize({
-  apiKey: 'your_api_key',
-  baseUrl: 'https://api.openmonetize.io',  // Optional
-  timeout: 30000,                           // Optional (ms)
-  debug: false                              // Optional
+  apiKey: "your_api_key",
+  baseUrl: "https://api.openmonetize.io", // Optional
+  timeout: 30000, // Optional (ms)
+  debug: false, // Optional
 });
 ```
 
