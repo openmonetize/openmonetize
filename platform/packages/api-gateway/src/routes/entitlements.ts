@@ -16,22 +16,22 @@
  */
 
 // Entitlement check routes
-import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { getPrismaClient } from '@openmonetize/common';
-import { authenticate } from '../middleware/auth';
-import { logger } from '../logger';
-import { z } from 'zod';
-import { withCommonResponses } from '../types/schemas';
+import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { getPrismaClient } from "@openmonetize/common";
+import { authenticate } from "../middleware/auth";
+import { logger } from "../logger";
+import { z } from "zod";
+import { withCommonResponses } from "../types/schemas";
 
 const db = getPrismaClient();
 
 // Request schema
 const EntitlementCheckSchema = z.object({
-  customerId: z.string().uuid(),
-  userId: z.string().uuid(),
+  customerId: z.string().min(1),
+  userId: z.string().min(1),
   featureId: z.string(),
   action: z.object({
-    type: z.enum(['token_usage', 'image_generation', 'api_call', 'custom']),
+    type: z.enum(["token_usage", "image_generation", "api_call", "custom"]),
     provider: z.string().optional(),
     model: z.string().optional(),
     estimated_input_tokens: z.number().optional(),
@@ -41,45 +41,50 @@ const EntitlementCheckSchema = z.object({
 
 export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all entitlement routes
-  app.addHook('preHandler', authenticate);
+  app.addHook("preHandler", authenticate);
 
   // Check entitlement - Real-time access control
   app.post(
-    '/v1/entitlements/check',
+    "/v1/entitlements/check",
     {
       schema: {
-        tags: ['Entitlements'],
-        'x-visibility': 'public',
-        description: 'Check if a user is entitled to perform an action (sub-10ms latency)',
+        tags: ["Entitlements"],
+        "x-visibility": "public",
+        description:
+          "Check if a user is entitled to perform an action (sub-10ms latency)",
         body: EntitlementCheckSchema,
-        response: withCommonResponses({
-          200: z.object({
-            allowed: z.boolean(),
-            reason: z.string().nullable(),
-            estimatedCostCredits: z.number().nullable(),
-            estimatedCostUsd: z.number().nullable(),
-            currentBalance: z.number().nullable(),
-            actions: z.array(
-              z.object({
-                type: z.string(),
-                label: z.string(),
-                url: z.string(),
-              })
-            ),
-          }),
-        }, [403, 500]),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              allowed: z.boolean(),
+              reason: z.string().nullable(),
+              estimatedCostCredits: z.number().nullable(),
+              estimatedCostUsd: z.number().nullable(),
+              currentBalance: z.number().nullable(),
+              actions: z.array(
+                z.object({
+                  type: z.string(),
+                  label: z.string(),
+                  url: z.string(),
+                }),
+              ),
+            }),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
       const startTime = Date.now();
       try {
-        const { customerId, userId, featureId, action } = request.body as z.infer<typeof EntitlementCheckSchema>;
+        const { customerId, userId, featureId, action } =
+          request.body as z.infer<typeof EntitlementCheckSchema>;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -94,15 +99,15 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         if (!entitlement) {
           return reply.send({
             allowed: false,
-            reason: 'Feature not enabled for this customer',
+            reason: "Feature not enabled for this customer",
             estimatedCostCredits: null,
             estimatedCostUsd: null,
             currentBalance: null,
             actions: [
               {
-                type: 'upgrade',
-                label: 'Upgrade Plan',
-                url: '/upgrade',
+                type: "upgrade",
+                label: "Upgrade Plan",
+                url: "/upgrade",
               },
             ],
           });
@@ -119,15 +124,15 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         if (!wallet) {
           return reply.send({
             allowed: false,
-            reason: 'No credit wallet found',
+            reason: "No credit wallet found",
             estimatedCostCredits: null,
             estimatedCostUsd: null,
             currentBalance: null,
             actions: [
               {
-                type: 'create_wallet',
-                label: 'Create Credit Wallet',
-                url: '/credits/wallet',
+                type: "create_wallet",
+                label: "Create Credit Wallet",
+                url: "/credits/wallet",
               },
             ],
           });
@@ -137,15 +142,15 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         if (wallet.expiresAt && wallet.expiresAt < new Date()) {
           return reply.send({
             allowed: false,
-            reason: 'Credits have expired',
+            reason: "Credits have expired",
             estimatedCostCredits: null,
             estimatedCostUsd: null,
             currentBalance: Number(wallet.balance),
             actions: [
               {
-                type: 'purchase',
-                label: 'Purchase New Credits',
-                url: '/credits/purchase',
+                type: "purchase",
+                label: "Purchase New Credits",
+                url: "/credits/purchase",
               },
             ],
           });
@@ -155,43 +160,39 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         let estimatedCostCredits = 0;
         let estimatedCostUsd = 0;
 
-        if (action.type === 'token_usage' && action.provider && action.model) {
+        if (action.type === "token_usage" && action.provider && action.model) {
           // Get provider costs for input and output tokens
           const [inputCost, outputCost] = await Promise.all([
             db.providerCost.findFirst({
               where: {
                 provider: action.provider as any,
                 model: action.model,
-                costType: 'INPUT_TOKEN',
+                costType: "INPUT_TOKEN",
                 validFrom: { lte: new Date() },
-                OR: [
-                  { validUntil: null },
-                  { validUntil: { gte: new Date() } },
-                ],
+                OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
               },
-              orderBy: { validFrom: 'desc' },
+              orderBy: { validFrom: "desc" },
             }),
             db.providerCost.findFirst({
               where: {
                 provider: action.provider as any,
                 model: action.model,
-                costType: 'OUTPUT_TOKEN',
+                costType: "OUTPUT_TOKEN",
                 validFrom: { lte: new Date() },
-                OR: [
-                  { validUntil: null },
-                  { validUntil: { gte: new Date() } },
-                ],
+                OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
               },
-              orderBy: { validFrom: 'desc' },
+              orderBy: { validFrom: "desc" },
             }),
           ]);
 
           if (inputCost || outputCost) {
             const inputCostUsd = inputCost
-              ? ((action.estimated_input_tokens || 0) / inputCost.unitSize) * Number(inputCost.costPerUnit)
+              ? ((action.estimated_input_tokens || 0) / inputCost.unitSize) *
+                Number(inputCost.costPerUnit)
               : 0;
             const outputCostUsd = outputCost
-              ? ((action.estimated_output_tokens || 0) / outputCost.unitSize) * Number(outputCost.costPerUnit)
+              ? ((action.estimated_output_tokens || 0) / outputCost.unitSize) *
+                Number(outputCost.costPerUnit)
               : 0;
 
             estimatedCostUsd = inputCostUsd + outputCostUsd;
@@ -202,100 +203,122 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         }
 
         // 5. Check available balance
-        const available = Number(wallet.balance) - Number(wallet.reservedBalance);
+        const available =
+          Number(wallet.balance) - Number(wallet.reservedBalance);
 
         // 6. Apply limit type logic
         let allowed = true;
         let reason = null;
         const actions: Array<{ type: string; label: string; url: string }> = [];
 
-        if (entitlement.limitType === 'HARD' && entitlement.limitValue !== null) {
+        if (
+          entitlement.limitType === "HARD" &&
+          entitlement.limitValue !== null
+        ) {
           // Hard limit - strictly enforce
           if (available < estimatedCostCredits) {
             allowed = false;
-            reason = 'Insufficient credits';
+            reason = "Insufficient credits";
             actions.push({
-              type: 'purchase',
-              label: 'Purchase Credits',
-              url: '/credits/purchase',
+              type: "purchase",
+              label: "Purchase Credits",
+              url: "/credits/purchase",
             });
           }
-        } else if (entitlement.limitType === 'SOFT' && entitlement.limitValue !== null) {
+        } else if (
+          entitlement.limitType === "SOFT" &&
+          entitlement.limitValue !== null
+        ) {
           // Soft limit - warn but allow
           if (available < estimatedCostCredits) {
             allowed = true;
-            reason = 'Low credits - consider purchasing more';
+            reason = "Low credits - consider purchasing more";
             actions.push({
-              type: 'purchase',
-              label: 'Purchase Credits',
-              url: '/credits/purchase',
+              type: "purchase",
+              label: "Purchase Credits",
+              url: "/credits/purchase",
             });
           }
-        } else if (entitlement.limitType === 'NONE') {
+        } else if (entitlement.limitType === "NONE") {
           // No limit - always allow (postpaid)
           allowed = true;
         }
 
         const duration = Date.now() - startTime;
-        logger.debug({ duration, userId, featureId, allowed }, 'Entitlement check completed');
+        logger.debug(
+          { duration, userId, featureId, allowed },
+          "Entitlement check completed",
+        );
 
         return reply.send({
           allowed,
           reason,
-          estimatedCostCredits: estimatedCostCredits > 0 ? estimatedCostCredits : null,
+          estimatedCostCredits:
+            estimatedCostCredits > 0 ? estimatedCostCredits : null,
           estimatedCostUsd: estimatedCostUsd > 0 ? estimatedCostUsd : null,
           currentBalance: available,
           actions,
         });
       } catch (error) {
         const duration = Date.now() - startTime;
-        logger.error({ err: error, duration }, 'Error checking entitlement');
+        logger.error({ err: error, duration }, "Error checking entitlement");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to check entitlement',
+          error: "Internal Server Error",
+          message: "Failed to check entitlement",
         });
       }
-    }
+    },
   );
 
   // Create new entitlement
   app.post(
-    '/v1/entitlements',
+    "/v1/entitlements",
     {
       schema: {
-        tags: ['Entitlements'],
-        'x-visibility': 'public',
-        description: 'Create a new entitlement for a customer or user',
+        tags: ["Entitlements"],
+        "x-visibility": "public",
+        description: "Create a new entitlement for a customer or user",
         body: z.object({
-          customerId: z.string().uuid(),
-          userId: z.string().uuid().optional(),
+          customerId: z.string().min(1),
+          userId: z.string().min(1).optional(),
           featureId: z.string(),
-          limitType: z.enum(['HARD', 'SOFT', 'NONE']),
+          limitType: z.enum(["HARD", "SOFT", "NONE"]),
           limitValue: z.number().nullable().optional(),
-          period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
+          period: z.enum(["DAILY", "MONTHLY", "TOTAL"]).nullable().optional(),
           metadata: z.record(z.string(), z.any()).optional(),
         }),
-        response: withCommonResponses({
-          201: z.object({
-            data: z.object({
-              id: z.string(),
-              featureId: z.string(),
-              limitType: z.string(),
-              limitValue: z.number().nullable(),
+        response: withCommonResponses(
+          {
+            201: z.object({
+              data: z.object({
+                id: z.string(),
+                featureId: z.string(),
+                limitType: z.string(),
+                limitValue: z.number().nullable(),
+              }),
             }),
-          }),
-        }, [403, 500]),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
       try {
-        const { customerId, userId, featureId, limitType, limitValue, period, metadata } = request.body as any;
+        const {
+          customerId,
+          userId,
+          featureId,
+          limitType,
+          limitValue,
+          period,
+          metadata,
+        } = request.body as any;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -306,59 +329,70 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             userId: userId || null,
             featureId,
             limitType,
-            limitValue: limitValue !== undefined && limitValue !== null ? BigInt(limitValue) : null,
+            limitValue:
+              limitValue !== undefined && limitValue !== null
+                ? BigInt(limitValue)
+                : null,
             period: period || null,
             metadata: metadata || null,
           },
         });
 
-        logger.info({ entitlementId: entitlement.id, featureId }, 'Entitlement created');
+        logger.info(
+          { entitlementId: entitlement.id, featureId },
+          "Entitlement created",
+        );
 
         return reply.status(201).send({
           data: {
             id: entitlement.id,
             featureId: entitlement.featureId,
             limitType: entitlement.limitType,
-            limitValue: entitlement.limitValue ? Number(entitlement.limitValue) : null,
+            limitValue: entitlement.limitValue
+              ? Number(entitlement.limitValue)
+              : null,
           },
         });
       } catch (error: any) {
-        logger.error({ err: error }, 'Error creating entitlement');
+        logger.error({ err: error }, "Error creating entitlement");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to create entitlement',
+          error: "Internal Server Error",
+          message: "Failed to create entitlement",
         });
       }
-    }
+    },
   );
 
   // Update entitlement
   app.put(
-    '/v1/entitlements/:id',
+    "/v1/entitlements/:id",
     {
       schema: {
-        tags: ['Entitlements'],
-        'x-visibility': 'public',
-        description: 'Update an existing entitlement',
+        tags: ["Entitlements"],
+        "x-visibility": "public",
+        description: "Update an existing entitlement",
         params: z.object({
           id: z.string().uuid(),
         }),
         body: z.object({
-          limitType: z.enum(['HARD', 'SOFT', 'NONE']).optional(),
+          limitType: z.enum(["HARD", "SOFT", "NONE"]).optional(),
           limitValue: z.number().nullable().optional(),
-          period: z.enum(['DAILY', 'MONTHLY', 'TOTAL']).nullable().optional(),
+          period: z.enum(["DAILY", "MONTHLY", "TOTAL"]).nullable().optional(),
           metadata: z.record(z.string(), z.any()).optional(),
         }),
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              id: z.string(),
-              featureId: z.string(),
-              limitType: z.string(),
-              limitValue: z.number().nullable(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                id: z.string(),
+                featureId: z.string(),
+                limitType: z.string(),
+                limitValue: z.number().nullable(),
+              }),
             }),
-          }),
-        }, [403, 404, 500]),
+          },
+          [403, 404, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -373,16 +407,16 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (!existing) {
           return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Entitlement not found',
+            error: "Not Found",
+            message: "Entitlement not found",
           });
         }
 
         // Verify customer access
         if (existing.customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this entitlement',
+            error: "Forbidden",
+            message: "Access denied to this entitlement",
           });
         }
 
@@ -391,13 +425,18 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           where: { id },
           data: {
             ...(limitType && { limitType }),
-            ...(limitValue !== undefined ? { limitValue: limitValue !== null ? BigInt(limitValue) : null } : {}),
+            ...(limitValue !== undefined
+              ? { limitValue: limitValue !== null ? BigInt(limitValue) : null }
+              : {}),
             ...(period && { period }),
             ...(metadata && { metadata }),
           },
         });
 
-        logger.info({ entitlementId: id, featureId: updated.featureId }, 'Entitlement updated');
+        logger.info(
+          { entitlementId: id, featureId: updated.featureId },
+          "Entitlement updated",
+        );
 
         return reply.send({
           data: {
@@ -408,29 +447,32 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error updating entitlement');
+        logger.error({ err: error }, "Error updating entitlement");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to update entitlement',
+          error: "Internal Server Error",
+          message: "Failed to update entitlement",
         });
       }
-    }
+    },
   );
 
   // Delete entitlement
   app.delete(
-    '/v1/entitlements/:id',
+    "/v1/entitlements/:id",
     {
       schema: {
-        tags: ['Entitlements'],
-        'x-visibility': 'public',
-        description: 'Delete an entitlement',
+        tags: ["Entitlements"],
+        "x-visibility": "public",
+        description: "Delete an entitlement",
         params: z.object({
           id: z.string().uuid(),
         }),
-        response: withCommonResponses({
-          204: z.null().describe('Entitlement deleted successfully'),
-        }, [403, 404, 500]),
+        response: withCommonResponses(
+          {
+            204: z.null().describe("Entitlement deleted successfully"),
+          },
+          [403, 404, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -444,16 +486,16 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (!existing) {
           return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Entitlement not found',
+            error: "Not Found",
+            message: "Entitlement not found",
           });
         }
 
         // Verify customer access
         if (existing.customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this entitlement',
+            error: "Forbidden",
+            message: "Access denied to this entitlement",
           });
         }
 
@@ -462,43 +504,49 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           where: { id },
         });
 
-        logger.info({ entitlementId: id, featureId: existing.featureId }, 'Entitlement deleted');
+        logger.info(
+          { entitlementId: id, featureId: existing.featureId },
+          "Entitlement deleted",
+        );
 
         return reply.status(204).send();
       } catch (error) {
-        logger.error({ err: error }, 'Error deleting entitlement');
+        logger.error({ err: error }, "Error deleting entitlement");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to delete entitlement',
+          error: "Internal Server Error",
+          message: "Failed to delete entitlement",
         });
       }
-    }
+    },
   );
 
   // List entitlements for a customer
   app.get(
-    '/v1/customers/:customerId/entitlements',
+    "/v1/customers/:customerId/entitlements",
     {
       schema: {
-        tags: ['Entitlements'],
-        'x-visibility': 'public',
-        description: 'List all entitlements for a customer',
+        tags: ["Entitlements"],
+        "x-visibility": "public",
+        description: "List all entitlements for a customer",
         params: z.object({
-          customerId: z.string().uuid(),
+          customerId: z.string().min(1),
         }),
-        response: withCommonResponses({
-          200: z.object({
-            data: z.array(
-              z.object({
-                featureId: z.string(),
-                limitType: z.string(),
-                limitValue: z.number().nullable(), // Converted from BigInt
-                period: z.string().nullable(),
-                metadata: z.any().nullable(),
-              })
-            ),
-          }),
-        }, [403, 500]),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.array(
+                z.object({
+                  featureId: z.string(),
+                  limitType: z.string(),
+                  limitValue: z.number().nullable(), // Converted from BigInt
+                  period: z.string().nullable(),
+                  metadata: z.any().nullable(),
+                }),
+              ),
+            }),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -508,8 +556,8 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -527,18 +575,18 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         return reply.send({
-          data: entitlements.map((e: typeof entitlements[number]) => ({
+          data: entitlements.map((e: (typeof entitlements)[number]) => ({
             ...e,
             limitValue: e.limitValue ? Number(e.limitValue) : null,
           })),
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching entitlements');
+        logger.error({ err: error }, "Error fetching entitlements");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch entitlements',
+          error: "Internal Server Error",
+          message: "Failed to fetch entitlements",
         });
       }
-    }
+    },
   );
 };

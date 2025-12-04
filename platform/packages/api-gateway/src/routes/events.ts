@@ -16,57 +16,60 @@
  */
 
 // Events routes
-import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { z } from 'zod';
-import { getPrismaClient } from '@openmonetize/common';
-import { authenticate } from '../middleware/auth';
-import { logger } from '../logger';
-import { withCommonResponses } from '../types/schemas';
-import type { GetEventsRoute } from '../types/routes';
+import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { z } from "zod";
+import { getPrismaClient } from "@openmonetize/common";
+import { authenticate } from "../middleware/auth";
+import { logger } from "../logger";
+import { withCommonResponses } from "../types/schemas";
+import type { GetEventsRoute } from "../types/routes";
 
 const db = getPrismaClient();
 
 export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all events routes
-  app.addHook('preHandler', authenticate);
+  app.addHook("preHandler", authenticate);
 
   // Get events
   app.get<GetEventsRoute>(
-    '/v1/events',
+    "/v1/events",
     {
       schema: {
-        tags: ['Events'],
-        'x-visibility': 'public',
-        description: 'Get usage events history',
+        tags: ["Events"],
+        "x-visibility": "public",
+        description: "Get usage events history",
         querystring: z.object({
-          customerId: z.string().uuid().optional(),
+          customerId: z.string().min(1).optional(),
           limit: z.coerce.number().min(1).max(100).default(50),
           offset: z.coerce.number().min(0).default(0),
         }),
-        response: withCommonResponses({
-          200: z.object({
-            data: z.array(
-              z.object({
-                id: z.string(),
-                eventType: z.string(),
-                featureId: z.string(),
-                provider: z.string().nullable(),
-                model: z.string().nullable(),
-                inputTokens: z.string().nullable(),
-                outputTokens: z.string().nullable(),
-                creditsBurned: z.string(),
-                costUsd: z.string().nullable(),
-                timestamp: z.string(),
-                metadata: z.record(z.string(), z.unknown()).nullable(),
-              })
-            ),
-            pagination: z.object({
-              total: z.number(),
-              limit: z.number(),
-              offset: z.number(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.array(
+                z.object({
+                  id: z.string(),
+                  eventType: z.string(),
+                  featureId: z.string(),
+                  provider: z.string().nullable(),
+                  model: z.string().nullable(),
+                  inputTokens: z.string().nullable(),
+                  outputTokens: z.string().nullable(),
+                  creditsBurned: z.string(),
+                  costUsd: z.string().nullable(),
+                  timestamp: z.string(),
+                  metadata: z.record(z.string(), z.unknown()).nullable(),
+                }),
+              ),
+              pagination: z.object({
+                total: z.number(),
+                limit: z.number(),
+                offset: z.number(),
+              }),
             }),
-          }),
-        }, [403, 500]),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -79,8 +82,8 @@ export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
         // Verify customer access
         if (targetCustomerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -97,7 +100,7 @@ export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
             customerId: targetCustomerId,
           },
           orderBy: {
-            timestamp: 'desc',
+            timestamp: "desc",
           },
           take: limit,
           skip: offset,
@@ -124,12 +127,12 @@ export const eventsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching events');
+        logger.error({ err: error }, "Error fetching events");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch events',
+          error: "Internal Server Error",
+          message: "Failed to fetch events",
         });
       }
-    }
+    },
   );
 };

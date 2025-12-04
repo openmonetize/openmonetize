@@ -16,30 +16,30 @@
  */
 
 // Credit management routes
-import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { z } from 'zod';
-import { getPrismaClient } from '@openmonetize/common';
-import { authenticate } from '../middleware/auth';
-import { logger } from '../logger';
-import { withCommonResponses } from '../types/schemas';
+import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import { z } from "zod";
+import { getPrismaClient } from "@openmonetize/common";
+import { authenticate } from "../middleware/auth";
+import { logger } from "../logger";
+import { withCommonResponses } from "../types/schemas";
 import type {
   GetUserCreditBalanceRoute,
   PurchaseCreditsRoute,
   GrantCreditsRoute,
   GetCreditTransactionsRoute,
-} from '../types/routes';
+} from "../types/routes";
 
 const db = getPrismaClient();
 
 // Request schemas
 const CreditBalanceSchema = z.object({
-  customerId: z.string().uuid(),
-  userId: z.string().uuid(),
+  customerId: z.string().min(1),
+  userId: z.string().min(1),
 });
 
 const CreditPurchaseSchema = z.object({
-  customerId: z.string().uuid(),
-  userId: z.string().uuid(),
+  customerId: z.string().min(1),
+  userId: z.string().min(1),
   amount: z.number().positive(),
   purchasePrice: z.number().positive(),
   expiresAt: z.string().datetime().optional(),
@@ -47,35 +47,38 @@ const CreditPurchaseSchema = z.object({
 
 export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all credit routes
-  app.addHook('preHandler', authenticate);
+  app.addHook("preHandler", authenticate);
 
   // Get credit balance for authenticated customer (simple endpoint)
   app.get(
-    '/v1/credits/balance',
+    "/v1/credits/balance",
     {
       schema: {
-        tags: ['Credits'],
-        'x-visibility': 'public',
-        description: 'Get credit balance for the authenticated customer',
+        tags: ["Credits"],
+        "x-visibility": "public",
+        description: "Get credit balance for the authenticated customer",
         security: [{ bearerAuth: [] }],
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              balance: z.string().describe('Total balance'),
-              reservedBalance: z.string().describe('Reserved credits'),
-              availableBalance: z.string().describe('Available credits'),
-              currency: z.string(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                balance: z.string().describe("Total balance"),
+                reservedBalance: z.string().describe("Reserved credits"),
+                availableBalance: z.string().describe("Available credits"),
+                currency: z.string(),
+              }),
             }),
-          }),
-        }, [401, 404, 500]),
+          },
+          [401, 404, 500],
+        ),
       },
     },
     async (request, reply) => {
       try {
         if (!request.customer) {
           return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Authentication required',
+            error: "Unauthorized",
+            message: "Authentication required",
           });
         }
 
@@ -87,7 +90,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
             teamId: null,
           },
           orderBy: {
-            createdAt: 'asc',
+            createdAt: "asc",
           },
         });
 
@@ -95,10 +98,10 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           // Return empty balance for new users instead of 404
           return reply.send({
             data: {
-              balance: '0',
-              reservedBalance: '0',
-              availableBalance: '0',
-              currency: 'USD', // Default currency
+              balance: "0",
+              reservedBalance: "0",
+              availableBalance: "0",
+              currency: "USD", // Default currency
             },
           });
         }
@@ -118,34 +121,37 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching credit balance');
+        logger.error({ err: error }, "Error fetching credit balance");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch credit balance',
+          error: "Internal Server Error",
+          message: "Failed to fetch credit balance",
         });
       }
-    }
+    },
   );
 
   // Get credit balance for a user
   app.get<GetUserCreditBalanceRoute>(
-    '/v1/customers/:customerId/users/:userId/credits',
+    "/v1/customers/:customerId/users/:userId/credits",
     {
       schema: {
-        tags: ['Credits'],
-        'x-visibility': 'public',
-        description: 'Get credit balance for a specific user',
+        tags: ["Credits"],
+        "x-visibility": "public",
+        description: "Get credit balance for a specific user",
         params: CreditBalanceSchema,
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              balance: z.number(),
-              reserved: z.number(),
-              available: z.number(),
-              expiresAt: z.string().nullable(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                balance: z.number(),
+                reserved: z.number(),
+                available: z.number(),
+                expiresAt: z.string().nullable(),
+              }),
             }),
-          }),
-        }, [403, 404, 500]),
+          },
+          [403, 404, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -155,8 +161,8 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -174,12 +180,13 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (!wallet) {
           return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Credit wallet not found',
+            error: "Not Found",
+            message: "Credit wallet not found",
           });
         }
 
-        const available = Number(wallet.balance) - Number(wallet.reservedBalance);
+        const available =
+          Number(wallet.balance) - Number(wallet.reservedBalance);
 
         return reply.send({
           data: {
@@ -190,43 +197,47 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching credit balance');
+        logger.error({ err: error }, "Error fetching credit balance");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch credit balance',
+          error: "Internal Server Error",
+          message: "Failed to fetch credit balance",
         });
       }
-    }
+    },
   );
 
   // Purchase credits (top-up)
   app.post<PurchaseCreditsRoute>(
-    '/v1/credits/purchase',
+    "/v1/credits/purchase",
     {
       schema: {
-        tags: ['Credits'],
-        'x-visibility': 'public',
-        description: 'Purchase credits for a user (top-up)',
+        tags: ["Credits"],
+        "x-visibility": "public",
+        description: "Purchase credits for a user (top-up)",
         body: CreditPurchaseSchema,
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              transactionId: z.string(),
-              newBalance: z.number(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                transactionId: z.string(),
+                newBalance: z.number(),
+              }),
             }),
-          }),
-        }, [403, 500]),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
       try {
-        const { customerId, userId, amount, purchasePrice, expiresAt } = request.body;
+        const { customerId, userId, amount, purchasePrice, expiresAt } =
+          request.body;
 
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -256,7 +267,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
             data: {
               walletId: wallet.id,
               customerId,
-              transactionType: 'PURCHASE',
+              transactionType: "PURCHASE",
               amount: BigInt(amount),
               balanceBefore: wallet.balance,
               balanceAfter: BigInt(Number(wallet.balance) + amount),
@@ -287,43 +298,47 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           data: result,
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error purchasing credits');
+        logger.error({ err: error }, "Error purchasing credits");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to purchase credits',
+          error: "Internal Server Error",
+          message: "Failed to purchase credits",
         });
       }
-    }
+    },
   );
 
   // Grant credits (admin operation - no payment required)
   app.post<GrantCreditsRoute>(
-    '/v1/credits/grant',
+    "/v1/credits/grant",
     {
       schema: {
-        tags: ['Credits'],
-        'x-visibility': 'public',
-        description: 'Grant credits to a customer, user, or team (admin operation)',
+        tags: ["Credits"],
+        "x-visibility": "public",
+        description:
+          "Grant credits to a customer, user, or team (admin operation)",
         body: z.object({
-          customerId: z.string().uuid(),
-          userId: z.string().uuid().optional(),
-          teamId: z.string().uuid().optional(),
+          customerId: z.string().min(1),
+          userId: z.string().min(1).optional(),
+          teamId: z.string().min(1).optional(),
           amount: z.number().min(1),
           reason: z.string().optional(),
           metadata: z.record(z.string(), z.any()).optional(),
           idempotencyKey: z.string().optional(),
           expiresAt: z.string().datetime().optional(),
         }),
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              transactionId: z.string(),
-              walletId: z.string(),
-              newBalance: z.string(),
-              amount: z.string(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                transactionId: z.string(),
+                walletId: z.string(),
+                newBalance: z.string(),
+                amount: z.string(),
+              }),
             }),
-          }),
-        }, [403, 409, 500]),
+          },
+          [403, 409, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -342,8 +357,8 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         // Verify customer access (must be same customer or admin)
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -408,7 +423,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
 
           logger.info(
             { walletId: wallet.id, customerId, userId, teamId },
-            'Created new credit wallet'
+            "Created new credit wallet",
           );
         }
 
@@ -421,7 +436,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
             data: {
               walletId: wallet.id,
               customerId,
-              transactionType: 'GRANT',
+              transactionType: "GRANT",
               amount: BigInt(amount),
               balanceBefore: wallet.balance,
               balanceAfter: newBalance,
@@ -454,7 +469,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
               amount,
               newBalance: newBalance.toString(),
             },
-            'Credits granted successfully'
+            "Credits granted successfully",
           );
 
           return {
@@ -469,60 +484,66 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           data: result,
         });
       } catch (error: any) {
-        logger.error({ err: error }, 'Error granting credits');
+        logger.error({ err: error }, "Error granting credits");
 
         // Handle unique constraint violation for idempotency key
-        if (error.code === 'P2002' && error.meta?.target?.includes('idempotencyKey')) {
+        if (
+          error.code === "P2002" &&
+          error.meta?.target?.includes("idempotencyKey")
+        ) {
           return reply.status(409).send({
-            error: 'Conflict',
-            message: 'Duplicate grant operation detected',
+            error: "Conflict",
+            message: "Duplicate grant operation detected",
           });
         }
 
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to grant credits',
+          error: "Internal Server Error",
+          message: "Failed to grant credits",
         });
       }
-    }
+    },
   );
 
   // Get credit transaction history
   app.get<GetCreditTransactionsRoute>(
-    '/v1/customers/:customerId/users/:userId/transactions',
+    "/v1/customers/:customerId/users/:userId/transactions",
     {
       schema: {
-        tags: ['Credits'],
-        'x-visibility': 'public',
-        description: 'Get credit transaction history for a user',
+        tags: ["Credits"],
+        "x-visibility": "public",
+        description: "Get credit transaction history for a user",
         params: z.object({
-          customerId: z.string().uuid(),
-          userId: z.string().uuid(),
+          customerId: z.string().min(1),
+          userId: z.string().min(1),
         }),
         querystring: z.object({
           limit: z.number().int().min(1).max(100).default(50),
           offset: z.number().int().min(0).default(0),
         }),
-        response: withCommonResponses({
-          200: z.object({
-            data: z.array(
-              z.object({
-                id: z.string(),
-                transactionType: z.string(),
-                amount: z.number(), // Converted from BigInt
-                balanceBefore: z.number(), // Converted from BigInt
-                balanceAfter: z.number(), // Converted from BigInt
-                description: z.string().nullable(),
-                createdAt: z.string(),
-              })
-            ),
-            pagination: z.object({
-              limit: z.number(),
-              offset: z.number(),
-              total: z.number(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.array(
+                z.object({
+                  id: z.string(),
+                  transactionType: z.string(),
+                  amount: z.number(), // Converted from BigInt
+                  balanceBefore: z.number(), // Converted from BigInt
+                  balanceAfter: z.number(), // Converted from BigInt
+                  description: z.string().nullable(),
+                  createdAt: z.string(),
+                }),
+              ),
+              pagination: z.object({
+                limit: z.number(),
+                offset: z.number(),
+                total: z.number(),
+              }),
             }),
-          }),
-        }, [403, 500]),
+          },
+          [403, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -533,8 +554,8 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         // Verify customer access
         if (customerId !== request.customer!.id) {
           return reply.status(403).send({
-            error: 'Forbidden',
-            message: 'Access denied to this customer',
+            error: "Forbidden",
+            message: "Access denied to this customer",
           });
         }
 
@@ -556,7 +577,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
               description: true,
               createdAt: true,
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             take: limit,
             skip: offset,
           }),
@@ -571,7 +592,7 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         ]);
 
         return reply.send({
-          data: transactions.map((tx: typeof transactions[number]) => ({
+          data: transactions.map((tx: (typeof transactions)[number]) => ({
             ...tx,
             amount: Number(tx.amount),
             balanceBefore: Number(tx.balanceBefore),
@@ -585,12 +606,12 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching transaction history');
+        logger.error({ err: error }, "Error fetching transaction history");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch transaction history',
+          error: "Internal Server Error",
+          message: "Failed to fetch transaction history",
         });
       }
-    }
+    },
   );
 };
