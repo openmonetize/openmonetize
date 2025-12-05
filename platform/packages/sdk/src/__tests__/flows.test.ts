@@ -67,9 +67,9 @@ describe("OpenMonetize SDK Flow Tests", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
 
       expect(body.events).toHaveLength(1);
-      expect(body.events[0].customerId).toBe("legalai-corp");
-      expect(body.events[0].userId).toBe("my-custom-user-id-123");
-      expect(body.events[0].eventType).toBe("TOKEN_USAGE");
+      expect(body.events[0].customer_id).toBe("legalai-corp");
+      expect(body.events[0].user_id).toBe("my-custom-user-id-123");
+      expect(body.events[0].event_type).toBe("TOKEN_USAGE");
     });
 
     it("should accept hyphenated string IDs", async () => {
@@ -96,8 +96,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customerId).toBe("company-name-with-dashes");
-      expect(body.events[0].userId).toBe("org-abc-user-xyz");
+      expect(body.events[0].customer_id).toBe("company-name-with-dashes");
+      expect(body.events[0].user_id).toBe("org-abc-user-xyz");
     });
 
     it("should accept email-style customer IDs", async () => {
@@ -122,8 +122,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customerId).toBe("tenant@domain.io");
-      expect(body.events[0].userId).toBe("user@company.com");
+      expect(body.events[0].customer_id).toBe("tenant@domain.io");
+      expect(body.events[0].user_id).toBe("user@company.com");
     });
 
     it("should still accept valid UUID IDs", async () => {
@@ -153,8 +153,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customerId).toBe(validUuidCustomer);
-      expect(body.events[0].userId).toBe(validUuidUser);
+      expect(body.events[0].customer_id).toBe(validUuidCustomer);
+      expect(body.events[0].user_id).toBe(validUuidUser);
     });
   });
 
@@ -341,18 +341,18 @@ describe("OpenMonetize SDK Flow Tests", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       const event = body.events[0];
 
-      // Verify event structure
-      expect(event.eventId).toMatch(
+      // Verify event structure (snake_case for API)
+      expect(event.event_id).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
-      expect(event.customerId).toBe("saas-company-xyz");
-      expect(event.userId).toBe("end-user-abc");
-      expect(event.eventType).toBe("TOKEN_USAGE");
-      expect(event.featureId).toBe("chat-completion");
+      expect(event.customer_id).toBe("saas-company-xyz");
+      expect(event.user_id).toBe("end-user-abc");
+      expect(event.event_type).toBe("TOKEN_USAGE");
+      expect(event.feature_id).toBe("chat-completion");
       expect(event.provider).toBe("GOOGLE");
       expect(event.model).toBe("gemini-pro");
-      expect(event.inputTokens).toBe(200);
-      expect(event.outputTokens).toBe(100);
+      expect(event.input_tokens).toBe(200);
+      expect(event.output_tokens).toBe(100);
       expect(event.metadata).toEqual({
         sessionId: "sess-12345",
         conversationId: "conv-67890",
@@ -383,8 +383,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].eventType).toBe("CUSTOM");
-      expect(body.events[0].unitType).toBe("minutes_processed");
+      expect(body.events[0].event_type).toBe("CUSTOM");
+      expect(body.events[0].unit_type).toBe("minutes_processed");
       expect(body.events[0].quantity).toBe(15.5);
     });
   });

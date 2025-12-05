@@ -16,13 +16,17 @@
  */
 
 // Customer registration and management routes
-import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { getPrismaClient, generateApiKey, hashApiKey } from '@openmonetize/common';
-import { logger } from '../logger';
-import { z } from 'zod';
-import { authenticate } from '../middleware/auth';
-import { withCommonResponses } from '../types/schemas';
-import type { RegisterCustomerRoute } from '../types/routes';
+import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
+import {
+  getPrismaClient,
+  generateApiKey,
+  hashApiKey,
+} from "@openmonetize/common";
+import { logger } from "../logger";
+import { z } from "zod";
+import { authenticate } from "../middleware/auth";
+import { withCommonResponses } from "../types/schemas";
+import type { RegisterCustomerRoute } from "../types/routes";
 
 const db = getPrismaClient();
 
@@ -30,31 +34,34 @@ const db = getPrismaClient();
 const CustomerRegistrationSchema = z.object({
   name: z.string().min(1).max(255),
   email: z.string().email(),
-  tier: z.enum(['STARTER', 'GROWTH', 'ENTERPRISE']).default('STARTER'),
+  tier: z.enum(["STARTER", "GROWTH", "ENTERPRISE"]).default("STARTER"),
 });
 
 export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
   // Customer registration (no auth required)
   app.post<RegisterCustomerRoute>(
-    '/v1/customers/register',
+    "/v1/customers/register",
     {
       schema: {
-        tags: ['Customers'],
-        'x-visibility': 'public',
-        description: 'Register a new customer account',
+        tags: ["Customers"],
+        "x-visibility": "public",
+        description: "Register a new customer account",
         body: CustomerRegistrationSchema,
-        response: withCommonResponses({
-          201: z.object({
-            data: z.object({
-              customerId: z.string().uuid(),
-              apiKey: z.string().describe('API key - only shown once! Save it securely.'),
-              name: z.string(),
-              email: z.string(),
-              tier: z.string(),
-              createdAt: z.string().datetime(),
+        response: withCommonResponses(
+          {
+            201: z.object({
+              data: z.object({
+                customerId: z.string().uuid(),
+                apiKey: z.string(),
+                name: z.string(),
+                email: z.string(),
+                tier: z.enum(["STARTER", "GROWTH", "ENTERPRISE"]),
+                createdAt: z.string().datetime(),
+              }),
             }),
-          }),
-        }, [400, 409, 500]),
+          },
+          [400, 409, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -69,13 +76,13 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (existingCustomer) {
           return reply.status(409).send({
-            error: 'Conflict',
-            message: 'A customer with this email already exists',
+            error: "Conflict",
+            message: "A customer with this email already exists",
           });
         }
 
         // Generate API key
-        const apiKey = generateApiKey('om_live');
+        const apiKey = generateApiKey("om_live");
         const apiKeyHash = hashApiKey(apiKey);
 
         // Create customer
@@ -85,13 +92,13 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
             email,
             tier: tier as any, // Cast to Prisma enum
             apiKeyHash,
-            status: 'ACTIVE' as any, // Cast to Prisma enum
+            status: "ACTIVE" as any, // Cast to Prisma enum
           },
         });
 
         logger.info(
           { customerId: customer.id, email },
-          'New customer registered'
+          "New customer registered",
         );
 
         return reply.status(201).send({
@@ -107,43 +114,46 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
       } catch (error) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
-            error: 'Validation Error',
-            message: 'Invalid request data',
+            error: "Validation Error",
+            message: "Invalid request data",
             details: error.issues,
           });
         }
 
-        logger.error({ err: error }, 'Error registering customer');
+        logger.error({ err: error }, "Error registering customer");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to register customer',
+          error: "Internal Server Error",
+          message: "Failed to register customer",
         });
       }
-    }
+    },
   );
 
   // Get customer profile (authenticated)
   app.get(
-    '/v1/customers/me',
+    "/v1/customers/me",
     {
       preHandler: authenticate,
       schema: {
-        tags: ['Customers'],
-        'x-visibility': 'internal',
-        description: 'Get current customer profile',
+        tags: ["Customers"],
+        "x-visibility": "internal",
+        description: "Get current customer profile",
         security: [{ bearerAuth: [] }],
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              id: z.string().uuid(),
-              name: z.string(),
-              email: z.string(),
-              tier: z.string(),
-              status: z.string(),
-              createdAt: z.string().datetime(),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                id: z.string().uuid(),
+                name: z.string(),
+                email: z.string(),
+                tier: z.string(),
+                status: z.string(),
+                createdAt: z.string().datetime(),
+              }),
             }),
-          }),
-        }, [401, 404, 500]),
+          },
+          [401, 404, 500],
+        ),
       },
     },
     async (request, reply) => {
@@ -151,8 +161,8 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
         // Customer is attached by auth middleware
         if (!request.customer) {
           return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Authentication required',
+            error: "Unauthorized",
+            message: "Authentication required",
           });
         }
 
@@ -170,8 +180,8 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
 
         if (!customer) {
           return reply.status(404).send({
-            error: 'Not Found',
-            message: 'Customer not found',
+            error: "Not Found",
+            message: "Customer not found",
           });
         }
 
@@ -182,44 +192,48 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error fetching customer profile');
+        logger.error({ err: error }, "Error fetching customer profile");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to fetch customer profile',
+          error: "Internal Server Error",
+          message: "Failed to fetch customer profile",
         });
       }
-    }
+    },
   );
   // Rotate API Key (authenticated)
   app.post(
-    '/v1/customers/rotate-key',
+    "/v1/customers/rotate-key",
     {
       preHandler: authenticate,
       schema: {
-        tags: ['Customers'],
-        'x-visibility': 'internal',
-        description: 'Rotate API key for the current customer. Invalidates the old key.',
+        tags: ["Customers"],
+        "x-visibility": "internal",
+        description:
+          "Rotate API key for the current customer. Invalidates the old key.",
         security: [{ bearerAuth: [] }],
-        response: withCommonResponses({
-          200: z.object({
-            data: z.object({
-              apiKey: z.string().describe('New API key - only shown once!'),
+        response: withCommonResponses(
+          {
+            200: z.object({
+              data: z.object({
+                apiKey: z.string().describe("New API key - only shown once!"),
+              }),
             }),
-          }),
-        }, [401, 500]),
+          },
+          [401, 500],
+        ),
       },
     },
     async (request, reply) => {
       try {
         if (!request.customer) {
           return reply.status(401).send({
-            error: 'Unauthorized',
-            message: 'Authentication required',
+            error: "Unauthorized",
+            message: "Authentication required",
           });
         }
 
         // Generate new key
-        const apiKey = generateApiKey('om_live');
+        const apiKey = generateApiKey("om_live");
         const apiKeyHash = hashApiKey(apiKey);
 
         // Update customer
@@ -228,18 +242,18 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
           data: { apiKeyHash },
         });
 
-        logger.info({ customerId: request.customer.id }, 'API Key rotated');
+        logger.info({ customerId: request.customer.id }, "API Key rotated");
 
         return reply.send({
           data: { apiKey },
         });
       } catch (error) {
-        logger.error({ err: error }, 'Error rotating API key');
+        logger.error({ err: error }, "Error rotating API key");
         return reply.status(500).send({
-          error: 'Internal Server Error',
-          message: 'Failed to rotate API key',
+          error: "Internal Server Error",
+          message: "Failed to rotate API key",
         });
       }
-    }
+    },
   );
 };

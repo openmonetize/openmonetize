@@ -16,7 +16,7 @@
  */
 
 // Customer Registration Tests
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 
 // Use vi.hoisted() for mock setup
 const {
@@ -32,7 +32,7 @@ const {
 }));
 
 // Mock dependencies
-vi.mock('@openmonetize/common', () => ({
+vi.mock("@openmonetize/common", () => ({
   getPrismaClient: () => ({
     customer: {
       findUnique: mockCustomerFindUnique,
@@ -43,7 +43,7 @@ vi.mock('@openmonetize/common', () => ({
   hashApiKey: mockHashApiKey,
 }));
 
-vi.mock('../../logger', () => ({
+vi.mock("../../logger", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -51,18 +51,30 @@ vi.mock('../../logger', () => ({
   },
 }));
 
-import Fastify, { FastifyInstance } from 'fastify';
-import { customersRoutes } from '../customers';
+import { logger } from "../../logger";
+import Fastify, { FastifyInstance } from "fastify";
+import {
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+import { customersRoutes } from "../customers";
 
-describe('Customer Registration', () => {
+describe("Customer Registration", () => {
   let app: FastifyInstance;
 
   beforeEach(async () => {
     // Reset mocks
     vi.clearAllMocks();
 
-    // Create fresh Fastify instance
+    // Create fresh Fastify instance with Zod type provider
     app = Fastify();
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
+
+    app.setErrorHandler((error, request, reply) => {
+      reply.status(500).send(error);
+    });
+
     await app.register(customersRoutes);
     await app.ready();
   });
@@ -71,19 +83,19 @@ describe('Customer Registration', () => {
     await app.close();
   });
 
-  describe('POST /v1/customers/register', () => {
-    describe('Successful Registration', () => {
-      it('should register a new customer with valid data', async () => {
-        const mockApiKey = 'om_live_abc123xyz';
-        const mockApiKeyHash = 'hashed_abc123xyz';
+  describe("POST /v1/customers/register", () => {
+    describe("Successful Registration", () => {
+      it("should register a new customer with valid data", async () => {
+        const mockApiKey = "om_live_abc123xyz";
+        const mockApiKeyHash = "hashed_abc123xyz";
         const mockCustomer = {
-          id: 'cust_new123',
-          name: 'Acme AI',
-          email: 'admin@acme-ai.com',
-          tier: 'STARTER',
-          status: 'ACTIVE',
+          id: "123e4567-e89b-12d3-a456-426614174000",
+          name: "Acme AI",
+          email: "admin@acme-ai.com",
+          tier: "STARTER",
+          status: "ACTIVE",
           apiKeyHash: mockApiKeyHash,
-          createdAt: new Date('2024-11-18T12:00:00Z'),
+          createdAt: new Date("2024-11-18T12:00:00Z"),
         };
 
         mockCustomerFindUnique.mockResolvedValue(null); // Email doesn't exist
@@ -92,11 +104,11 @@ describe('Customer Registration', () => {
         mockCustomerCreate.mockResolvedValue(mockCustomer);
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Acme AI',
-            email: 'admin@acme-ai.com',
+            name: "Acme AI",
+            email: "admin@acme-ai.com",
           },
         });
 
@@ -104,66 +116,66 @@ describe('Customer Registration', () => {
 
         const body = JSON.parse(response.body);
         expect(body.data).toMatchObject({
-          customerId: 'cust_new123',
+          customerId: "123e4567-e89b-12d3-a456-426614174000",
           apiKey: mockApiKey,
-          name: 'Acme AI',
-          email: 'admin@acme-ai.com',
-          tier: 'STARTER',
+          name: "Acme AI",
+          email: "admin@acme-ai.com",
+          tier: "STARTER",
         });
 
-        expect(body.data.createdAt).toBe('2024-11-18T12:00:00.000Z');
+        expect(body.data.createdAt).toBe("2024-11-18T12:00:00.000Z");
       });
 
-      it('should register customer with specified tier', async () => {
+      it("should register customer with specified tier", async () => {
         mockCustomerFindUnique.mockResolvedValue(null);
-        mockGenerateApiKey.mockReturnValue('om_live_enterprise');
-        mockHashApiKey.mockReturnValue('hashed_enterprise');
+        mockGenerateApiKey.mockReturnValue("om_live_enterprise");
+        mockHashApiKey.mockReturnValue("hashed_enterprise");
         mockCustomerCreate.mockResolvedValue({
-          id: 'cust_ent456',
-          name: 'Enterprise Corp',
-          email: 'billing@enterprise.com',
-          tier: 'ENTERPRISE',
-          status: 'ACTIVE',
-          apiKeyHash: 'hashed_enterprise',
+          id: "123e4567-e89b-12d3-a456-426614174001",
+          name: "Enterprise Corp",
+          email: "billing@enterprise.com",
+          tier: "ENTERPRISE",
+          status: "ACTIVE",
+          apiKeyHash: "hashed_enterprise",
           createdAt: new Date(),
         });
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Enterprise Corp',
-            email: 'billing@enterprise.com',
-            tier: 'ENTERPRISE',
+            name: "Enterprise Corp",
+            email: "billing@enterprise.com",
+            tier: "ENTERPRISE",
           },
         });
 
         expect(response.statusCode).toBe(201);
 
         const body = JSON.parse(response.body);
-        expect(body.data.tier).toBe('ENTERPRISE');
+        expect(body.data.tier).toBe("ENTERPRISE");
       });
 
-      it('should default to STARTER tier when not specified', async () => {
+      it("should default to STARTER tier when not specified", async () => {
         mockCustomerFindUnique.mockResolvedValue(null);
-        mockGenerateApiKey.mockReturnValue('om_live_starter');
-        mockHashApiKey.mockReturnValue('hashed_starter');
+        mockGenerateApiKey.mockReturnValue("om_live_starter");
+        mockHashApiKey.mockReturnValue("hashed_starter");
         mockCustomerCreate.mockResolvedValue({
-          id: 'cust_start789',
-          name: 'Startup Inc',
-          email: 'info@startup.com',
-          tier: 'STARTER',
-          status: 'ACTIVE',
-          apiKeyHash: 'hashed_starter',
+          id: "123e4567-e89b-12d3-a456-426614174002",
+          name: "Startup Inc",
+          email: "info@startup.com",
+          tier: "STARTER",
+          status: "ACTIVE",
+          apiKeyHash: "hashed_starter",
           createdAt: new Date(),
         });
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Startup Inc',
-            email: 'info@startup.com',
+            name: "Startup Inc",
+            email: "info@startup.com",
             // tier not specified
           },
         });
@@ -171,120 +183,120 @@ describe('Customer Registration', () => {
         expect(response.statusCode).toBe(201);
 
         const body = JSON.parse(response.body);
-        expect(body.data.tier).toBe('STARTER');
+        expect(body.data.tier).toBe("STARTER");
       });
 
-      it('should generate API key with om_live prefix', async () => {
+      it("should generate API key with om_live prefix", async () => {
         mockCustomerFindUnique.mockResolvedValue(null);
-        mockGenerateApiKey.mockReturnValue('om_live_generated123');
-        mockHashApiKey.mockReturnValue('hashed_generated');
+        mockGenerateApiKey.mockReturnValue("om_live_generated123");
+        mockHashApiKey.mockReturnValue("hashed_generated");
         mockCustomerCreate.mockResolvedValue({
-          id: 'cust_999',
-          name: 'Test Co',
-          email: 'test@example.com',
-          tier: 'STARTER',
-          status: 'ACTIVE',
-          apiKeyHash: 'hashed_generated',
+          id: "123e4567-e89b-12d3-a456-426614174003",
+          name: "Test Co",
+          email: "test@example.com",
+          tier: "STARTER",
+          status: "ACTIVE",
+          apiKeyHash: "hashed_generated",
           createdAt: new Date(),
         });
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Co',
-            email: 'test@example.com',
+            name: "Test Co",
+            email: "test@example.com",
           },
         });
 
-        expect(mockGenerateApiKey).toHaveBeenCalledWith('om_live');
+        expect(mockGenerateApiKey).toHaveBeenCalledWith("om_live");
         expect(response.statusCode).toBe(201);
 
         const body = JSON.parse(response.body);
-        expect(body.data.apiKey).toBe('om_live_generated123');
+        expect(body.data.apiKey).toBe("om_live_generated123");
       });
     });
 
-    describe('Validation Errors', () => {
-      it('should return 400 when name is missing', async () => {
+    describe("Validation Errors", () => {
+      it("should return 400 when name is missing", async () => {
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            email: 'test@example.com',
+            email: "test@example.com",
           },
         });
 
         expect(response.statusCode).toBe(400);
 
         const body = JSON.parse(response.body);
-        expect(body.error).toBe('Bad Request');
+        expect(body.error).toBe("Bad Request");
       });
 
-      it('should return 400 when email is missing', async () => {
+      it("should return 400 when email is missing", async () => {
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Company',
+            name: "Test Company",
           },
         });
 
         expect(response.statusCode).toBe(400);
       });
 
-      it('should return 400 when email is invalid', async () => {
+      it("should return 400 when email is invalid", async () => {
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Company',
-            email: 'not-an-email',
+            name: "Test Company",
+            email: "not-an-email",
           },
         });
 
         expect(response.statusCode).toBe(400);
 
         const body = JSON.parse(response.body);
-        expect(body.error).toBe('Bad Request');
+        expect(body.error).toBe("Bad Request");
       });
 
-      it('should return 400 when name is empty string', async () => {
+      it("should return 400 when name is empty string", async () => {
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: '',
-            email: 'test@example.com',
+            name: "",
+            email: "test@example.com",
           },
         });
 
         expect(response.statusCode).toBe(400);
       });
 
-      it('should return 400 when name exceeds 255 characters', async () => {
-        const longName = 'a'.repeat(256);
+      it("should return 400 when name exceeds 255 characters", async () => {
+        const longName = "a".repeat(256);
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
             name: longName,
-            email: 'test@example.com',
+            email: "test@example.com",
           },
         });
 
         expect(response.statusCode).toBe(400);
       });
 
-      it('should return 400 when tier is invalid', async () => {
+      it("should return 400 when tier is invalid", async () => {
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Company',
-            email: 'test@example.com',
-            tier: 'INVALID_TIER',
+            name: "Test Company",
+            email: "test@example.com",
+            tier: "INVALID_TIER",
           },
         });
 
@@ -292,93 +304,93 @@ describe('Customer Registration', () => {
       });
     });
 
-    describe('Duplicate Email', () => {
-      it('should return 409 when email already exists', async () => {
+    describe("Duplicate Email", () => {
+      it("should return 409 when email already exists", async () => {
         const existingCustomer = {
-          id: 'cust_existing',
-          email: 'existing@example.com',
-          name: 'Existing Customer',
+          id: "cust_existing",
+          email: "existing@example.com",
+          name: "Existing Customer",
         };
 
         mockCustomerFindUnique.mockResolvedValue(existingCustomer);
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'New Customer',
-            email: 'existing@example.com',
+            name: "New Customer",
+            email: "existing@example.com",
           },
         });
 
         expect(response.statusCode).toBe(409);
 
         const body = JSON.parse(response.body);
-        expect(body.error).toBe('Conflict');
-        expect(body.message).toContain('email already exists');
+        expect(body.error).toBe("Conflict");
+        expect(body.message).toContain("email already exists");
       });
 
-      it('should check email case-insensitively', async () => {
+      it("should check email case-insensitively", async () => {
         const existingCustomer = {
-          id: 'cust_existing',
-          email: 'TEST@example.com',
-          name: 'Existing Customer',
+          id: "cust_existing",
+          email: "TEST@example.com",
+          name: "Existing Customer",
         };
 
         mockCustomerFindUnique.mockResolvedValue(existingCustomer);
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'New Customer',
-            email: 'test@example.com', // Different case
+            name: "New Customer",
+            email: "test@example.com", // Different case
           },
         });
 
         expect(mockCustomerFindUnique).toHaveBeenCalledWith({
-          where: { email: 'test@example.com' },
+          where: { email: "test@example.com" },
         });
 
         expect(response.statusCode).toBe(409);
       });
     });
 
-    describe('Error Handling', () => {
-      it('should return 500 when database create fails', async () => {
+    describe("Error Handling", () => {
+      it("should return 500 when database create fails", async () => {
         mockCustomerFindUnique.mockResolvedValue(null);
-        mockGenerateApiKey.mockReturnValue('om_live_test');
-        mockHashApiKey.mockReturnValue('hashed_test');
-        mockCustomerCreate.mockRejectedValue(new Error('Database error'));
+        mockGenerateApiKey.mockReturnValue("om_live_test");
+        mockHashApiKey.mockReturnValue("hashed_test");
+        mockCustomerCreate.mockRejectedValue(new Error("Database error"));
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Company',
-            email: 'test@example.com',
+            name: "Test Company",
+            email: "test@example.com",
           },
         });
 
         expect(response.statusCode).toBe(500);
 
         const body = JSON.parse(response.body);
-        expect(body.error).toBe('Internal Server Error');
-        expect(body.message).toContain('Failed to register customer');
+        expect(body.error).toBe("Internal Server Error");
+        expect(body.message).toContain("Failed to register customer");
       });
 
-      it('should return 500 when API key generation fails', async () => {
+      it("should return 500 when API key generation fails", async () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockImplementation(() => {
-          throw new Error('Key generation error');
+          throw new Error("Key generation error");
         });
 
         const response = await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Company',
-            email: 'test@example.com',
+            name: "Test Company",
+            email: "test@example.com",
           },
         });
 
@@ -386,67 +398,67 @@ describe('Customer Registration', () => {
       });
     });
 
-    describe('Database Operations', () => {
-      it('should create customer with correct data structure', async () => {
-        const expectedApiKeyHash = 'hashed_correct';
+    describe("Database Operations", () => {
+      it("should create customer with correct data structure", async () => {
+        const expectedApiKeyHash = "hashed_correct";
 
         mockCustomerFindUnique.mockResolvedValue(null);
-        mockGenerateApiKey.mockReturnValue('om_live_correct');
+        mockGenerateApiKey.mockReturnValue("om_live_correct");
         mockHashApiKey.mockReturnValue(expectedApiKeyHash);
         mockCustomerCreate.mockResolvedValue({
-          id: 'cust_123',
-          name: 'Test Co',
-          email: 'test@example.com',
-          tier: 'GROWTH',
-          status: 'ACTIVE',
+          id: "123e4567-e89b-12d3-a456-426614174004",
+          name: "Test Co",
+          email: "test@example.com",
+          tier: "GROWTH",
+          status: "ACTIVE",
           apiKeyHash: expectedApiKeyHash,
           createdAt: new Date(),
         });
 
         await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Test Co',
-            email: 'test@example.com',
-            tier: 'GROWTH',
+            name: "Test Co",
+            email: "test@example.com",
+            tier: "GROWTH",
           },
         });
 
         expect(mockCustomerCreate).toHaveBeenCalledWith({
           data: {
-            name: 'Test Co',
-            email: 'test@example.com',
-            tier: 'GROWTH',
+            name: "Test Co",
+            email: "test@example.com",
+            tier: "GROWTH",
             apiKeyHash: expectedApiKeyHash,
-            status: 'ACTIVE',
+            status: "ACTIVE",
           },
         });
       });
 
-      it('should hash API key before storing', async () => {
-        const plainApiKey = 'om_live_plain123';
-        const hashedApiKey = 'sha256_hashed_plain123';
+      it("should hash API key before storing", async () => {
+        const plainApiKey = "om_live_plain123";
+        const hashedApiKey = "sha256_hashed_plain123";
 
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue(plainApiKey);
         mockHashApiKey.mockReturnValue(hashedApiKey);
         mockCustomerCreate.mockResolvedValue({
-          id: 'cust_456',
-          name: 'Secure Co',
-          email: 'secure@example.com',
-          tier: 'STARTER',
-          status: 'ACTIVE',
+          id: "123e4567-e89b-12d3-a456-426614174005",
+          name: "Secure Co",
+          email: "secure@example.com",
+          tier: "STARTER",
+          status: "ACTIVE",
           apiKeyHash: hashedApiKey,
           createdAt: new Date(),
         });
 
         await app.inject({
-          method: 'POST',
-          url: '/v1/customers/register',
+          method: "POST",
+          url: "/v1/customers/register",
           payload: {
-            name: 'Secure Co',
-            email: 'secure@example.com',
+            name: "Secure Co",
+            email: "secure@example.com",
           },
         });
 
@@ -456,7 +468,7 @@ describe('Customer Registration', () => {
             data: expect.objectContaining({
               apiKeyHash: hashedApiKey,
             }),
-          })
+          }),
         );
       });
     });

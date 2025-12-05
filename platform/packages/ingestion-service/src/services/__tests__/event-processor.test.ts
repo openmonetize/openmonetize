@@ -16,7 +16,7 @@
  */
 
 // Event Processor Tests
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Use vi.hoisted() for mock setup
 const {
@@ -26,8 +26,10 @@ const {
   mockCreditTransactionCreate,
   mockTransaction,
   mockCalculateCost,
-  mockGetQueue,
   mockUuidv4,
+  mockXadd,
+  mockPipelineExec,
+  mockQuit,
 } = vi.hoisted(() => ({
   mockUsageEventCreate: vi.fn(),
   mockCreditWalletFindFirst: vi.fn(),
@@ -35,12 +37,14 @@ const {
   mockCreditTransactionCreate: vi.fn(),
   mockTransaction: vi.fn(),
   mockCalculateCost: vi.fn(),
-  mockGetQueue: vi.fn(),
   mockUuidv4: vi.fn(),
+  mockXadd: vi.fn(),
+  mockPipelineExec: vi.fn(),
+  mockQuit: vi.fn(),
 }));
 
 // Mock dependencies
-vi.mock('@openmonetize/common', () => ({
+vi.mock("@openmonetize/common", () => ({
   getPrismaClient: () => ({
     $transaction: mockTransaction,
     usageEvent: {
@@ -56,19 +60,32 @@ vi.mock('@openmonetize/common', () => ({
   }),
 }));
 
-vi.mock('../cost-calculator', () => ({
+vi.mock("../cost-calculator", () => ({
   calculateCost: mockCalculateCost,
 }));
 
-vi.mock('../../queue', () => ({
-  getQueue: mockGetQueue,
-}));
+// Mock ioredis - the event-processor creates Redis instances directly
+// Need a class mock since the code uses `new Redis()`
+vi.mock("ioredis", () => {
+  const MockRedis = class {
+    pipeline() {
+      return {
+        xadd: mockXadd.mockReturnThis(),
+        exec: mockPipelineExec,
+      };
+    }
+    quit() {
+      return mockQuit();
+    }
+  };
+  return { default: MockRedis };
+});
 
-vi.mock('uuid', () => ({
+vi.mock("uuid", () => ({
   v4: mockUuidv4,
 }));
 
-vi.mock('../../logger', () => ({
+vi.mock("../../logger", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -78,90 +95,73 @@ vi.mock('../../logger', () => ({
 }));
 
 // Import after mocking
-import { enqueueEvents, processEvent } from '../event-processor';
+import { enqueueEvents, processEvent } from "../event-processor";
 
-describe('Event Processor', () => {
+describe("Event Processor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('enqueueEvents', () => {
-    it('should enqueue events with batch ID', async () => {
-      const mockAddBulk = vi.fn().mockResolvedValue(undefined);
-      const mockQueue = { addBulk: mockAddBulk };
-      const batchId = 'batch-123';
+  describe("enqueueEvents", () => {
+    beforeEach(() => {
+      mockPipelineExec.mockResolvedValue([]);
+      mockQuit.mockResolvedValue("OK");
+    });
 
-      mockGetQueue.mockReturnValue(mockQueue);
+    it("should enqueue events with batch ID", async () => {
+      const batchId = "batch-123";
       mockUuidv4.mockReturnValue(batchId);
 
       const events = [
-        { event_id: 'evt-1', customer_id: 'cust-1', event_type: 'TOKEN_USAGE' },
-        { event_id: 'evt-2', customer_id: 'cust-1', event_type: 'API_CALL' },
+        { event_id: "evt-1", customer_id: "cust-1", event_type: "TOKEN_USAGE" },
+        { event_id: "evt-2", customer_id: "cust-1", event_type: "API_CALL" },
       ];
 
-      const result = await enqueueEvents(events, 'cust-1');
+      const result = await enqueueEvents(events, "cust-1");
 
       expect(result).toBe(batchId);
-      expect(mockAddBulk).toHaveBeenCalledWith([
-        {
-          name: 'event-evt-1',
-          data: expect.objectContaining({
-            event_id: 'evt-1',
-            batch_id: batchId,
-            enqueued_at: expect.any(String),
-          }),
-          opts: { jobId: 'evt-1' },
-        },
-        {
-          name: 'event-evt-2',
-          data: expect.objectContaining({
-            event_id: 'evt-2',
-            batch_id: batchId,
-            enqueued_at: expect.any(String),
-          }),
-          opts: { jobId: 'evt-2' },
-        },
-      ]);
+      expect(mockXadd).toHaveBeenCalledTimes(2);
+      expect(mockPipelineExec).toHaveBeenCalled();
+      expect(mockQuit).toHaveBeenCalled();
     });
 
-    it('should use event_id as job ID for idempotency', async () => {
-      const mockAddBulk = vi.fn().mockResolvedValue(undefined);
-      mockGetQueue.mockReturnValue({ addBulk: mockAddBulk });
-      mockUuidv4.mockReturnValue('batch-456');
+    it("should add batch_id and enqueued_at to events", async () => {
+      mockUuidv4.mockReturnValue("batch-456");
 
-      const events = [{ event_id: 'evt-unique-1', customer_id: 'cust-1' }];
+      const events = [{ event_id: "evt-unique-1", customer_id: "cust-1" }];
 
-      await enqueueEvents(events, 'cust-1');
+      await enqueueEvents(events, "cust-1");
 
-      const callArgs = mockAddBulk.mock.calls[0][0];
-      expect(callArgs[0].opts.jobId).toBe('evt-unique-1');
+      // Verify xadd was called with the event data including batch_id
+      expect(mockXadd).toHaveBeenCalled();
     });
 
-    it('should throw error when queue operation fails', async () => {
-      const mockAddBulk = vi.fn().mockRejectedValue(new Error('Queue error'));
-      mockGetQueue.mockReturnValue({ addBulk: mockAddBulk });
-      mockUuidv4.mockReturnValue('batch-789');
+    it("should throw error when pipeline exec fails", async () => {
+      mockUuidv4.mockReturnValue("batch-789");
+      mockPipelineExec.mockRejectedValue(new Error("Pipeline error"));
 
-      const events = [{ event_id: 'evt-1', customer_id: 'cust-1' }];
+      const events = [{ event_id: "evt-1", customer_id: "cust-1" }];
 
-      await expect(enqueueEvents(events, 'cust-1')).rejects.toThrow('Queue error');
+      await expect(enqueueEvents(events, "cust-1")).rejects.toThrow(
+        "Pipeline error",
+      );
     });
   });
 
-  describe('processEvent', () => {
-    describe('Successful Processing', () => {
-      it('should process event and burn credits', async () => {
+  describe("processEvent", () => {
+    describe("Successful Processing", () => {
+      it("should process event and burn credits", async () => {
         const mockEvent = {
-          event_id: 'evt-123',
-          customer_id: 'cust-123',
-          user_id: 'user-456',
-          event_type: 'TOKEN_USAGE',
-          feature_id: 'ai-chat',
-          provider: 'OPENAI',
-          model: 'gpt-4',
+          event_id: "evt-123",
+          customer_id: "cust-123",
+          user_id: "user-456",
+          event_type: "TOKEN_USAGE",
+          feature_id: "ai-chat",
+          provider: "OPENAI",
+          model: "gpt-4",
           input_tokens: 1000,
           output_tokens: 500,
-          timestamp: '2024-11-18T12:00:00Z',
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         const mockCost = {
@@ -170,8 +170,8 @@ describe('Event Processor', () => {
         };
 
         const mockWallet = {
-          id: 'wallet-789',
-          customerId: 'cust-123',
+          id: "wallet-789",
+          customerId: "cust-123",
           balance: BigInt(1000),
         };
 
@@ -206,13 +206,13 @@ describe('Event Processor', () => {
         expect(mockCalculateCost).toHaveBeenCalledWith(mockEvent);
         expect(mockUsageEventCreate).toHaveBeenCalledWith({
           data: expect.objectContaining({
-            id: 'evt-123',
-            customerId: 'cust-123',
-            userId: 'user-456',
-            eventType: 'TOKEN_USAGE',
-            featureId: 'ai-chat',
-            provider: 'OPENAI',
-            model: 'gpt-4',
+            id: "evt-123",
+            customerId: "cust-123",
+            userId: "user-456",
+            eventType: "TOKEN_USAGE",
+            featureId: "ai-chat",
+            provider: "OPENAI",
+            model: "gpt-4",
             inputTokens: BigInt(1000),
             outputTokens: BigInt(500),
             creditsBurned: BigInt(15),
@@ -221,13 +221,13 @@ describe('Event Processor', () => {
         });
       });
 
-      it('should skip credit burn when credits are zero', async () => {
+      it("should skip credit burn when credits are zero", async () => {
         const mockEvent = {
-          event_id: 'evt-456',
-          customer_id: 'cust-456',
-          event_type: 'FEATURE_ACCESS',
-          feature_id: 'dashboard',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-456",
+          customer_id: "cust-456",
+          event_type: "FEATURE_ACCESS",
+          feature_id: "dashboard",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         const mockCost = {
@@ -261,15 +261,15 @@ describe('Event Processor', () => {
       });
     });
 
-    describe('Credit Wallet Selection', () => {
-      it('should prioritize team wallet over user wallet', async () => {
+    describe("Credit Wallet Selection", () => {
+      it("should prioritize team wallet over user wallet", async () => {
         const mockEvent = {
-          event_id: 'evt-789',
-          customer_id: 'cust-789',
-          user_id: 'user-123',
-          team_id: 'team-456',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-789",
+          customer_id: "cust-789",
+          user_id: "user-123",
+          team_id: "team-456",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         mockCalculateCost.mockResolvedValue({
@@ -289,12 +289,12 @@ describe('Event Processor', () => {
 
           mockUsageEventCreate.mockResolvedValue({});
           mockCreditWalletFindFirst.mockResolvedValue({
-            id: 'team-wallet',
-            teamId: 'team-456',
+            id: "team-wallet",
+            teamId: "team-456",
             balance: BigInt(500),
           });
           mockCreditWalletUpdate.mockResolvedValue({
-            id: 'team-wallet',
+            id: "team-wallet",
             balance: BigInt(490),
           });
           mockCreditTransactionCreate.mockResolvedValue({});
@@ -306,20 +306,20 @@ describe('Event Processor', () => {
 
         expect(mockCreditWalletFindFirst).toHaveBeenCalledWith({
           where: {
-            customerId: 'cust-789',
-            teamId: 'team-456',
+            customerId: "cust-789",
+            teamId: "team-456",
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         });
       });
 
-      it('should use user wallet when no team_id', async () => {
+      it("should use user wallet when no team_id", async () => {
         const mockEvent = {
-          event_id: 'evt-user',
-          customer_id: 'cust-user',
-          user_id: 'user-only',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-user",
+          customer_id: "cust-user",
+          user_id: "user-only",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         mockCalculateCost.mockResolvedValue({
@@ -339,12 +339,12 @@ describe('Event Processor', () => {
 
           mockUsageEventCreate.mockResolvedValue({});
           mockCreditWalletFindFirst.mockResolvedValue({
-            id: 'user-wallet',
-            userId: 'user-only',
+            id: "user-wallet",
+            userId: "user-only",
             balance: BigInt(100),
           });
           mockCreditWalletUpdate.mockResolvedValue({
-            id: 'user-wallet',
+            id: "user-wallet",
             balance: BigInt(95),
           });
           mockCreditTransactionCreate.mockResolvedValue({});
@@ -356,20 +356,20 @@ describe('Event Processor', () => {
 
         expect(mockCreditWalletFindFirst).toHaveBeenCalledWith({
           where: {
-            customerId: 'cust-user',
-            userId: 'user-only',
+            customerId: "cust-user",
+            userId: "user-only",
             teamId: null,
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         });
       });
 
-      it('should use customer wallet when no user_id or team_id', async () => {
+      it("should use customer wallet when no user_id or team_id", async () => {
         const mockEvent = {
-          event_id: 'evt-customer',
-          customer_id: 'cust-only',
-          event_type: 'API_CALL',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-customer",
+          customer_id: "cust-only",
+          event_type: "API_CALL",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         mockCalculateCost.mockResolvedValue({
@@ -389,12 +389,12 @@ describe('Event Processor', () => {
 
           mockUsageEventCreate.mockResolvedValue({});
           mockCreditWalletFindFirst.mockResolvedValue({
-            id: 'customer-wallet',
-            customerId: 'cust-only',
+            id: "customer-wallet",
+            customerId: "cust-only",
             balance: BigInt(5000),
           });
           mockCreditWalletUpdate.mockResolvedValue({
-            id: 'customer-wallet',
+            id: "customer-wallet",
             balance: BigInt(4992),
           });
           mockCreditTransactionCreate.mockResolvedValue({});
@@ -406,22 +406,22 @@ describe('Event Processor', () => {
 
         expect(mockCreditWalletFindFirst).toHaveBeenCalledWith({
           where: {
-            customerId: 'cust-only',
+            customerId: "cust-only",
             userId: null,
             teamId: null,
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         });
       });
     });
 
-    describe('Insufficient Balance', () => {
-      it('should log warning but continue processing when balance is insufficient', async () => {
+    describe("Insufficient Balance", () => {
+      it("should log warning but continue processing when balance is insufficient", async () => {
         const mockEvent = {
-          event_id: 'evt-insufficient',
-          customer_id: 'cust-low-balance',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-insufficient",
+          customer_id: "cust-low-balance",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         mockCalculateCost.mockResolvedValue({
@@ -441,11 +441,11 @@ describe('Event Processor', () => {
 
           mockUsageEventCreate.mockResolvedValue({});
           mockCreditWalletFindFirst.mockResolvedValue({
-            id: 'low-wallet',
+            id: "low-wallet",
             balance: BigInt(10), // Less than required
           });
           mockCreditWalletUpdate.mockResolvedValue({
-            id: 'low-wallet',
+            id: "low-wallet",
             balance: BigInt(-90), // Negative balance allowed
           });
           mockCreditTransactionCreate.mockResolvedValue({});
@@ -461,28 +461,30 @@ describe('Event Processor', () => {
       });
     });
 
-    describe('Error Handling', () => {
-      it('should throw error when cost calculation fails', async () => {
+    describe("Error Handling", () => {
+      it("should throw error when cost calculation fails", async () => {
         const mockEvent = {
-          event_id: 'evt-error',
-          customer_id: 'cust-error',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-error",
+          customer_id: "cust-error",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
-        mockCalculateCost.mockRejectedValue(new Error('Cost calculation failed'));
+        mockCalculateCost.mockRejectedValue(
+          new Error("Cost calculation failed"),
+        );
 
         await expect(processEvent(mockEvent)).rejects.toThrow(
-          'Cost calculation failed'
+          "Cost calculation failed",
         );
       });
 
-      it('should throw error when transaction fails', async () => {
+      it("should throw error when transaction fails", async () => {
         const mockEvent = {
-          event_id: 'evt-tx-error',
-          customer_id: 'cust-tx-error',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-tx-error",
+          customer_id: "cust-tx-error",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         mockCalculateCost.mockResolvedValue({
@@ -490,29 +492,31 @@ describe('Event Processor', () => {
           usd: 0.01,
         });
 
-        mockTransaction.mockRejectedValue(new Error('Transaction failed'));
+        mockTransaction.mockRejectedValue(new Error("Transaction failed"));
 
-        await expect(processEvent(mockEvent)).rejects.toThrow('Transaction failed');
+        await expect(processEvent(mockEvent)).rejects.toThrow(
+          "Transaction failed",
+        );
       });
     });
 
-    describe('Credit Transaction Record', () => {
-      it('should create transaction record with correct data', async () => {
+    describe("Credit Transaction Record", () => {
+      it("should create transaction record with correct data", async () => {
         const mockEvent = {
-          event_id: 'evt-tx-record',
-          customer_id: 'cust-tx',
-          event_type: 'TOKEN_USAGE',
-          timestamp: '2024-11-18T12:00:00Z',
+          event_id: "evt-tx-record",
+          customer_id: "cust-tx",
+          event_type: "TOKEN_USAGE",
+          timestamp: "2024-11-18T12:00:00Z",
         };
 
         const mockWallet = {
-          id: 'wallet-tx',
-          customerId: 'cust-tx',
+          id: "wallet-tx",
+          customerId: "cust-tx",
           balance: BigInt(1000),
         };
 
         const mockUpdatedWallet = {
-          id: 'wallet-tx',
+          id: "wallet-tx",
           balance: BigInt(980),
         };
 
@@ -543,13 +547,13 @@ describe('Event Processor', () => {
 
         expect(mockCreditTransactionCreate).toHaveBeenCalledWith({
           data: {
-            walletId: 'wallet-tx',
-            customerId: 'cust-tx',
-            transactionType: 'BURN',
+            walletId: "wallet-tx",
+            customerId: "cust-tx",
+            transactionType: "BURN",
             amount: BigInt(-20),
             balanceBefore: BigInt(1000),
             balanceAfter: BigInt(980),
-            description: 'AI usage credit burn',
+            description: "AI usage credit burn",
             metadata: {},
           },
         });

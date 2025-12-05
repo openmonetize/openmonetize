@@ -283,15 +283,55 @@ export class OpenMonetize {
   }
 
   /**
+   * Transform camelCase event to snake_case for API
+   */
+  private transformEventForApi(event: UsageEvent): Record<string, unknown> {
+    // Base fields common to all event types
+    const base: Record<string, unknown> = {
+      event_id: event.eventId,
+      customer_id: event.customerId,
+      user_id: event.userId,
+      event_type: event.eventType,
+      feature_id: event.featureId,
+      timestamp: event.timestamp,
+      metadata: event.metadata,
+    };
+
+    // Add event-type specific fields (using type narrowing)
+    if (event.eventType === "TOKEN_USAGE") {
+      base.provider = event.provider;
+      base.model = event.model;
+      base.input_tokens = event.inputTokens;
+      base.output_tokens = event.outputTokens;
+    } else if (event.eventType === "IMAGE_GENERATION") {
+      base.provider = event.provider;
+      base.model = event.model;
+      base.image_count = event.imageCount;
+      if (event.imageSize) base.image_size = event.imageSize;
+      if (event.quality) base.quality = event.quality;
+    } else if (event.eventType === "CUSTOM") {
+      base.unit_type = event.unitType;
+      base.quantity = event.quantity;
+    }
+
+    return base;
+  }
+
+  /**
    * Ingest usage events directly (bypasses buffer if called directly, but used by flush)
    */
   async ingestEvents(
     request: IngestEventsRequest,
   ): Promise<IngestEventsResponse> {
+    // Transform camelCase events to snake_case for the API
+    const apiRequest = {
+      events: request.events.map((event) => this.transformEventForApi(event)),
+    };
+
     return this.request<IngestEventsResponse>(
       "POST",
       "/v1/events/ingest",
-      request,
+      apiRequest,
     );
   }
 
