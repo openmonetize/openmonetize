@@ -38,7 +38,10 @@
       "Bash(bash scripts/build-redoc.sh:*)",
       "Bash(NODE_ENV=production pnpm --filter @openmonetize/api-gateway build)",
       "Bash(NODE_ENV=production pnpm:*)",
-      "Bash(NODE_ENV=production bash -c:*)"
+      "Bash(NODE_ENV=production bash -c:*)",
+      "Bash(node:*)",
+      "Bash(pnpm --filter @openmonetize/ingestion-service build)",
+      "Bash(pnpm -C /Users/eliranelnasi/openmonetize/platform --filter dashboard exec eslint --config eslint.config.mjs /Users/eliranelnasi/openmonetize/platform/apps/dashboard/src/app/api/auth/[...nextauth]/route.ts /Users/eliranelnasi/openmonetize/platform/apps/dashboard/src/hooks/useSandboxAuth.ts)"
     ],
     "deny": [],
     "ask": []

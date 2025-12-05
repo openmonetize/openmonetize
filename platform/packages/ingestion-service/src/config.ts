@@ -23,40 +23,35 @@ import path from "path";
 loadEnv({ path: path.resolve(__dirname, "../../../.env") });
 
 const configSchema = z.object({
-  nodeEnv: z.enum(["development", "production", "test"]).default("development"),
-  port: z.number().int().positive().default(8081),
-  host: z.string().default("0.0.0.0"),
-  databaseUrl: z
-    .string()
-    .url()
-    .default(
-      "postgresql://admin:dev_password_change_in_production@localhost:5432/monetization",
-    ),
-  redisUrl: z.string().url().default("redis://localhost:6379"),
-  rateLimitMax: z.number().int().positive().default(1000),
-  rateLimitWindow: z
-    .union([z.string(), z.number().int().positive()])
-    .default("1 minute"),
-  queueName: z.string().default("usage-events"),
-  queueConcurrency: z.number().int().positive().default(10),
-  streamKey: z.string().default("events:stream"),
-  consumerGroup: z.string().default("billing-group"),
-  dlqStreamKey: z.string().default("events:stream:dlq"),
+  nodeEnv: z.enum(["development", "production", "test"]),
+  port: z.number().int().positive(),
+  host: z.string(),
+  databaseUrl: z.string().url(),
+  redisUrl: z.string().url(),
+  rateLimitMax: z.number().int().positive(),
+  rateLimitWindow: z.union([z.string(), z.number().int().positive()]),
+  queueName: z.string(),
+  queueConcurrency: z.number().int().positive(),
+  streamKey: z.string(),
+  consumerGroup: z.string(),
+  dlqStreamKey: z.string(),
 });
 
 export const config = configSchema.parse({
-  nodeEnv: process.env.NODE_ENV,
-  port: Number(process.env.PORT),
-  host: process.env.HOST,
-  databaseUrl: process.env.DATABASE_URL,
-  redisUrl: process.env.REDIS_URL,
-  rateLimitMax: Number(process.env.RATE_LIMIT_MAX),
-  rateLimitWindow: process.env.RATE_LIMIT_WINDOW,
-  queueName: process.env.QUEUE_NAME,
-  queueConcurrency: Number(process.env.QUEUE_CONCURRENCY),
-  streamKey: process.env.STREAM_KEY,
-  consumerGroup: process.env.CONSUMER_GROUP,
-  dlqStreamKey: process.env.DLQ_STREAM_KEY,
+  nodeEnv: process.env.NODE_ENV || "development",
+  port: parseInt(process.env.PORT || "8081", 10),
+  host: process.env.HOST || "0.0.0.0",
+  databaseUrl:
+    process.env.DATABASE_URL ||
+    "postgresql://admin:dev_password_change_in_production@localhost:5432/monetization",
+  redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+  rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || "1000", 10),
+  rateLimitWindow: process.env.RATE_LIMIT_WINDOW || "1 minute",
+  queueName: process.env.QUEUE_NAME || "usage-events",
+  queueConcurrency: parseInt(process.env.QUEUE_CONCURRENCY || "10", 10),
+  streamKey: process.env.STREAM_KEY || "events:stream",
+  consumerGroup: process.env.CONSUMER_GROUP || "billing-group",
+  dlqStreamKey: process.env.DLQ_STREAM_KEY || "events:stream:dlq",
 });
 
 export type Config = z.infer<typeof configSchema>;
