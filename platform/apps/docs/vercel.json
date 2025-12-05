@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @openmonetize/common build && pnpm --filter @openmonetize/api-gateway... build && cd apps/docs && bash scripts/build-redoc.sh",
+  "buildCommand": "cd ../.. && pnpm install --dev && pnpm --filter @openmonetize/common build && pnpm --filter @openmonetize/api-gateway... build && cd apps/docs && bash scripts/build-redoc.sh",
   "outputDirectory": "public",
   "headers": [
     {

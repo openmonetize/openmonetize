@@ -34,7 +34,11 @@
       "Bash(pnpm install:*)",
       "Bash(timeout 5 pnpm dev:*)",
       "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" REDIS_URL=\"redis://localhost:6379\" tsx ../../scripts/generate-docs.ts:*)",
-      "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" REDIS_URL=\"redis://localhost:6379\" npx tsx:*)"
+      "Bash(DATABASE_URL=\"postgresql://test:test@localhost:5432/test\" REDIS_URL=\"redis://localhost:6379\" npx tsx:*)",
+      "Bash(bash scripts/build-redoc.sh:*)",
+      "Bash(NODE_ENV=production pnpm --filter @openmonetize/api-gateway build)",
+      "Bash(NODE_ENV=production pnpm:*)",
+      "Bash(NODE_ENV=production bash -c:*)"
     ],
     "deny": [],
     "ask": []
