@@ -15,26 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { z } from 'zod';
-import { config as loadEnv } from 'dotenv';
-import path from 'path';
+import { z } from "zod";
+import { config as loadEnv } from "dotenv";
+import path from "path";
 
 // Load from root .env file
-loadEnv({ path: path.resolve(__dirname, '../../../.env') });
+loadEnv({ path: path.resolve(__dirname, "../../../.env") });
 
 const configSchema = z.object({
-  nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
+  nodeEnv: z.enum(["development", "production", "test"]).default("development"),
   port: z.number().int().positive().default(8081),
-  host: z.string().default('0.0.0.0'),
-  databaseUrl: z.string().url(),
-  redisUrl: z.string().url(),
+  host: z.string().default("0.0.0.0"),
+  databaseUrl: z
+    .string()
+    .url()
+    .default(
+      "postgresql://admin:dev_password_change_in_production@localhost:5432/monetization",
+    ),
+  redisUrl: z.string().url().default("redis://localhost:6379"),
   rateLimitMax: z.number().int().positive().default(1000),
-  rateLimitWindow: z.union([z.string(), z.number().int().positive()]).default('1 minute'),
-  queueName: z.string().default('usage-events'),
+  rateLimitWindow: z
+    .union([z.string(), z.number().int().positive()])
+    .default("1 minute"),
+  queueName: z.string().default("usage-events"),
   queueConcurrency: z.number().int().positive().default(10),
-  streamKey: z.string().default('events:stream'),
-  consumerGroup: z.string().default('billing-group'),
-  dlqStreamKey: z.string().default('events:stream:dlq')
+  streamKey: z.string().default("events:stream"),
+  consumerGroup: z.string().default("billing-group"),
+  dlqStreamKey: z.string().default("events:stream:dlq"),
 });
 
 export const config = configSchema.parse({
@@ -49,7 +56,7 @@ export const config = configSchema.parse({
   queueConcurrency: Number(process.env.QUEUE_CONCURRENCY),
   streamKey: process.env.STREAM_KEY,
   consumerGroup: process.env.CONSUMER_GROUP,
-  dlqStreamKey: process.env.DLQ_STREAM_KEY
+  dlqStreamKey: process.env.DLQ_STREAM_KEY,
 });
 
 export type Config = z.infer<typeof configSchema>;

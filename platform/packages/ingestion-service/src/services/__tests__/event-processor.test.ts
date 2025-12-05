@@ -94,6 +94,13 @@ vi.mock("../../logger", () => ({
   },
 }));
 
+vi.mock("../../config", () => ({
+  config: {
+    redisUrl: "redis://localhost:6379",
+    streamKey: "test-stream",
+  },
+}));
+
 // Import after mocking
 import { enqueueEvents, processEvent } from "../event-processor";
 
