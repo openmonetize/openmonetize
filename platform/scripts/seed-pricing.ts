@@ -244,6 +244,22 @@ async function seedPricing() {
       },
       {
         provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        costType: 'INPUT_TOKEN',
+        costPerUnit: 0.15,
+        unitSize: 1000000,
+        currency: 'USD'
+      },
+      {
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        costType: 'OUTPUT_TOKEN',
+        costPerUnit: 0.60,
+        unitSize: 1000000,
+        currency: 'USD'
+      },
+      {
+        provider: 'GOOGLE',
         model: 'gemini-2.5-flash-lite',
         costType: 'INPUT_TOKEN',
         costPerUnit: 0.10,
