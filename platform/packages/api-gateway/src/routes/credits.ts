@@ -223,6 +223,22 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         const { userId, amount, purchasePrice, expiresAt } = request.body;
         const customerId = request.customer!.id;
 
+        // Ensure user exists in OpenMonetize database (SDK consumers pass their app's user IDs)
+        await db.user.upsert({
+          where: {
+            customerId_externalUserId: {
+              customerId,
+              externalUserId: userId,
+            },
+          },
+          create: {
+            id: userId,
+            customerId,
+            externalUserId: userId,
+          },
+          update: {},
+        });
+
         // Find or create credit wallet
         let wallet = await db.creditWallet.findFirst({
           where: {
@@ -368,6 +384,22 @@ export const creditsRoutes: FastifyPluginAsyncZod = async (app) => {
         };
 
         if (userId) {
+          // Ensure user exists in OpenMonetize database (SDK consumers pass their app's user IDs)
+          await db.user.upsert({
+            where: {
+              customerId_externalUserId: {
+                customerId,
+                externalUserId: userId,
+              },
+            },
+            create: {
+              id: userId,
+              customerId,
+              externalUserId: userId,
+            },
+            update: {},
+          });
+
           walletQuery.userId = userId;
           walletQuery.teamId = null;
         } else if (teamId) {
