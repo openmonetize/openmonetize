@@ -28,6 +28,8 @@ import type {
   CreditBalance,
   PurchaseCreditsRequest,
   PurchaseCreditsResponse,
+  GrantCreditsRequest,
+  GrantCreditsResponse,
   TransactionHistoryResponse,
   EntitlementCheckRequest,
   EntitlementCheckResponse,
@@ -58,13 +60,13 @@ const SDK_VERSION = "0.7.0";
  *
  * // Track token usage (automatically batched)
  * client.trackTokenUsage({
- *   user_id: 'law-firm-a',
- *   customer_id: 'legalai-corp',
- *   feature_id: 'legal-research',
+ *   userId: 'law-firm-a',
+ *   customerId: 'legalai-corp',
+ *   featureId: 'legal-research',
  *   provider: 'OPENAI',
  *   model: 'gpt-4',
- *   input_tokens: 1000,
- *   output_tokens: 500
+ *   inputTokens: 1000,
+ *   outputTokens: 500
  * });
  * ```
  */
@@ -300,28 +302,27 @@ export class OpenMonetize {
    * To force immediate send, call flush() afterwards or configure autoFlush: false.
    */
   trackTokenUsage(params: {
-    user_id: string;
-    customer_id: string;
-    feature_id: string;
+    userId: string;
+    customerId: string;
+    featureId: string;
     provider: string;
     model: string;
-    input_tokens: number;
-    output_tokens: number;
+    inputTokens: number;
+    outputTokens: number;
     metadata?: Record<string, unknown>;
   }): void {
-    // Generate event ID
-    const event_id = uuidv4();
+    const eventId = uuidv4();
 
     this.enqueueEvent({
-      event_id,
-      customer_id: params.customer_id,
-      user_id: params.user_id,
-      event_type: "TOKEN_USAGE",
-      feature_id: params.feature_id,
+      eventId,
+      customerId: params.customerId,
+      userId: params.userId,
+      eventType: "TOKEN_USAGE",
+      featureId: params.featureId,
       provider: params.provider.toUpperCase() as any,
       model: params.model,
-      input_tokens: params.input_tokens,
-      output_tokens: params.output_tokens,
+      inputTokens: params.inputTokens,
+      outputTokens: params.outputTokens,
       timestamp: new Date().toISOString(),
       metadata: params.metadata,
     });
@@ -331,28 +332,28 @@ export class OpenMonetize {
    * Track image generation usage
    */
   trackImageGeneration(params: {
-    user_id: string;
-    customer_id: string;
-    feature_id: string;
+    userId: string;
+    customerId: string;
+    featureId: string;
     provider: string;
     model: string;
-    image_count: number;
-    image_size?: string;
+    imageCount: number;
+    imageSize?: string;
     quality?: string;
     metadata?: Record<string, unknown>;
   }): void {
-    const event_id = uuidv4();
+    const eventId = uuidv4();
 
     this.enqueueEvent({
-      event_id,
-      customer_id: params.customer_id,
-      user_id: params.user_id,
-      event_type: "IMAGE_GENERATION",
-      feature_id: params.feature_id,
+      eventId,
+      customerId: params.customerId,
+      userId: params.userId,
+      eventType: "IMAGE_GENERATION",
+      featureId: params.featureId,
       provider: params.provider.toUpperCase() as any,
       model: params.model,
-      image_count: params.image_count,
-      image_size: params.image_size,
+      imageCount: params.imageCount,
+      imageSize: params.imageSize,
       quality: params.quality,
       timestamp: new Date().toISOString(),
       metadata: params.metadata,
@@ -363,22 +364,22 @@ export class OpenMonetize {
    * Track custom usage event (outcome-based metering)
    */
   trackCustomEvent(params: {
-    user_id: string;
-    customer_id: string;
-    feature_id: string;
-    unit_type: string;
+    userId: string;
+    customerId: string;
+    featureId: string;
+    unitType: string;
     quantity: number;
     metadata?: Record<string, unknown>;
   }): void {
-    const event_id = uuidv4();
+    const eventId = uuidv4();
 
     this.enqueueEvent({
-      event_id,
-      customer_id: params.customer_id,
-      user_id: params.user_id,
-      event_type: "CUSTOM",
-      feature_id: params.feature_id,
-      unit_type: params.unit_type,
+      eventId,
+      customerId: params.customerId,
+      userId: params.userId,
+      eventType: "CUSTOM",
+      featureId: params.featureId,
+      unitType: params.unitType,
       quantity: params.quantity,
       timestamp: new Date().toISOString(),
       metadata: params.metadata,
@@ -406,10 +407,32 @@ export class OpenMonetize {
       "POST",
       "/v1/credits/purchase",
       {
-        userId: request.user_id,
+        userId: request.userId,
         amount: request.amount,
-        purchasePrice: request.purchase_price,
-        expiresAt: request.expires_at,
+        purchasePrice: request.purchasePrice,
+        expiresAt: request.expiresAt,
+      },
+    );
+    return response.data;
+  }
+
+  /**
+   * Grant credits to a user (admin operation - no payment required)
+   */
+  async grantCredits(
+    request: GrantCreditsRequest,
+  ): Promise<GrantCreditsResponse> {
+    const response = await this.request<{ data: GrantCreditsResponse }>(
+      "POST",
+      "/v1/credits/grant",
+      {
+        userId: request.userId,
+        teamId: request.teamId,
+        amount: request.amount,
+        reason: request.reason,
+        metadata: request.metadata,
+        idempotencyKey: request.idempotencyKey,
+        expiresAt: request.expiresAt,
       },
     );
     return response.data;
@@ -458,8 +481,8 @@ export class OpenMonetize {
     return this.request<CalculateCostResponse>("POST", "/v1/rating/calculate", {
       provider: request.provider,
       model: request.model,
-      inputTokens: request.input_tokens,
-      outputTokens: request.output_tokens,
+      inputTokens: request.inputTokens,
+      outputTokens: request.outputTokens,
     });
   }
 
@@ -470,11 +493,11 @@ export class OpenMonetize {
     request: UsageAnalyticsRequest,
   ): Promise<UsageAnalyticsResponse> {
     const params = new URLSearchParams({
-      start_date: request.start_date,
-      end_date: request.end_date,
+      start_date: request.startDate,
+      end_date: request.endDate,
     });
-    if (request.user_id) {
-      params.set("user_id", request.user_id);
+    if (request.userId) {
+      params.set("user_id", request.userId);
     }
 
     return this.request<UsageAnalyticsResponse>(
@@ -490,9 +513,9 @@ export class OpenMonetize {
     startDate: string,
     endDate: string,
   ): Promise<{
-    total_cost_usd: number;
-    by_provider: Record<string, { cost_usd: number; percentage: number }>;
-    by_model: Record<string, { cost_usd: number; percentage: number }>;
+    totalCostUsd: number;
+    byProvider: Record<string, { costUsd: number; percentage: number }>;
+    byModel: Record<string, { costUsd: number; percentage: number }>;
   }> {
     const params = new URLSearchParams({
       start_date: startDate,
@@ -511,57 +534,57 @@ export class OpenMonetize {
   normalizeProviderResponse(
     provider: Provider,
     response: any,
-  ): { input_tokens: number; output_tokens: number } {
-    let input_tokens = 0;
-    let output_tokens = 0;
+  ): { inputTokens: number; outputTokens: number } {
+    let inputTokens = 0;
+    let outputTokens = 0;
 
     if (!response) {
-      return { input_tokens, output_tokens };
+      return { inputTokens, outputTokens };
     }
 
     switch (provider) {
       case "OPENAI":
         // OpenAI: usage: { prompt_tokens, completion_tokens }
         if (response.usage) {
-          input_tokens = response.usage.prompt_tokens || 0;
-          output_tokens = response.usage.completion_tokens || 0;
+          inputTokens = response.usage.prompt_tokens || 0;
+          outputTokens = response.usage.completion_tokens || 0;
         }
         break;
 
       case "ANTHROPIC":
         // Anthropic: usage: { input_tokens, output_tokens }
         if (response.usage) {
-          input_tokens = response.usage.input_tokens || 0;
-          output_tokens = response.usage.output_tokens || 0;
+          inputTokens = response.usage.input_tokens || 0;
+          outputTokens = response.usage.output_tokens || 0;
         }
         break;
 
       case "GOOGLE":
         // Gemini: usageMetadata: { promptTokenCount, candidatesTokenCount }
         if (response.usageMetadata) {
-          input_tokens = response.usageMetadata.promptTokenCount || 0;
-          output_tokens = response.usageMetadata.candidatesTokenCount || 0;
+          inputTokens = response.usageMetadata.promptTokenCount || 0;
+          outputTokens = response.usageMetadata.candidatesTokenCount || 0;
         }
         break;
 
       case "COHERE":
         // Cohere: meta: { billed_units: { input_tokens, output_tokens } }
         if (response.meta?.billed_units) {
-          input_tokens = response.meta.billed_units.input_tokens || 0;
-          output_tokens = response.meta.billed_units.output_tokens || 0;
+          inputTokens = response.meta.billed_units.input_tokens || 0;
+          outputTokens = response.meta.billed_units.output_tokens || 0;
         }
         break;
 
       case "MISTRAL":
         // Mistral: usage: { prompt_tokens, completion_tokens }
         if (response.usage) {
-          input_tokens = response.usage.prompt_tokens || 0;
-          output_tokens = response.usage.completion_tokens || 0;
+          inputTokens = response.usage.prompt_tokens || 0;
+          outputTokens = response.usage.completion_tokens || 0;
         }
         break;
     }
 
-    return { input_tokens, output_tokens };
+    return { inputTokens, outputTokens };
   }
 
   // Offline Durability

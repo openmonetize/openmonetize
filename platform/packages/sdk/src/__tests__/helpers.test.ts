@@ -65,13 +65,13 @@ describe("OpenMonetize SDK Helpers", () => {
 
       expect(result).toBe(mockOpenAIResponse);
       expect(trackSpy).toHaveBeenCalledWith({
-        user_id: "user-1",
-        customer_id: "cust-1",
-        feature_id: "feat-1",
+        userId: "user-1",
+        customerId: "cust-1",
+        featureId: "feat-1",
         provider: "OPENAI",
         model: "gpt-4",
-        input_tokens: 100,
-        output_tokens: 50,
+        inputTokens: 100,
+        outputTokens: 50,
         metadata: undefined,
       });
     });
@@ -121,13 +121,13 @@ describe("OpenMonetize SDK Helpers", () => {
 
       expect(result).toBe(mockAnthropicResponse);
       expect(trackSpy).toHaveBeenCalledWith({
-        user_id: "user-1",
-        customer_id: "cust-1",
-        feature_id: "feat-1",
+        userId: "user-1",
+        customerId: "cust-1",
+        featureId: "feat-1",
         provider: "ANTHROPIC",
         model: "claude-3-sonnet-20240229",
-        input_tokens: 200,
-        output_tokens: 100,
+        inputTokens: 200,
+        outputTokens: 100,
         metadata: undefined,
       });
     });
@@ -145,12 +145,12 @@ describe("OpenMonetize SDK Helpers", () => {
         customerId: "cust-1",
         userId: "user-1",
         featureId: "feat-1",
-        metadata: { session_id: "sess-123" },
+        metadata: { sessionId: "sess-123" },
       });
 
       expect(trackSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          metadata: { session_id: "sess-123" },
+          metadata: { sessionId: "sess-123" },
         }),
       );
     });
@@ -182,13 +182,13 @@ describe("OpenMonetize SDK Helpers", () => {
 
       expect(result).toBe(mockGoogleResponse);
       expect(trackSpy).toHaveBeenCalledWith({
-        user_id: "user-1",
-        customer_id: "cust-1",
-        feature_id: "feat-1",
+        userId: "user-1",
+        customerId: "cust-1",
+        featureId: "feat-1",
         provider: "GOOGLE",
         model: "gemini-pro",
-        input_tokens: 10,
-        output_tokens: 20,
+        inputTokens: 10,
+        outputTokens: 20,
         metadata: undefined,
       });
     });
@@ -220,13 +220,13 @@ describe("OpenMonetize SDK Helpers", () => {
 
       expect(result).toBe(mockGoogleResponse);
       expect(trackSpy).toHaveBeenCalledWith({
-        user_id: "user-1",
-        customer_id: "cust-1",
-        feature_id: "feat-1",
+        userId: "user-1",
+        customerId: "cust-1",
+        featureId: "feat-1",
         provider: "GOOGLE",
         model: "gemini-pro",
-        input_tokens: 15,
-        output_tokens: 25,
+        inputTokens: 15,
+        outputTokens: 25,
         metadata: undefined,
       });
     });
@@ -255,13 +255,13 @@ describe("OpenMonetize SDK Helpers", () => {
 
       expect(result).toBe(mockGoogleResponse);
       expect(trackSpy).toHaveBeenCalledWith({
-        user_id: "user-1",
-        customer_id: "cust-1",
-        feature_id: "feat-1",
+        userId: "user-1",
+        customerId: "cust-1",
+        featureId: "feat-1",
         provider: "GOOGLE",
         model: "gemini-pro",
-        input_tokens: 5,
-        output_tokens: 8,
+        inputTokens: 5,
+        outputTokens: 8,
         metadata: undefined,
       });
     });
@@ -310,7 +310,7 @@ describe("OpenMonetize SDK Helpers", () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.events).toHaveLength(1);
-      expect(body.events[0].event_id).toMatch(
+      expect(body.events[0].eventId).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
     });

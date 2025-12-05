@@ -1,6 +1,6 @@
 {
   "name": "@openmonetize/sdk",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "publishConfig": {
     "access": "public"
   },
@@ -24,7 +24,14 @@
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest",
-    "lint": "eslint src/"
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "lint": "eslint src/",
+    "version:patch": "pnpm version patch && pnpm build",
+    "version:minor": "pnpm version minor && pnpm build",
+    "version:major": "pnpm version major && pnpm build",
+    "release:patch": "pnpm version:patch && npm publish --access public",
+    "release:minor": "pnpm version:minor && npm publish --access public",
+    "release:major": "pnpm version:major && npm publish --access public"
   },
   "keywords": [
     "openmonetize",

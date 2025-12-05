@@ -1,0 +1,170 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Unit tests run without external services
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: platform
+        run: pnpm install
+
+      - name: Generate Prisma Client
+        working-directory: platform
+        run: pnpm db:generate
+
+      - name: Build packages
+        working-directory: platform
+        run: pnpm build
+
+      - name: Run unit tests
+        working-directory: platform
+        run: pnpm test
+
+  # Integration tests require running services
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: dev_password_change_in_production
+          POSTGRES_DB: monetization
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://admin:dev_password_change_in_production@localhost:5432/monetization?schema=public
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: platform
+        run: pnpm install
+
+      - name: Generate Prisma Client
+        working-directory: platform
+        run: pnpm db:generate
+
+      - name: Run database migrations
+        working-directory: platform
+        run: pnpm db:deploy
+
+      - name: Seed database
+        working-directory: platform
+        run: pnpm db:seed
+
+      - name: Build packages
+        working-directory: platform
+        run: pnpm build
+
+      # Start services in background
+      - name: Start API Gateway
+        working-directory: platform
+        run: |
+          nohup node packages/api-gateway/dist/index.js > /tmp/api-gateway.log 2>&1 &
+          echo "API Gateway starting..."
+
+      - name: Start Ingestion Service
+        working-directory: platform
+        run: |
+          nohup node packages/ingestion-service/dist/index.js > /tmp/ingestion.log 2>&1 &
+          echo "Ingestion Service starting..."
+
+      - name: Start Rating Engine
+        working-directory: platform
+        run: |
+          nohup node packages/rating-engine/dist/index.js > /tmp/rating.log 2>&1 &
+          echo "Rating Engine starting..."
+
+      # Wait for services to be ready
+      - name: Wait for services
+        run: |
+          echo "Waiting for services to start..."
+          sleep 10
+
+          # Health check API Gateway
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null; then
+              echo "API Gateway is ready"
+              break
+            fi
+            echo "Waiting for API Gateway... ($i/30)"
+            sleep 2
+          done
+
+          # Health check Ingestion Service
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/health > /dev/null; then
+              echo "Ingestion Service is ready"
+              break
+            fi
+            echo "Waiting for Ingestion Service... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run SDK integration tests
+        working-directory: platform/packages/sdk
+        run: pnpm test:integration
+
+      # Show service logs on failure
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          echo "=== API Gateway Logs ==="
+          cat /tmp/api-gateway.log || true
+          echo "=== Ingestion Service Logs ==="
+          cat /tmp/ingestion.log || true
+          echo "=== Rating Engine Logs ==="
+          cat /tmp/rating.log || true

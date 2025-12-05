@@ -70,23 +70,23 @@ export type EventType =
  */
 export interface TokenUsageEvent {
   /** Unique event ID (for idempotency) */
-  event_id: string;
+  eventId: string;
   /** Your customer ID (AI SaaS company) */
-  customer_id: string;
+  customerId: string;
   /** End user ID (your customer) */
-  user_id: string;
+  userId: string;
   /** Event type */
-  event_type: "TOKEN_USAGE";
+  eventType: "TOKEN_USAGE";
   /** Feature identifier */
-  feature_id: string;
+  featureId: string;
   /** AI provider */
   provider: Provider;
   /** Model identifier */
   model: string;
   /** Input tokens consumed */
-  input_tokens: number;
+  inputTokens: number;
   /** Output tokens generated */
-  output_tokens: number;
+  outputTokens: number;
   /** Event timestamp (ISO 8601) */
   timestamp: string;
   /** Optional metadata */
@@ -97,17 +97,17 @@ export interface TokenUsageEvent {
  * Image Generation Event
  */
 export interface ImageGenerationEvent {
-  event_id: string;
-  customer_id: string;
-  user_id: string;
-  event_type: "IMAGE_GENERATION";
-  feature_id: string;
+  eventId: string;
+  customerId: string;
+  userId: string;
+  eventType: "IMAGE_GENERATION";
+  featureId: string;
   provider: Provider;
   model: string;
   /** Number of images generated */
-  image_count: number;
+  imageCount: number;
   /** Image size (e.g., "1024x1024") */
-  image_size?: string;
+  imageSize?: string;
   /** Image quality (e.g., "standard", "hd") */
   quality?: string;
   timestamp: string;
@@ -118,13 +118,13 @@ export interface ImageGenerationEvent {
  * Custom Event
  */
 export interface CustomEvent {
-  event_id: string;
-  customer_id: string;
-  user_id: string;
-  event_type: "CUSTOM";
-  feature_id: string;
+  eventId: string;
+  customerId: string;
+  userId: string;
+  eventType: "CUSTOM";
+  featureId: string;
   /** Custom unit of measurement */
-  unit_type: string;
+  unitType: string;
   /** Number of units consumed */
   quantity: number;
   timestamp: string;
@@ -151,7 +151,7 @@ export interface IngestEventsResponse {
   processed: number;
   failed: number;
   errors?: Array<{
-    event_id: string;
+    eventId: string;
     error: string;
   }>;
 }
@@ -175,13 +175,13 @@ export interface CreditBalance {
  */
 export interface PurchaseCreditsRequest {
   /** End user ID */
-  user_id: string;
+  userId: string;
   /** Number of credits to purchase */
   amount: number;
   /** Purchase price in USD */
-  purchase_price: number;
+  purchasePrice: number;
   /** Optional expiration date (ISO 8601) */
-  expires_at?: string;
+  expiresAt?: string;
 }
 
 /**
@@ -189,9 +189,43 @@ export interface PurchaseCreditsRequest {
  */
 export interface PurchaseCreditsResponse {
   /** Transaction ID */
-  transaction_id: string;
+  transactionId: string;
   /** New balance after purchase */
-  new_balance: number;
+  newBalance: number;
+}
+
+/**
+ * Credit grant request (admin operation)
+ */
+export interface GrantCreditsRequest {
+  /** End user ID (optional - grants to customer wallet if not provided) */
+  userId?: string;
+  /** Team ID (optional) */
+  teamId?: string;
+  /** Number of credits to grant */
+  amount: number;
+  /** Reason for the grant */
+  reason?: string;
+  /** Optional metadata */
+  metadata?: Record<string, unknown>;
+  /** Idempotency key to prevent duplicate grants */
+  idempotencyKey?: string;
+  /** Optional expiration date (ISO 8601) */
+  expiresAt?: string;
+}
+
+/**
+ * Credit grant response
+ */
+export interface GrantCreditsResponse {
+  /** Transaction ID */
+  transactionId: string;
+  /** Wallet ID */
+  walletId: string;
+  /** New balance after grant */
+  newBalance: string;
+  /** Amount granted */
+  amount: string;
 }
 
 /**
@@ -199,12 +233,12 @@ export interface PurchaseCreditsResponse {
  */
 export interface CreditTransaction {
   id: string;
-  transaction_type: "PURCHASE" | "BURN" | "REFUND" | "EXPIRATION";
+  transactionType: "PURCHASE" | "BURN" | "REFUND" | "EXPIRATION" | "GRANT";
   amount: number;
-  balance_before: number;
-  balance_after: number;
+  balanceBefore: number;
+  balanceAfter: number;
   description: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 /**
@@ -224,16 +258,16 @@ export interface TransactionHistoryResponse {
  */
 export interface EntitlementCheckRequest {
   /** End user ID */
-  user_id: string;
+  userId: string;
   /** Feature identifier */
-  feature_id: string;
+  featureId: string;
   /** Action to perform */
   action: {
     type: "token_usage" | "image_generation" | "api_call" | "custom";
     provider?: string;
     model?: string;
-    estimated_input_tokens?: number;
-    estimated_output_tokens?: number;
+    estimatedInputTokens?: number;
+    estimatedOutputTokens?: number;
   };
 }
 
@@ -246,11 +280,11 @@ export interface EntitlementCheckResponse {
   /** Reason if not allowed */
   reason: string | null;
   /** Estimated cost in credits */
-  estimated_cost_credits: number | null;
+  estimatedCostCredits: number | null;
   /** Estimated cost in USD */
-  estimated_cost_usd: number | null;
+  estimatedCostUsd: number | null;
   /** Current credit balance */
-  current_balance: number | null;
+  currentBalance: number | null;
   /** Suggested actions */
   actions: Array<{
     type: string;
@@ -265,8 +299,8 @@ export interface EntitlementCheckResponse {
 export interface CalculateCostRequest {
   provider: Provider;
   model: string;
-  input_tokens: number;
-  output_tokens: number;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 /**
@@ -274,14 +308,14 @@ export interface CalculateCostRequest {
  */
 export interface CalculateCostResponse {
   credits: number;
-  cost_breakdown: {
-    input_cost_usd: number;
-    output_cost_usd: number;
-    total_cost_usd: number;
+  costBreakdown: {
+    inputCostUsd: number;
+    outputCostUsd: number;
+    totalCostUsd: number;
   };
-  provider_cost_usd: number;
-  margin_usd: number;
-  margin_percent: number;
+  providerCostUsd: number;
+  marginUsd: number;
+  marginPercent: number;
 }
 
 /**
@@ -289,40 +323,40 @@ export interface CalculateCostResponse {
  */
 export interface UsageAnalyticsRequest {
   /** End user ID */
-  user_id?: string;
+  userId?: string;
   /** Start date (ISO 8601) */
-  start_date: string;
+  startDate: string;
   /** End date (ISO 8601) */
-  end_date: string;
+  endDate: string;
 }
 
 /**
  * Usage analytics response
  */
 export interface UsageAnalyticsResponse {
-  total_credits: number;
-  total_cost_usd: number;
-  by_provider: Record<
+  totalCredits: number;
+  totalCostUsd: number;
+  byProvider: Record<
     string,
     {
       credits: number;
-      cost_usd: number;
+      costUsd: number;
       percentage: number;
     }
   >;
-  by_model: Record<
+  byModel: Record<
     string,
     {
       credits: number;
-      cost_usd: number;
+      costUsd: number;
       percentage: number;
     }
   >;
-  by_feature: Record<
+  byFeature: Record<
     string,
     {
       credits: number;
-      cost_usd: number;
+      costUsd: number;
       percentage: number;
     }
   >;

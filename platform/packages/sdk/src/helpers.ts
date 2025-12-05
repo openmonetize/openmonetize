@@ -21,9 +21,9 @@
  */
 
 // OpenMonetize SDK Helper Functions
-import type { OpenMonetize } from './client';
-import type { Provider } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import type { OpenMonetize } from "./client";
+import type { Provider } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * OpenAI Integration Helper
@@ -51,14 +51,16 @@ import { v4 as uuidv4 } from 'uuid';
  * );
  * ```
  */
-export async function withOpenAITracking<T extends {
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  model: string;
-}>(
+export async function withOpenAITracking<
+  T extends {
+    usage?: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    };
+    model: string;
+  },
+>(
   client: OpenMonetize,
   fn: () => Promise<T>,
   context: {
@@ -66,20 +68,20 @@ export async function withOpenAITracking<T extends {
     userId: string;
     featureId: string;
     metadata?: Record<string, unknown>;
-  }
+  },
 ): Promise<T> {
   const response = await fn();
 
   if (response.usage) {
     // Track usage (automatically batched)
     client.trackTokenUsage({
-      user_id: context.userId,
-      customer_id: context.customerId,
-      feature_id: context.featureId,
-      provider: 'OPENAI',
+      userId: context.userId,
+      customerId: context.customerId,
+      featureId: context.featureId,
+      provider: "OPENAI",
       model: response.model,
-      input_tokens: response.usage.prompt_tokens,
-      output_tokens: response.usage.completion_tokens,
+      inputTokens: response.usage.prompt_tokens,
+      outputTokens: response.usage.completion_tokens,
       metadata: context.metadata,
     });
   }
@@ -113,13 +115,15 @@ export async function withOpenAITracking<T extends {
  * );
  * ```
  */
-export async function withAnthropicTracking<T extends {
-  usage: {
-    input_tokens: number;
-    output_tokens: number;
-  };
-  model: string;
-}>(
+export async function withAnthropicTracking<
+  T extends {
+    usage: {
+      input_tokens: number;
+      output_tokens: number;
+    };
+    model: string;
+  },
+>(
   client: OpenMonetize,
   fn: () => Promise<T>,
   context: {
@@ -127,19 +131,19 @@ export async function withAnthropicTracking<T extends {
     userId: string;
     featureId: string;
     metadata?: Record<string, unknown>;
-  }
+  },
 ): Promise<T> {
   const response = await fn();
 
   // Track usage (automatically batched)
   client.trackTokenUsage({
-    user_id: context.userId,
-    customer_id: context.customerId,
-    feature_id: context.featureId,
-    provider: 'ANTHROPIC',
+    userId: context.userId,
+    customerId: context.customerId,
+    featureId: context.featureId,
+    provider: "ANTHROPIC",
     model: response.model,
-    input_tokens: response.usage.input_tokens,
-    output_tokens: response.usage.output_tokens,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
     metadata: context.metadata,
   });
 
@@ -179,23 +183,23 @@ export async function withGoogleTracking<T>(
     featureId: string;
     model: string;
     metadata?: Record<string, unknown>;
-  }
+  },
 ): Promise<T> {
   const result = await fn();
-  
+
   let inputTokens = 0;
   let outputTokens = 0;
   let hasUsage = false;
 
   try {
     const response = result as any;
-    
+
     // Handle @google/genai response structure (v0.1.0+)
     if (response?.usageMetadata) {
       inputTokens = response.usageMetadata.promptTokenCount || 0;
       outputTokens = response.usageMetadata.candidatesTokenCount || 0;
       hasUsage = true;
-    } 
+    }
     // Handle @google/generative-ai response structure (v0.1.0+)
     else if (response?.response?.usageMetadata) {
       inputTokens = response.response.usageMetadata.promptTokenCount || 0;
@@ -215,13 +219,13 @@ export async function withGoogleTracking<T>(
   if (hasUsage) {
     // Track usage (automatically batched)
     client.trackTokenUsage({
-      user_id: context.userId,
-      customer_id: context.customerId,
-      feature_id: context.featureId,
-      provider: 'GOOGLE',
+      userId: context.userId,
+      customerId: context.customerId,
+      featureId: context.featureId,
+      provider: "GOOGLE",
       model: context.model,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
+      inputTokens: inputTokens,
+      outputTokens: outputTokens,
       metadata: context.metadata,
     });
   }
@@ -261,19 +265,19 @@ export async function trackUsage<T>(
     inputTokens: number;
     outputTokens: number;
     metadata?: Record<string, unknown>;
-  }
+  },
 ): Promise<T> {
   const response = await fn();
 
   // Track usage (automatically batched)
   client.trackTokenUsage({
-    user_id: tracking.userId,
-    customer_id: tracking.customerId,
-    feature_id: tracking.featureId,
+    userId: tracking.userId,
+    customerId: tracking.customerId,
+    featureId: tracking.featureId,
     provider: tracking.provider.toUpperCase() as any,
     model: tracking.model,
-    input_tokens: tracking.inputTokens,
-    output_tokens: tracking.outputTokens,
+    inputTokens: tracking.inputTokens,
+    outputTokens: tracking.outputTokens,
     metadata: tracking.metadata,
   });
 
@@ -324,16 +328,16 @@ export class BatchTracker {
     }
 
     await this.client.ingestEvents({
-      events: this.events.map(event => ({
-        event_id: uuidv4(),
-        customer_id: event.customerId,
-        user_id: event.userId,
-        event_type: 'TOKEN_USAGE' as const,
-        feature_id: event.featureId,
+      events: this.events.map((event) => ({
+        eventId: uuidv4(),
+        customerId: event.customerId,
+        userId: event.userId,
+        eventType: "TOKEN_USAGE" as const,
+        featureId: event.featureId,
         provider: event.provider,
         model: event.model,
-        input_tokens: event.inputTokens,
-        output_tokens: event.outputTokens,
+        inputTokens: event.inputTokens,
+        outputTokens: event.outputTokens,
         timestamp: new Date().toISOString(),
         metadata: event.metadata,
       })),
@@ -360,7 +364,7 @@ export const formatCredits = {
    * @example formatCredits.number(15000) // "15,000"
    */
   number(credits: number): string {
-    return credits.toLocaleString('en-US');
+    return credits.toLocaleString("en-US");
   },
 
   /**
@@ -368,7 +372,7 @@ export const formatCredits = {
    * @example formatCredits.withLabel(15000) // "15,000 credits"
    */
   withLabel(credits: number): string {
-    return `${this.number(credits)} ${credits === 1 ? 'credit' : 'credits'}`;
+    return `${this.number(credits)} ${credits === 1 ? "credit" : "credits"}`;
   },
 
   /**
@@ -376,9 +380,9 @@ export const formatCredits = {
    * @example formatCredits.usd(12.50) // "$12.50"
    */
   usd(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   },
 };
@@ -393,13 +397,13 @@ export function validateConfig(config: {
 }): void {
   if (!config.apiKey) {
     throw new Error(
-      'OPENMONETIZE_API_KEY is required. Get your API key at https://app.openmonetize.io'
+      "OPENMONETIZE_API_KEY is required. Get your API key at https://app.openmonetize.io",
     );
   }
 
   if (!config.openaiKey && !config.anthropicKey) {
     console.warn(
-      '[OpenMonetize] Warning: No AI provider API keys found. Make sure OPENAI_API_KEY or ANTHROPIC_API_KEY is set.'
+      "[OpenMonetize] Warning: No AI provider API keys found. Make sure OPENAI_API_KEY or ANTHROPIC_API_KEY is set.",
     );
   }
 }

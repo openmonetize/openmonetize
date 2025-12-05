@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { OpenMonetize } from '../client';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { OpenMonetize } from "../client";
 
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe('OpenMonetize SDK Batching', () => {
+describe("OpenMonetize SDK Batching", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -37,9 +37,9 @@ describe('OpenMonetize SDK Batching', () => {
     vi.useRealTimers();
   });
 
-  it('should batch events and flush after interval', async () => {
+  it("should batch events and flush after interval", async () => {
     const client = new OpenMonetize({
-      apiKey: 'test-key',
+      apiKey: "test-key",
       flushInterval: 1000,
       maxBatchSize: 10,
     });
@@ -51,31 +51,31 @@ describe('OpenMonetize SDK Batching', () => {
 
     // Track 3 events
     client.trackTokenUsage({
-      user_id: 'user-1',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-1",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
     client.trackTokenUsage({
-      user_id: 'user-2',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-2",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
     client.trackTokenUsage({
-      user_id: 'user-3',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-3",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
 
     // Should not have called fetch yet
@@ -88,14 +88,16 @@ describe('OpenMonetize SDK Batching', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.events).toHaveLength(3);
-    expect(body.events[0].user_id).toBe('user-1');
-    expect(body.events[0].event_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    expect(body.events[2].user_id).toBe('user-3');
+    expect(body.events[0].userId).toBe("user-1");
+    expect(body.events[0].eventId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(body.events[2].userId).toBe("user-3");
   });
 
-  it('should flush immediately when maxBatchSize is reached', async () => {
+  it("should flush immediately when maxBatchSize is reached", async () => {
     const client = new OpenMonetize({
-      apiKey: 'test-key',
+      apiKey: "test-key",
       flushInterval: 10000,
       maxBatchSize: 2, // Small batch size
     });
@@ -107,25 +109,25 @@ describe('OpenMonetize SDK Batching', () => {
 
     // Track 1st event
     client.trackTokenUsage({
-      user_id: 'user-1',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-1",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
     expect(mockFetch).not.toHaveBeenCalled();
 
     // Track 2nd event (hits maxBatchSize)
     client.trackTokenUsage({
-      user_id: 'user-2',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-2",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
 
     // Should flush immediately (async)
@@ -138,9 +140,9 @@ describe('OpenMonetize SDK Batching', () => {
     expect(body.events).toHaveLength(2);
   });
 
-  it('should retry on 500 errors', async () => {
+  it("should retry on 500 errors", async () => {
     const client = new OpenMonetize({
-      apiKey: 'test-key',
+      apiKey: "test-key",
       maxRetries: 3,
       autoFlush: false, // Manual flush for control
     });
@@ -150,7 +152,7 @@ describe('OpenMonetize SDK Batching', () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 500,
-        json: async () => ({ error: 'Server Error' }),
+        json: async () => ({ error: "Server Error" }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -158,13 +160,13 @@ describe('OpenMonetize SDK Batching', () => {
       });
 
     client.trackTokenUsage({
-      user_id: 'user-1',
-      customer_id: 'cust-1',
-      feature_id: 'feat-1',
-      provider: 'OPENAI',
-      model: 'gpt-4',
-      input_tokens: 10,
-      output_tokens: 10,
+      userId: "user-1",
+      customerId: "cust-1",
+      featureId: "feat-1",
+      provider: "OPENAI",
+      model: "gpt-4",
+      inputTokens: 10,
+      outputTokens: 10,
     });
 
     // Flush manually

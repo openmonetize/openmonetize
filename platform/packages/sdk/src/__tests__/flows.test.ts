@@ -39,7 +39,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
   });
 
   describe("String ID Support (Non-UUID)", () => {
-    it("should accept arbitrary string customer_id and user_id in trackTokenUsage", async () => {
+    it("should accept arbitrary string customerId and userId in trackTokenUsage", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         flushInterval: 100,
@@ -52,13 +52,13 @@ describe("OpenMonetize SDK Flow Tests", () => {
 
       // Use non-UUID string IDs (the fix allows any string, not just UUIDs)
       client.trackTokenUsage({
-        user_id: "my-custom-user-id-123",
-        customer_id: "legalai-corp",
-        feature_id: "legal-research",
+        userId: "my-custom-user-id-123",
+        customerId: "legalai-corp",
+        featureId: "legal-research",
         provider: "OPENAI",
         model: "gpt-4",
-        input_tokens: 100,
-        output_tokens: 50,
+        inputTokens: 100,
+        outputTokens: 50,
       });
 
       await vi.advanceTimersByTimeAsync(200);
@@ -67,9 +67,9 @@ describe("OpenMonetize SDK Flow Tests", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
 
       expect(body.events).toHaveLength(1);
-      expect(body.events[0].customer_id).toBe("legalai-corp");
-      expect(body.events[0].user_id).toBe("my-custom-user-id-123");
-      expect(body.events[0].event_type).toBe("TOKEN_USAGE");
+      expect(body.events[0].customerId).toBe("legalai-corp");
+      expect(body.events[0].userId).toBe("my-custom-user-id-123");
+      expect(body.events[0].eventType).toBe("TOKEN_USAGE");
     });
 
     it("should accept hyphenated string IDs", async () => {
@@ -84,20 +84,20 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       client.trackImageGeneration({
-        user_id: "org-abc-user-xyz",
-        customer_id: "company-name-with-dashes",
-        feature_id: "image-gen",
+        userId: "org-abc-user-xyz",
+        customerId: "company-name-with-dashes",
+        featureId: "image-gen",
         provider: "OPENAI",
         model: "dall-e-3",
-        image_count: 1,
-        image_size: "1024x1024",
+        imageCount: 1,
+        imageSize: "1024x1024",
       });
 
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customer_id).toBe("company-name-with-dashes");
-      expect(body.events[0].user_id).toBe("org-abc-user-xyz");
+      expect(body.events[0].customerId).toBe("company-name-with-dashes");
+      expect(body.events[0].userId).toBe("org-abc-user-xyz");
     });
 
     it("should accept email-style customer IDs", async () => {
@@ -112,18 +112,18 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       client.trackCustomEvent({
-        user_id: "user@company.com",
-        customer_id: "tenant@domain.io",
-        feature_id: "custom-feature",
-        unit_type: "api_calls",
+        userId: "user@company.com",
+        customerId: "tenant@domain.io",
+        featureId: "custom-feature",
+        unitType: "api_calls",
         quantity: 5,
       });
 
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customer_id).toBe("tenant@domain.io");
-      expect(body.events[0].user_id).toBe("user@company.com");
+      expect(body.events[0].customerId).toBe("tenant@domain.io");
+      expect(body.events[0].userId).toBe("user@company.com");
     });
 
     it("should still accept valid UUID IDs", async () => {
@@ -141,20 +141,20 @@ describe("OpenMonetize SDK Flow Tests", () => {
       const validUuidUser = "987fcdeb-51a2-3bc4-d567-890123456789";
 
       client.trackTokenUsage({
-        user_id: validUuidUser,
-        customer_id: validUuidCustomer,
-        feature_id: "feature",
+        userId: validUuidUser,
+        customerId: validUuidCustomer,
+        featureId: "feature",
         provider: "ANTHROPIC",
         model: "claude-3-opus",
-        input_tokens: 50,
-        output_tokens: 25,
+        inputTokens: 50,
+        outputTokens: 25,
       });
 
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].customer_id).toBe(validUuidCustomer);
-      expect(body.events[0].user_id).toBe(validUuidUser);
+      expect(body.events[0].customerId).toBe(validUuidCustomer);
+      expect(body.events[0].userId).toBe(validUuidUser);
     });
   });
 
@@ -199,22 +199,22 @@ describe("OpenMonetize SDK Flow Tests", () => {
         ok: true,
         json: async () => ({
           credits: 150,
-          cost_breakdown: {
-            input_cost_usd: 0.003,
-            output_cost_usd: 0.006,
-            total_cost_usd: 0.009,
+          costBreakdown: {
+            inputCostUsd: 0.003,
+            outputCostUsd: 0.006,
+            totalCostUsd: 0.009,
           },
-          provider_cost_usd: 0.008,
-          margin_usd: 0.001,
-          margin_percent: 11.11,
+          providerCostUsd: 0.008,
+          marginUsd: 0.001,
+          marginPercent: 11.11,
         }),
       });
 
       const cost = await client.calculateCost({
         provider: "OPENAI",
         model: "gpt-4",
-        input_tokens: 100,
-        output_tokens: 50,
+        inputTokens: 100,
+        outputTokens: 50,
       });
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -239,15 +239,15 @@ describe("OpenMonetize SDK Flow Tests", () => {
         ok: true,
         json: async () => ({
           credits: 100,
-          cost_breakdown: { total_cost_usd: 0.01 },
+          costBreakdown: { totalCostUsd: 0.01 },
         }),
       });
 
       await client.calculateCost({
         provider: "ANTHROPIC",
         model: "claude-3-sonnet",
-        input_tokens: 50,
-        output_tokens: 25,
+        inputTokens: 50,
+        outputTokens: 25,
       });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -265,17 +265,17 @@ describe("OpenMonetize SDK Flow Tests", () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
-          total_credits: 5000,
-          total_cost_usd: 5.0,
-          by_provider: {},
-          by_model: {},
-          by_feature: {},
+          totalCredits: 5000,
+          totalCostUsd: 5.0,
+          byProvider: {},
+          byModel: {},
+          byFeature: {},
         }),
       });
 
       await client.getUsageAnalytics({
-        start_date: "2025-01-01T00:00:00Z",
-        end_date: "2025-01-31T23:59:59Z",
+        startDate: "2025-01-01T00:00:00Z",
+        endDate: "2025-01-31T23:59:59Z",
       });
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -286,7 +286,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
       expect(url).toContain("end_date=");
     });
 
-    it("should include user_id in query when provided", async () => {
+    it("should include userId in query when provided", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         autoFlush: false,
@@ -294,13 +294,13 @@ describe("OpenMonetize SDK Flow Tests", () => {
 
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ total_credits: 1000 }),
+        json: async () => ({ totalCredits: 1000 }),
       });
 
       await client.getUsageAnalytics({
-        start_date: "2025-01-01T00:00:00Z",
-        end_date: "2025-01-31T23:59:59Z",
-        user_id: "specific-user",
+        startDate: "2025-01-01T00:00:00Z",
+        endDate: "2025-01-31T23:59:59Z",
+        userId: "specific-user",
       });
 
       const url = mockFetch.mock.calls[0][0];
@@ -309,7 +309,7 @@ describe("OpenMonetize SDK Flow Tests", () => {
   });
 
   describe("Complete Tracking Flow", () => {
-    it("should track event, flush, and verify event_id is UUID", async () => {
+    it("should track event, flush, and verify eventId is UUID", async () => {
       const client = new OpenMonetize({
         apiKey: "test-key",
         flushInterval: 100,
@@ -321,16 +321,16 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       client.trackTokenUsage({
-        user_id: "end-user-abc",
-        customer_id: "saas-company-xyz",
-        feature_id: "chat-completion",
+        userId: "end-user-abc",
+        customerId: "saas-company-xyz",
+        featureId: "chat-completion",
         provider: "GOOGLE",
         model: "gemini-pro",
-        input_tokens: 200,
-        output_tokens: 100,
+        inputTokens: 200,
+        outputTokens: 100,
         metadata: {
-          session_id: "sess-12345",
-          conversation_id: "conv-67890",
+          sessionId: "sess-12345",
+          conversationId: "conv-67890",
         },
       });
 
@@ -342,20 +342,20 @@ describe("OpenMonetize SDK Flow Tests", () => {
       const event = body.events[0];
 
       // Verify event structure
-      expect(event.event_id).toMatch(
+      expect(event.eventId).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
-      expect(event.customer_id).toBe("saas-company-xyz");
-      expect(event.user_id).toBe("end-user-abc");
-      expect(event.event_type).toBe("TOKEN_USAGE");
-      expect(event.feature_id).toBe("chat-completion");
+      expect(event.customerId).toBe("saas-company-xyz");
+      expect(event.userId).toBe("end-user-abc");
+      expect(event.eventType).toBe("TOKEN_USAGE");
+      expect(event.featureId).toBe("chat-completion");
       expect(event.provider).toBe("GOOGLE");
       expect(event.model).toBe("gemini-pro");
-      expect(event.input_tokens).toBe(200);
-      expect(event.output_tokens).toBe(100);
+      expect(event.inputTokens).toBe(200);
+      expect(event.outputTokens).toBe(100);
       expect(event.metadata).toEqual({
-        session_id: "sess-12345",
-        conversation_id: "conv-67890",
+        sessionId: "sess-12345",
+        conversationId: "conv-67890",
       });
       expect(event.timestamp).toBeDefined();
     });
@@ -372,19 +372,19 @@ describe("OpenMonetize SDK Flow Tests", () => {
       });
 
       client.trackCustomEvent({
-        user_id: "user-1",
-        customer_id: "customer-1",
-        feature_id: "video-processing",
-        unit_type: "minutes_processed",
+        userId: "user-1",
+        customerId: "customer-1",
+        featureId: "video-processing",
+        unitType: "minutes_processed",
         quantity: 15.5,
-        metadata: { video_id: "vid_abc123" },
+        metadata: { videoId: "vid_abc123" },
       });
 
       await vi.advanceTimersByTimeAsync(200);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.events[0].event_type).toBe("CUSTOM");
-      expect(body.events[0].unit_type).toBe("minutes_processed");
+      expect(body.events[0].eventType).toBe("CUSTOM");
+      expect(body.events[0].unitType).toBe("minutes_processed");
       expect(body.events[0].quantity).toBe(15.5);
     });
   });
@@ -410,8 +410,8 @@ describe("OpenMonetize SDK Flow Tests", () => {
         client.calculateCost({
           provider: "OPENAI",
           model: "gpt-4",
-          input_tokens: 100,
-          output_tokens: 50,
+          inputTokens: 100,
+          outputTokens: 50,
         }),
       ).rejects.toThrow(OpenMonetizeError);
     });
