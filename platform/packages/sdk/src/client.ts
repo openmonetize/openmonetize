@@ -45,7 +45,7 @@ import { OpenMonetizeError } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
 /** SDK version - keep in sync with package.json */
-const SDK_VERSION = "0.7.0";
+const SDK_VERSION = "0.8.1";
 
 /**
  * OpenMonetize SDK Client

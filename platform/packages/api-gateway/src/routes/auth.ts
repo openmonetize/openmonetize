@@ -77,14 +77,14 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         });
 
         // Generate a fresh API key for every login (both new and existing users)
-        // This ensures the session always has a valid key and provides key rotation security
+        // This ensures the session always has a valid key
         const apiKey = generateApiKey("om_live");
         const apiKeyHash = hashApiKey(apiKey);
         let isNewUser = false;
 
         if (customer) {
           // Update existing customer with new key
-          // Note: This invalidates the old key - intentional for security (key rotation)
+          // This invalidates the old key - ensures session always has valid key
           customer = await db.customer.update({
             where: { id: customer.id },
             data: {
