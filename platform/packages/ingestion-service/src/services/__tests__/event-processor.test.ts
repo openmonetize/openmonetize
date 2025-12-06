@@ -24,6 +24,7 @@ const {
   mockCreditWalletFindFirst,
   mockCreditWalletUpdate,
   mockCreditTransactionCreate,
+  mockUserUpsert,
   mockTransaction,
   mockCalculateCost,
   mockUuidv4,
@@ -35,6 +36,7 @@ const {
   mockCreditWalletFindFirst: vi.fn(),
   mockCreditWalletUpdate: vi.fn(),
   mockCreditTransactionCreate: vi.fn(),
+  mockUserUpsert: vi.fn(),
   mockTransaction: vi.fn(),
   mockCalculateCost: vi.fn(),
   mockUuidv4: vi.fn(),
@@ -56,6 +58,9 @@ vi.mock("@openmonetize/common", () => ({
     },
     creditTransaction: {
       create: mockCreditTransactionCreate,
+    },
+    user: {
+      upsert: mockUserUpsert,
     },
   }),
 }));
@@ -198,6 +203,7 @@ describe("Event Processor", () => {
               update: mockCreditWalletUpdate,
             },
             creditTransaction: { create: mockCreditTransactionCreate },
+            user: { upsert: mockUserUpsert },
           };
 
           mockUsageEventCreate.mockResolvedValue({});
@@ -292,6 +298,7 @@ describe("Event Processor", () => {
               update: mockCreditWalletUpdate,
             },
             creditTransaction: { create: mockCreditTransactionCreate },
+            user: { upsert: mockUserUpsert },
           };
 
           mockUsageEventCreate.mockResolvedValue({});
@@ -342,6 +349,7 @@ describe("Event Processor", () => {
               update: mockCreditWalletUpdate,
             },
             creditTransaction: { create: mockCreditTransactionCreate },
+            user: { upsert: mockUserUpsert },
           };
 
           mockUsageEventCreate.mockResolvedValue({});
