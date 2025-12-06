@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import type { LogEntry } from "@/app/(dashboard)/playground/types";
 
 // Extended session user type
@@ -75,9 +75,7 @@ export function useSandboxAuth(
     setApiKey(null);
     setCustomerName(null);
     // Also sign out from NextAuth
-    // import { signOut } from 'next-auth/react'; // We need to import this if we want to use it, but for now just clearing local state is enough for the sandbox view
-    // actually, better to fully sign out
-    // signOut();
+    signOut({ callbackUrl: "/login" });
   };
 
   const handleLoginSuccess = (key: string, name: string) => {
