@@ -11,6 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// Force dynamic rendering since this page uses headers via getServerSession
+export const dynamic = "force-dynamic";
+
 // Client component for the chart to avoid serialization issues if needed,
 // but we can try rendering it directly if we use a client wrapper or just simple divs for now.
 // Actually, let's use a simple client component for the chart if Recharts is used.
