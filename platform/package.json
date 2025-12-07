@@ -17,7 +17,7 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "db:migrate": "pnpm --filter @openmonetize/common db:migrate:dev",
-    "db:deploy": "pnpm --filter @openmonetize/comm§n db:migrate:deploy",
+    "db:deploy": "pnpm --filter @openmonetize/common db:migrate:deploy",
     "db:generate": "pnpm --filter @openmonetize/common db:generate",
     "db:seed": "pnpm db:deploy && pnpm db:generate && dotenv -e .env -- tsx scripts/seed.ts",
     "docker:up": "docker compose up -d",

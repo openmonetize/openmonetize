@@ -38,7 +38,13 @@ Complete REST API reference with examples:
 
 Step-by-step tutorials and how-to guides:
 
+- **[Getting Started](guides/getting-started.md)** - Create your account and API key
+- **[AI Proxy Guide](guides/ai-proxy.md)** - Zero-code billing with the AI Proxy
+- **[SDK Usage Guide](sdk-usage-guide.md)** - Manual SDK tracking for advanced use cases
+- **[Dashboard & Analytics](guides/dashboard-analytics.md)** - View and analyze your usage
+- **[Troubleshooting](guides/troubleshooting.md)** - Common issues and solutions
 - **[Migration Guide](guides/migration.md)** - Migrate from Stripe, Lago, or custom solutions
+- **[Self-Hosting Guide](guides/self-hosting.md)** - Deploy on your own infrastructure
 - **[Railway Deployment](guides/deployment-railway.md)** - Deploy to Railway in 10 minutes
 
 ## 🏗️ Architecture
@@ -67,26 +73,26 @@ Technical architecture and system design:
 
 ### I want to...
 
+**Get started quickly**
+→ Follow the [Getting Started Guide](guides/getting-started.md)
+
 **Track AI usage and costs**
-→ Start with [API Overview](api/overview.md), then [Credits API](api/credits.md)
+→ Use the [AI Proxy Guide](guides/ai-proxy.md) or [SDK Usage Guide](sdk-usage-guide.md)
+
+**View my usage analytics**
+→ See [Dashboard & Analytics](guides/dashboard-analytics.md)
+
+**Fix an issue**
+→ Check the [Troubleshooting Guide](guides/troubleshooting.md)
+
+**Deploy to production**
+→ Read [Self-Hosting Guide](guides/self-hosting.md) or [Railway Deployment](guides/deployment-railway.md)
 
 **Migrate from another platform**
 → Read [Migration Guide](guides/migration.md)
 
-**Deploy to production**
-→ Follow [Railway Deployment](guides/deployment-railway.md)
-
-**Integrate the TypeScript SDK**
-→ See [SDK Documentation](api/)
-
-**Understand the architecture**
-→ Read [Architecture Overview](architecture/overview.md)
-
 **Implement feature gating**
 → Check [Entitlements API](api/entitlements.md)
-
-**Track usage analytics**
-→ Use [Analytics API](api/analytics.md)
 
 **Report a bug or request a feature**
 → Visit [GitHub Issues](https://github.com/openmonetize/openmonetize/issues)
@@ -108,7 +114,9 @@ Technical architecture and system design:
 
 ### For DevOps Engineers
 
+- [Self-Hosting Guide](guides/self-hosting.md) - Deploy on your own infrastructure
 - [Railway Deployment](guides/deployment-railway.md) - Cloud deployment
+- [Troubleshooting](guides/troubleshooting.md) - Common issues
 - [Platform Setup](../platform/README.md) - Infrastructure
 
 ### For Business Teams
@@ -118,11 +126,11 @@ Technical architecture and system design:
 
 ## 📊 Documentation Status
 
-| Section | Status | Last Updated |
-|---------|--------|--------------|
-| API Reference | ✅ Complete | Nov 18, 2024 |
-| Guides | ✅ Complete | Nov 18, 2024 |
-| Architecture | ✅ Complete | Nov 18, 2024 |
+| Section           | Status      | Last Updated |
+| ----------------- | ----------- | ------------ |
+| API Reference     | ✅ Complete | Nov 18, 2024 |
+| Guides            | ✅ Complete | Dec 7, 2024  |
+| Architecture      | ✅ Complete | Nov 18, 2024 |
 | SDK Documentation | ✅ Complete | Nov 18, 2024 |
 
 ## 🤝 Contributing to Documentation

@@ -61,23 +61,27 @@ await client.flush();
 Use the SDK helper to configure your AI client for automatic billing:
 
 ```typescript
-import OpenAI from "openai";
-import { createBilledOpenAIConfig } from "@openmonetize/sdk";
+import Anthropic from "@anthropic-ai/sdk";
+import { getProxyConfig } from "@openmonetize/sdk";
 
 // Cloud SaaS: Uses https://proxy.openmonetize.io by default
-const openai = new OpenAI(
-  createBilledOpenAIConfig({
-    openaiApiKey: process.env.OPENAI_API_KEY!,
-    openmonetizeApiKey: process.env.OPENMONETIZE_API_KEY!,
-    customerId: "cust_your-company",
-    userId: "user_current-user",
-    featureId: "ai-chat",
-  }),
-);
+const proxyConfig = getProxyConfig({
+  openmonetizeApiKey: process.env.OPENMONETIZE_API_KEY!,
+  customerId: "cust_your-company",
+  userId: "user_current-user",
+  featureId: "ai-chat",
+});
 
-// Use OpenAI normally - billing is automatic!
-const response = await openai.chat.completions.create({
-  model: "gpt-4",
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  baseURL: proxyConfig.baseURL,
+  defaultHeaders: proxyConfig.headers,
+});
+
+// Use Anthropic normally - billing is automatic!
+const message = await anthropic.messages.create({
+  model: "claude-sonnet-4-20250514",
+  max_tokens: 1024,
   messages: [{ role: "user", content: "Hello!" }],
 });
 ```

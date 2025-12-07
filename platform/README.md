@@ -152,17 +152,17 @@ When running locally, visit `http://localhost:3002/sandbox` to access the Sandbo
 Instead of manually instrumenting every AI call, use our proxy to automatically track usage:
 
 ```typescript
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-// Before: Calling OpenAI directly (no billing)
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Before: Calling Anthropic directly (no billing)
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // After: Route through OpenMonetize Proxy (automatic billing!)
 // Cloud: Uses https://proxy.openmonetize.io by default
-// Local: Use baseURL: 'http://localhost:8082/v1'
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "https://proxy.openmonetize.io/v1", // Default SaaS URL
+// Local: Use baseURL: 'http://localhost:8082'
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: "https://proxy.openmonetize.io", // Default SaaS URL
   defaultHeaders: {
     "X-OM-Customer-Id": "your-customer",
     "X-OM-User-Id": "user-123",
@@ -171,9 +171,10 @@ const openai = new OpenAI({
   },
 });
 
-// Use OpenAI normally - billing is automatic!
-const response = await openai.chat.completions.create({
-  model: "gpt-4",
+// Use Anthropic normally - billing is automatic!
+const message = await anthropic.messages.create({
+  model: "claude-sonnet-4-20250514",
+  max_tokens: 1024,
   messages: [{ role: "user", content: "Hello!" }],
 });
 ```
