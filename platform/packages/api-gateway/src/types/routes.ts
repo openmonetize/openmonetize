@@ -42,6 +42,7 @@ export interface GetUsageAnalyticsRoute {
     groupBy?: "day" | "week" | "month";
     provider?: string; // Comma-separated list of providers
     model?: string; // Comma-separated list of models
+    featureId?: string; // Comma-separated list of feature IDs
   };
 }
 

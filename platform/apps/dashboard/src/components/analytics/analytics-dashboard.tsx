@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
@@ -111,18 +111,17 @@ export function AnalyticsDashboard() {
       }
       params.set("groupBy", filters.granularity);
 
-      // Add feature filter for server-side filtering
+      // Add feature filter
       if (filters.features.length > 0) {
-        // Pass the first feature for now (API may support comma-separated in future)
         params.set("featureId", filters.features.join(","));
       }
 
-      // Add provider filter for server-side filtering
+      // Add provider filter
       if (filters.providers.length > 0) {
         params.set("provider", filters.providers.join(","));
       }
 
-      // Add model filter for server-side filtering
+      // Add model filter
       if (filters.models.length > 0) {
         params.set("model", filters.models.join(","));
       }
@@ -178,20 +177,10 @@ export function AnalyticsDashboard() {
     }
   }, [status, fetchData]);
 
-  // Filter data based on selected filters
-  const filteredByProvider = usageData?.byProvider.filter((p) => {
-    if (filters.providers.length > 0 && !filters.providers.includes(p.provider))
-      return false;
-    if (filters.models.length > 0 && !filters.models.includes(p.model))
-      return false;
-    return true;
-  });
-
-  const filteredByFeature = usageData?.byFeature.filter((f) => {
-    if (filters.features.length > 0 && !filters.features.includes(f.featureId))
-      return false;
-    return true;
-  });
+  // Since the API now handles all filtering, we can use the data directly
+  // No need for client-side filtering
+  const byProvider = usageData?.byProvider || [];
+  const byFeature = usageData?.byFeature || [];
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -223,47 +212,12 @@ export function AnalyticsDashboard() {
     });
   };
 
-  // Compute summary based on filtered data
-  // When provider/model filters are active, recalculate from filtered byProvider data
-  const hasProviderModelFilters =
-    filters.providers.length > 0 || filters.models.length > 0;
-
-  const summary = useMemo(() => {
-    const defaultSummary = {
-      totalEvents: 0,
-      totalCreditsBurned: "0",
-      totalCostUsd: "0.0000",
-    };
-
-    if (!usageData) return defaultSummary;
-
-    // If no provider/model filters, use original summary
-    if (!hasProviderModelFilters) {
-      return usageData.summary || defaultSummary;
-    }
-
-    // Compute from filtered provider data
-    const filtered = filteredByProvider || [];
-    const totalEvents = filtered.reduce((sum, p) => sum + p.eventCount, 0);
-    const totalTokens = filtered.reduce(
-      (sum, p) => sum + Number(p.inputTokens) + Number(p.outputTokens),
-      0,
-    );
-
-    // Estimate credits (rough approximation based on tokens - actual calculation may vary)
-    // Using the original summary ratio if available
-    const originalTotal = usageData.summary?.totalEvents || 1;
-    const ratio = totalEvents / originalTotal;
-    const estimatedCredits =
-      Number(usageData.summary?.totalCreditsBurned || 0) * ratio;
-    const estimatedCost = Number(usageData.summary?.totalCostUsd || 0) * ratio;
-
-    return {
-      totalEvents,
-      totalCreditsBurned: estimatedCredits.toFixed(0),
-      totalCostUsd: estimatedCost.toFixed(4),
-    };
-  }, [usageData, filteredByProvider, hasProviderModelFilters]);
+  // Use the summary directly from the API (which is already filtered)
+  const summary = usageData?.summary || {
+    totalEvents: 0,
+    totalCreditsBurned: "0",
+    totalCostUsd: "0.0000",
+  };
 
   return (
     <div className="flex gap-6">
@@ -383,10 +337,7 @@ export function AnalyticsDashboard() {
               <CardTitle>Usage by Model</CardTitle>
             </CardHeader>
             <CardContent>
-              <ModelBreakdown
-                data={filteredByProvider || []}
-                loading={loading}
-              />
+              <ModelBreakdown data={byProvider} loading={loading} />
             </CardContent>
           </Card>
 
@@ -396,10 +347,7 @@ export function AnalyticsDashboard() {
               <CardTitle>Usage by Feature</CardTitle>
             </CardHeader>
             <CardContent>
-              <FeatureUsageChart
-                data={filteredByFeature || []}
-                loading={loading}
-              />
+              <FeatureUsageChart data={byFeature} loading={loading} />
             </CardContent>
           </Card>
         </div>

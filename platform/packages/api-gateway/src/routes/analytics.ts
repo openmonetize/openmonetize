@@ -18,7 +18,7 @@
 // Analytics routes
 import { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { getPrismaClient } from "@openmonetize/common";
+import { getPrismaClient, Prisma } from "@openmonetize/common";
 import { authenticate } from "../middleware/auth";
 import { logger } from "../logger";
 import { withCommonResponses } from "../types/schemas";
@@ -35,9 +35,56 @@ const usageQuerySchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   groupBy: z.enum(["day", "week", "month"]).optional(),
-  provider: z.string().optional(), // Comma-separated list of providers
-  model: z.string().optional(), // Comma-separated list of models
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  featureId: z.string().optional(),
 });
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Parse a comma-separated string into an array of trimmed, non-empty values
+ */
+function parseCommaSeparatedFilter(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Get default date range (last 30 days)
+ */
+function getDefaultDateRange(startDate?: string, endDate?: string) {
+  const start = startDate
+    ? new Date(startDate)
+    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const end = endDate ? new Date(endDate) : new Date();
+  return { start, end };
+}
+
+/**
+ * Verify customer access and return target customer ID
+ * Throws 403 error if access is denied
+ */
+function verifyCustomerAccess(
+  customerId: string | undefined,
+  authenticatedCustomerId: string,
+  reply: any,
+): string | null {
+  const targetCustomerId = customerId || authenticatedCustomerId;
+  if (targetCustomerId !== authenticatedCustomerId) {
+    reply.status(403).send({
+      error: "Forbidden",
+      message: "Access denied to this customer",
+    });
+    return null;
+  }
+  return targetCustomerId;
+}
 
 export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
   // Register authentication for all analytics routes
@@ -104,59 +151,42 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       try {
-        // After Fastify validates against usageQuerySchema, query is guaranteed to match the schema
-        const { customerId, startDate, endDate, provider, model } =
+        const { customerId, startDate, endDate, provider, model, featureId } =
           request.query;
 
-        // Parse comma-separated provider/model filters
-        const providerFilters = provider
-          ? provider
-              .split(",")
-              .map((p: string) => p.trim())
-              .filter(Boolean)
-          : [];
-        const modelFilters = model
-          ? model
-              .split(",")
-              .map((m: string) => m.trim())
-              .filter(Boolean)
-          : [];
-
-        // Use authenticated customer's ID if customerId not provided
-        const targetCustomerId = customerId || request.customer!.id;
-
         // Verify customer access
-        if (targetCustomerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const targetCustomerId = verifyCustomerAccess(
+          customerId,
+          request.customer!.id,
+          reply,
+        );
+        if (!targetCustomerId) return;
 
-        // Date range defaults
-        const start = startDate
-          ? new Date(startDate)
-          : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-        const end = endDate ? new Date(endDate) : new Date();
+        // Parse filters
+        const providerFilters = parseCommaSeparatedFilter(provider);
+        const modelFilters = parseCommaSeparatedFilter(model);
+        const featureFilters = parseCommaSeparatedFilter(featureId);
 
-        // Build where clause with optional provider/model filters
-        const whereClause: any = {
+        // Get date range
+        const { start, end } = getDefaultDateRange(startDate, endDate);
+
+        // Build where clause with type safety
+        const whereClause: Prisma.UsageEventWhereInput = {
           customerId: targetCustomerId,
           timestamp: {
             gte: start,
             lte: end,
           },
+          ...(providerFilters.length > 0 && {
+            provider: {
+              in: providerFilters as Prisma.EnumProviderNameNullableFilter<"UsageEvent">["in"],
+            },
+          }),
+          ...(modelFilters.length > 0 && { model: { in: modelFilters } }),
+          ...(featureFilters.length > 0 && {
+            featureId: { in: featureFilters },
+          }),
         };
-
-        // Add provider filter if specified
-        if (providerFilters.length > 0) {
-          whereClause.provider = { in: providerFilters };
-        }
-
-        // Add model filter if specified
-        if (modelFilters.length > 0) {
-          whereClause.model = { in: modelFilters };
-        }
 
         // Get usage events
         const events = await db.usageEvent.findMany({
@@ -388,22 +418,16 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const { customerId, startDate, endDate } = request.query;
 
-        // Use authenticated customer's ID if customerId not provided or verify access
-        const targetCustomerId = customerId || request.customer!.id;
-
         // Verify customer access
-        if (targetCustomerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const targetCustomerId = verifyCustomerAccess(
+          customerId,
+          request.customer!.id,
+          reply,
+        );
+        if (!targetCustomerId) return;
 
-        // Date range defaults
-        const start = startDate
-          ? new Date(startDate)
-          : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate) : new Date();
+        // Get date range
+        const { start, end } = getDefaultDateRange(startDate, endDate);
 
         // Get usage events with costs
         const events = await db.usageEvent.findMany({
@@ -539,25 +563,20 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
       try {
         const { customerId, userId } = request.query;
 
-        // Use authenticated customer's ID if customerId not provided or verify access
-        const targetCustomerId = customerId || request.customer!.id;
-
         // Verify customer access
-        if (targetCustomerId !== request.customer!.id) {
-          return reply.status(403).send({
-            error: "Forbidden",
-            message: "Access denied to this customer",
-          });
-        }
+        const targetCustomerId = verifyCustomerAccess(
+          customerId,
+          request.customer!.id,
+          reply,
+        );
+        if (!targetCustomerId) return;
 
-        // Get credit wallet
-        const walletQuery: any = { customerId: targetCustomerId };
-        if (userId) {
-          walletQuery.userId = userId;
-        } else {
-          walletQuery.userId = null;
-          walletQuery.teamId = null;
-        }
+        // Build wallet query with proper typing
+        const walletQuery: Prisma.CreditWalletWhereInput = {
+          customerId: targetCustomerId,
+          userId: userId || null,
+          teamId: null,
+        };
 
         const wallet = await db.creditWallet.findFirst({
           where: walletQuery,
