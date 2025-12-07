@@ -13,12 +13,14 @@ OpenMonetize is a comprehensive, open-source platform for AI-driven consumption-
 ### 🎯 Who This Is For
 
 **You are an AI SaaS company** (e.g., AI legal assistant, AI coding tool, AI sales platform) and:
+
 - ✅ You pay OpenAI/Anthropic directly for API usage
 - ✅ You need to track which of YOUR customers uses what
 - ✅ You want to bill YOUR customers accurately
 - ✅ You need to maintain healthy profit margins
 
 **We provide the "smart meter" software** to help you:
+
 - Track consumption at the end-user level
 - Calculate costs and credits automatically
 - Generate accurate invoices
@@ -103,7 +105,9 @@ platform/
 │   ├── common/              # Shared types, DB client, utilities
 │   ├── api-gateway/         # Fastify API gateway
 │   ├── ingestion-service/   # High-throughput event processing
-│   └── rating-engine/       # Credit calculation & burn tables
+│   ├── rating-engine/       # Credit calculation & burn tables
+│   ├── ai-proxy-service/    # OpenAI/Anthropic/Gemini proxy (port 8082)
+│   └── sdk/                 # TypeScript SDK
 ├── services/
 │   ├── postgres/            # Database configuration
 │   └── redis/               # Cache configuration
@@ -113,16 +117,16 @@ platform/
 
 ### Tech Stack
 
-| Component | Technology | Why |
-|-----------|------------|-----|
-| **Language** | TypeScript 5.9 | Type safety, developer experience |
-| **Runtime** | Node.js 20+ | Async I/O, large ecosystem |
-| **API Framework** | Fastify | 40K req/sec, plugin ecosystem |
-| **Database** | PostgreSQL 15 | ACID, JSON support, reliability |
-| **ORM** | Prisma | Type-safe queries, migrations |
-| **Cache** | Redis 7 | Sub-ms latency, data structures |
-| **Validation** | Zod | Runtime type checking |
-| **Build** | Turborepo | Fast, efficient monorepo builds |
+| Component         | Technology     | Why                               |
+| ----------------- | -------------- | --------------------------------- |
+| **Language**      | TypeScript 5.9 | Type safety, developer experience |
+| **Runtime**       | Node.js 20+    | Async I/O, large ecosystem        |
+| **API Framework** | Fastify        | 40K req/sec, plugin ecosystem     |
+| **Database**      | PostgreSQL 15  | ACID, JSON support, reliability   |
+| **ORM**           | Prisma         | Type-safe queries, migrations     |
+| **Cache**         | Redis 7        | Sub-ms latency, data structures   |
+| **Validation**    | Zod            | Runtime type checking             |
+| **Build**         | Turborepo      | Fast, efficient monorepo builds   |
 
 ## Dashboard & Sandbox
 
@@ -132,45 +136,91 @@ OpenMonetize comes with a built-in **Customer Dashboard** (`apps/dashboard`) tha
 2.  **Developer Sandbox**: A powerful testing tool that visualizes the entire flow of an API request—from the app, through the gateway, ingestion, rating engine, and finally to the database.
 
 ### Using the Sandbox
+
 When running locally, visit `http://localhost:3002/sandbox` to access the Sandbox. It allows you to:
--   Simulate API requests (Text Generation, Image Generation).
--   See real-time logs from all system components.
--   View the exact code snippets needed to integrate the SDK.
+
+- Simulate API requests (Text Generation, Image Generation).
+- See real-time logs from all system components.
+- View the exact code snippets needed to integrate the SDK.
 
 ## Features
 
-### 1. Event Ingestion
+### 🚀 AI Proxy (Zero-Code Integration)
+
+**The fastest way to add billing—just change your `baseURL`!**
+
+Instead of manually instrumenting every AI call, use our proxy to automatically track usage:
+
+```typescript
+import OpenAI from "openai";
+
+// Before: Calling OpenAI directly (no billing)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// After: Route through OpenMonetize Proxy (automatic billing!)
+// Cloud: Uses https://proxy.openmonetize.io by default
+// Local: Use baseURL: 'http://localhost:8082/v1'
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://proxy.openmonetize.io/v1", // Default SaaS URL
+  defaultHeaders: {
+    "X-OM-Customer-Id": "your-customer",
+    "X-OM-User-Id": "user-123",
+    "X-OM-Feature-Id": "ai-chat",
+    "X-OM-Api-Key": process.env.OPENMONETIZE_API_KEY,
+  },
+});
+
+// Use OpenAI normally - billing is automatic!
+const response = await openai.chat.completions.create({
+  model: "gpt-4",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+**Supported Providers:**
+| Provider | Endpoint | Status |
+|----------|----------|--------|
+| OpenAI | `POST /v1/chat/completions` | ✅ |
+| Anthropic | `POST /v1/messages` | ✅ |
+| Gemini | `POST /v1beta/models/:model:generateContent` | ✅ |
+
+Start the proxy: `pnpm --filter @openmonetize/ai-proxy-service dev` (port 8082)
+
+---
+
+### 1. Event Ingestion (SDK Method)
 
 **Scenario**: Your AI SaaS company (e.g., "LegalAI") tracks when your customer (e.g., "Law Firm A") uses AI features.
 
 ```typescript
-import { client } from '@openmonetize/sdk';
+import { client } from "@openmonetize/sdk";
 
 // Initialize with YOUR API key to our platform
 const openmonetize = new OpenMonetizeClient({
-  apiKey: process.env.OPENMONETIZE_API_KEY  // Your key
+  apiKey: process.env.OPENMONETIZE_API_KEY, // Your key
 });
 
 // When Law Firm A uses your AI feature
 async function handleAIRequest(lawFirmId, prompt) {
   // You call OpenAI with YOUR API key
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo',
-    messages: [{ role: 'user', content: prompt }]
+    model: "gpt-4-turbo",
+    messages: [{ role: "user", content: prompt }],
   });
 
   // You report usage to our platform
   await openmonetize.events.track({
-    event_id: 'evt_123',
-    customer_id: 'legalai-company',     // Your company
-    user_id: 'law-firm-a',              // Your customer
-    event_type: 'TOKEN_USAGE',
-    feature_id: 'legal-research',
-    provider: 'OPENAI',
-    model: 'gpt-4-turbo',
+    event_id: "evt_123",
+    customer_id: "legalai-company", // Your company
+    user_id: "law-firm-a", // Your customer
+    event_type: "TOKEN_USAGE",
+    feature_id: "legal-research",
+    provider: "OPENAI",
+    model: "gpt-4-turbo",
     input_tokens: response.usage.prompt_tokens,
     output_tokens: response.usage.completion_tokens,
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 
   return response;
@@ -178,29 +228,29 @@ async function handleAIRequest(lawFirmId, prompt) {
 
 // Example: Tracking Image Generation
 await openmonetize.trackCustomEvent({
-  event_id: 'evt_img_123',
-  customer_id: 'legalai-company',
-  user_id: 'law-firm-a',
-  event_type: 'IMAGE_GENERATION',
-  feature_id: 'logo-creator',
-  provider: 'OPENAI',
-  model: 'dall-e-3',
+  event_id: "evt_img_123",
+  customer_id: "legalai-company",
+  user_id: "law-firm-a",
+  event_type: "IMAGE_GENERATION",
+  feature_id: "logo-creator",
+  provider: "OPENAI",
+  model: "dall-e-3",
   image_count: 1,
-  image_size: '1024x1024',
-  quality: 'hd',
-  timestamp: new Date()
+  image_size: "1024x1024",
+  quality: "hd",
+  timestamp: new Date(),
 });
 
 // Example: Tracking Custom Units
 await openmonetize.trackCustomEvent({
-  event_id: 'evt_custom_123',
-  customer_id: 'legalai-company',
-  user_id: 'law-firm-a',
-  event_type: 'CUSTOM',
-  feature_id: 'pdf-processing',
-  unit_type: 'pages',
+  event_id: "evt_custom_123",
+  customer_id: "legalai-company",
+  user_id: "law-firm-a",
+  event_type: "CUSTOM",
+  feature_id: "pdf-processing",
+  unit_type: "pages",
   quantity: 5,
-  timestamp: new Date()
+  timestamp: new Date(),
 });
 ```
 
@@ -210,16 +260,16 @@ Sub-10ms latency for access control:
 
 ```typescript
 const entitlement = await client.entitlements.check({
-  customer_id: 'cust_abc',
-  user_id: 'user_456',
-  feature_id: 'ai-text-generation',
+  customer_id: "cust_abc",
+  user_id: "user_456",
+  feature_id: "ai-text-generation",
   action: {
-    type: 'token_usage',
-    provider: 'openai',
-    model: 'gpt-4-turbo',
+    type: "token_usage",
+    provider: "openai",
+    model: "gpt-4-turbo",
     estimated_input_tokens: 1000,
-    estimated_output_tokens: 500
-  }
+    estimated_output_tokens: 500,
+  },
 });
 
 if (!entitlement.allowed) {
@@ -235,10 +285,10 @@ Real-time cost preview before execution:
 
 ```typescript
 const cost = await client.rating.calculate({
-  provider: 'openai',
-  model: 'gpt-4-turbo',
+  provider: "openai",
+  model: "gpt-4-turbo",
   input_tokens: 1000,
-  output_tokens: 500
+  output_tokens: 500,
 });
 
 console.log(`Credits: ${cost.credits}`);
@@ -252,19 +302,19 @@ Configure burn tables via API:
 
 ```typescript
 await client.burnTables.create({
-  name: 'Premium Tier Pricing',
+  name: "Premium Tier Pricing",
   rules: {
-    'gpt-4-turbo': {
+    "gpt-4-turbo": {
       input_tokens: 1.5,
       output_tokens: 10.0,
-      per_unit: 1000
+      per_unit: 1000,
     },
-    'claude-3.5-sonnet': {
+    "claude-3.5-sonnet": {
       input_tokens: 0.8,
       output_tokens: 4.0,
-      per_unit: 1000
-    }
-  }
+      per_unit: 1000,
+    },
+  },
 });
 ```
 
@@ -372,6 +422,7 @@ Deploy to Railway in 5 minutes with managed PostgreSQL and Redis:
 **Full Guide**: [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) - Comprehensive Railway documentation
 
 **Features**:
+
 - One-click deployment from GitHub
 - Managed PostgreSQL + Redis
 - Automatic SSL certificates
@@ -444,6 +495,7 @@ Apache 2.0 - See [LICENSE](../LICENSE) for details.
 ## Roadmap
 
 ### Phase 1: Foundation (Complete ✅)
+
 - [x] Monorepo setup with Turborepo
 - [x] Complete database schema
 - [x] Type definitions and validation
@@ -451,6 +503,7 @@ Apache 2.0 - See [LICENSE](../LICENSE) for details.
 - [x] Provider cost seeding
 
 ### Phase 2: Core Services (Complete ✅)
+
 - [x] Event ingestion service
 - [x] Rating engine
 - [x] API gateway
@@ -459,12 +512,14 @@ Apache 2.0 - See [LICENSE](../LICENSE) for details.
 - [x] License management system
 
 ### Phase 3: SDK Expansion (In Progress)
+
 - [/] Python SDK
 - [ ] Go SDK
 - [ ] Analytics dashboard
 - [ ] Admin UI
 
 ### Phase 4: Enterprise
+
 - [ ] White-label support
 - [ ] SOC 2 compliance
 - [ ] Advanced security
@@ -473,6 +528,7 @@ Apache 2.0 - See [LICENSE](../LICENSE) for details.
 ## Acknowledgments
 
 Built with inspiration from:
+
 - Stripe Billing
 - Metronome
 - Orb

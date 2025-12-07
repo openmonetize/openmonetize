@@ -407,3 +407,127 @@ export function validateConfig(config: {
     );
   }
 }
+
+/**
+ * AI Proxy Configuration
+ *
+ * Generate configuration for using the OpenMonetize AI Proxy.
+ * This allows automatic usage tracking without SDK instrumentation.
+ *
+ * @example
+ * ```typescript
+ * import OpenAI from 'openai';
+ * import { getProxyConfig } from '@openmonetize/sdk';
+ *
+ * const proxyConfig = getProxyConfig({
+ *   proxyBaseUrl: 'https://proxy.openmonetize.io',
+ *   openmonetizeApiKey: process.env.OM_API_KEY,
+ *   customerId: 'cust_xxx',
+ *   userId: 'user_123',
+ *   featureId: 'ai-chat'
+ * });
+ *
+ * const openai = new OpenAI({
+ *   baseURL: proxyConfig.baseURL,
+ *   defaultHeaders: proxyConfig.headers
+ * });
+ *
+ * // Now all OpenAI calls are automatically tracked!
+ * const response = await openai.chat.completions.create({
+ *   model: 'gpt-4',
+ *   messages: [{ role: 'user', content: 'Hello!' }]
+ * });
+ * ```
+ */
+export interface ProxyConfig {
+  baseURL: string;
+  headers: Record<string, string>;
+}
+
+export function getProxyConfig(params: {
+  /** Base URL of the OpenMonetize AI Proxy */
+  proxyBaseUrl?: string;
+  /** Your OpenMonetize API key */
+  openmonetizeApiKey: string;
+  /** Customer ID for billing */
+  customerId: string;
+  /** User ID for tracking */
+  userId: string;
+  /** Feature ID for analytics */
+  featureId: string;
+  /** Optional metadata to attach to usage events */
+  metadata?: Record<string, unknown>;
+}): ProxyConfig {
+  const baseURL = params.proxyBaseUrl || "https://proxy.openmonetize.io/v1";
+
+  const headers: Record<string, string> = {
+    "X-OM-Customer-Id": params.customerId,
+    "X-OM-User-Id": params.userId,
+    "X-OM-Feature-Id": params.featureId,
+    "X-OM-Api-Key": params.openmonetizeApiKey,
+  };
+
+  if (params.metadata) {
+    headers["X-OM-Metadata"] = JSON.stringify(params.metadata);
+  }
+
+  return { baseURL, headers };
+}
+
+/**
+ * Create an OpenAI-compatible client configured for OpenMonetize billing.
+ *
+ * This is a convenience wrapper that returns the configuration needed
+ * to instantiate an OpenAI client with automatic usage tracking.
+ *
+ * @example
+ * ```typescript
+ * import OpenAI from 'openai';
+ * import { createBilledOpenAIConfig } from '@openmonetize/sdk';
+ *
+ * const config = createBilledOpenAIConfig({
+ *   openaiApiKey: process.env.OPENAI_API_KEY,
+ *   openmonetizeApiKey: process.env.OM_API_KEY,
+ *   customerId: 'cust_xxx',
+ *   userId: 'user_123',
+ *   featureId: 'ai-chat'
+ * });
+ *
+ * const openai = new OpenAI(config);
+ * ```
+ */
+export function createBilledOpenAIConfig(params: {
+  /** Your OpenAI API key */
+  openaiApiKey: string;
+  /** Your OpenMonetize API key */
+  openmonetizeApiKey: string;
+  /** Customer ID for billing */
+  customerId: string;
+  /** User ID for tracking */
+  userId: string;
+  /** Feature ID for analytics */
+  featureId: string;
+  /** Base URL of the OpenMonetize AI Proxy (optional) */
+  proxyBaseUrl?: string;
+  /** Optional metadata */
+  metadata?: Record<string, unknown>;
+}): {
+  apiKey: string;
+  baseURL: string;
+  defaultHeaders: Record<string, string>;
+} {
+  const proxyConfig = getProxyConfig({
+    proxyBaseUrl: params.proxyBaseUrl,
+    openmonetizeApiKey: params.openmonetizeApiKey,
+    customerId: params.customerId,
+    userId: params.userId,
+    featureId: params.featureId,
+    metadata: params.metadata,
+  });
+
+  return {
+    apiKey: params.openaiApiKey,
+    baseURL: proxyConfig.baseURL,
+    defaultHeaders: proxyConfig.headers,
+  };
+}

@@ -104,13 +104,9 @@ export function UsageTimelineChart({
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={chartData}>
           <defs>
-            <linearGradient id="colorEvents" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorCredits" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
               <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorCredits" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -131,10 +127,17 @@ export function UsageTimelineChart({
           />
           <Tooltip
             contentStyle={{
-              background: "hsl(var(--popover))",
+              backgroundColor: "hsl(var(--popover))",
               border: "1px solid hsl(var(--border))",
               borderRadius: "8px",
+            }}
+            itemStyle={{
               color: "hsl(var(--popover-foreground))",
+            }}
+            labelStyle={{
+              color: "hsl(var(--popover-foreground))",
+              fontWeight: 600,
+              marginBottom: "4px",
             }}
             labelFormatter={(label) => {
               const date = new Date(label);
@@ -144,24 +147,19 @@ export function UsageTimelineChart({
                 day: "numeric",
               });
             }}
-          />
-          <Area
-            type="monotone"
-            dataKey="events"
-            stroke="#6366f1"
-            strokeWidth={2}
-            fillOpacity={1}
-            fill="url(#colorEvents)"
-            name="API Calls"
+            formatter={(value: number) => [
+              `${value.toLocaleString()} credits`,
+              "Usage",
+            ]}
           />
           <Area
             type="monotone"
             dataKey="credits"
-            stroke="#22c55e"
+            stroke="#6366f1"
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#colorCredits)"
-            name="Credits"
+            name="Credits Burned"
           />
         </AreaChart>
       </ResponsiveContainer>

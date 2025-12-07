@@ -44,6 +44,7 @@ await client.flush();
 ## Features
 
 - ✅ **Type-Safe** - Full TypeScript support with comprehensive type definitions
+- ✅ **AI Proxy Support** - Zero-code integration via `getProxyConfig()` helper
 - ✅ **Easy Integration** - Drop-in helpers for OpenAI, Anthropic, Google Gemini, and more
 - ✅ **Real-Time Tracking** - Track AI usage as it happens
 - ✅ **No Redundant IDs** - API key determines customer identity automatically
@@ -52,6 +53,50 @@ await client.flush();
 - ✅ **Analytics** - Get usage insights and cost breakdowns
 - ✅ **Batch Processing** - Efficient bulk event tracking
 - ✅ **Error Handling** - Proper error types and retry logic
+
+## 🚀 AI Proxy (Easiest Integration)
+
+**The fastest way to add billing—just change your `baseURL`!**
+
+Use the SDK helper to configure your AI client for automatic billing:
+
+```typescript
+import OpenAI from "openai";
+import { createBilledOpenAIConfig } from "@openmonetize/sdk";
+
+// Cloud SaaS: Uses https://proxy.openmonetize.io by default
+const openai = new OpenAI(
+  createBilledOpenAIConfig({
+    openaiApiKey: process.env.OPENAI_API_KEY!,
+    openmonetizeApiKey: process.env.OPENMONETIZE_API_KEY!,
+    customerId: "cust_your-company",
+    userId: "user_current-user",
+    featureId: "ai-chat",
+  }),
+);
+
+// Use OpenAI normally - billing is automatic!
+const response = await openai.chat.completions.create({
+  model: "gpt-4",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+**Default Proxy URLs:**
+| Environment | URL |
+|-------------|-----|
+| Cloud SaaS (default) | `https://proxy.openmonetize.io/v1` |
+| Local Development | `http://localhost:8082/v1` |
+| Self-Hosted | Your custom URL |
+
+For local development, pass `proxyBaseUrl: 'http://localhost:8082/v1'`.
+
+**Supported Providers:**
+| Provider | Proxy Endpoint |
+|----------|----------------|
+| OpenAI | `POST /v1/chat/completions` |
+| Anthropic | `POST /v1/messages` |
+| Gemini | `POST /v1beta/models/:model:generateContent` |
 
 ## Testing with Sandbox
 
@@ -474,6 +519,8 @@ await client.trackTokenUsage({...}); // Don't block on tracking!
 
 | Function                                     | Description                                                |
 | -------------------------------------------- | ---------------------------------------------------------- |
+| `getProxyConfig(params)`                     | Generate proxy config (baseURL + headers) for AI clients   |
+| `createBilledOpenAIConfig(params)`           | Create OpenAI client config for automatic proxy billing    |
 | `withOpenAITracking(client, fn, context)`    | Wrap OpenAI calls with automatic tracking                  |
 | `withAnthropicTracking(client, fn, context)` | Wrap Anthropic calls with automatic tracking               |
 | `withGoogleTracking(client, fn, context)`    | Wrap Google Gemini calls with automatic tracking           |

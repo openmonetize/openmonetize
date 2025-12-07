@@ -118,10 +118,16 @@ export function ModelBreakdown({ data, loading }: ModelBreakdownProps) {
             </Pie>
             <Tooltip
               contentStyle={{
-                background: "hsl(var(--popover))",
+                backgroundColor: "hsl(var(--popover))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
+              }}
+              itemStyle={{
                 color: "hsl(var(--popover-foreground))",
+              }}
+              labelStyle={{
+                color: "hsl(var(--popover-foreground))",
+                fontWeight: 600,
               }}
               formatter={(value: number) => [value.toLocaleString(), "Calls"]}
             />

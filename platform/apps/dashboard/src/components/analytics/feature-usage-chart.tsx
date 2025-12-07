@@ -92,10 +92,16 @@ export function FeatureUsageChart({ data, loading }: FeatureUsageChartProps) {
         />
         <Tooltip
           contentStyle={{
-            background: "hsl(var(--popover))",
+            backgroundColor: "hsl(var(--popover))",
             border: "1px solid hsl(var(--border))",
             borderRadius: "8px",
+          }}
+          itemStyle={{
             color: "hsl(var(--popover-foreground))",
+          }}
+          labelStyle={{
+            color: "hsl(var(--popover-foreground))",
+            fontWeight: 600,
           }}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           formatter={(value: number, _name: string, props: any) => [

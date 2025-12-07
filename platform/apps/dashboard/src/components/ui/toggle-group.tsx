@@ -41,15 +41,7 @@ const ToggleGroupItem = React.forwardRef<
     variant?: "default" | "outline";
     size?: "default" | "sm" | "lg";
   }
->(({ className, children, ...props }, ref) => {
-  // Extract variant and size from props to prevent them from being passed to DOM
-  // These are used by the context system for styling
-  const {
-    variant: _,
-    size: __,
-    ...restProps
-  } = props as { variant?: string; size?: string } & typeof props;
-
+>(({ className, children, variant, size, ...props }, ref) => {
   return (
     <ToggleGroupPrimitive.Item
       ref={ref}
@@ -57,7 +49,7 @@ const ToggleGroupItem = React.forwardRef<
         "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-white data-[state=on]:text-slate-900 data-[state=on]:shadow-sm dark:data-[state=on]:bg-slate-900 dark:data-[state=on]:text-slate-50",
         className,
       )}
-      {...restProps}
+      {...props}
     >
       {children}
     </ToggleGroupPrimitive.Item>

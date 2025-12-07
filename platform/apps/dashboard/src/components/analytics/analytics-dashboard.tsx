@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
@@ -211,11 +211,47 @@ export function AnalyticsDashboard() {
     });
   };
 
-  const summary = usageData?.summary || {
-    totalEvents: 0,
-    totalCreditsBurned: "0",
-    totalCostUsd: "0.0000",
-  };
+  // Compute summary based on filtered data
+  // When provider/model filters are active, recalculate from filtered byProvider data
+  const hasProviderModelFilters =
+    filters.providers.length > 0 || filters.models.length > 0;
+
+  const summary = useMemo(() => {
+    const defaultSummary = {
+      totalEvents: 0,
+      totalCreditsBurned: "0",
+      totalCostUsd: "0.0000",
+    };
+
+    if (!usageData) return defaultSummary;
+
+    // If no provider/model filters, use original summary
+    if (!hasProviderModelFilters) {
+      return usageData.summary || defaultSummary;
+    }
+
+    // Compute from filtered provider data
+    const filtered = filteredByProvider || [];
+    const totalEvents = filtered.reduce((sum, p) => sum + p.eventCount, 0);
+    const totalTokens = filtered.reduce(
+      (sum, p) => sum + Number(p.inputTokens) + Number(p.outputTokens),
+      0,
+    );
+
+    // Estimate credits (rough approximation based on tokens - actual calculation may vary)
+    // Using the original summary ratio if available
+    const originalTotal = usageData.summary?.totalEvents || 1;
+    const ratio = totalEvents / originalTotal;
+    const estimatedCredits =
+      Number(usageData.summary?.totalCreditsBurned || 0) * ratio;
+    const estimatedCost = Number(usageData.summary?.totalCostUsd || 0) * ratio;
+
+    return {
+      totalEvents,
+      totalCreditsBurned: estimatedCredits.toFixed(0),
+      totalCostUsd: estimatedCost.toFixed(4),
+    };
+  }, [usageData, filteredByProvider, hasProviderModelFilters]);
 
   return (
     <div className="flex gap-6">
