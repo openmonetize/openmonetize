@@ -35,6 +35,8 @@ const usageQuerySchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   groupBy: z.enum(["day", "week", "month"]).optional(),
+  provider: z.string().optional(), // Comma-separated list of providers
+  model: z.string().optional(), // Comma-separated list of models
 });
 
 export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
@@ -103,7 +105,22 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       try {
         // After Fastify validates against usageQuerySchema, query is guaranteed to match the schema
-        const { customerId, startDate, endDate } = request.query;
+        const { customerId, startDate, endDate, provider, model } =
+          request.query;
+
+        // Parse comma-separated provider/model filters
+        const providerFilters = provider
+          ? provider
+              .split(",")
+              .map((p: string) => p.trim())
+              .filter(Boolean)
+          : [];
+        const modelFilters = model
+          ? model
+              .split(",")
+              .map((m: string) => m.trim())
+              .filter(Boolean)
+          : [];
 
         // Use authenticated customer's ID if customerId not provided
         const targetCustomerId = customerId || request.customer!.id;
@@ -122,15 +139,28 @@ export const analyticsRoutes: FastifyPluginAsyncZod = async (app) => {
           : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
         const end = endDate ? new Date(endDate) : new Date();
 
+        // Build where clause with optional provider/model filters
+        const whereClause: any = {
+          customerId: targetCustomerId,
+          timestamp: {
+            gte: start,
+            lte: end,
+          },
+        };
+
+        // Add provider filter if specified
+        if (providerFilters.length > 0) {
+          whereClause.provider = { in: providerFilters };
+        }
+
+        // Add model filter if specified
+        if (modelFilters.length > 0) {
+          whereClause.model = { in: modelFilters };
+        }
+
         // Get usage events
         const events = await db.usageEvent.findMany({
-          where: {
-            customerId: targetCustomerId,
-            timestamp: {
-              gte: start,
-              lte: end,
-            },
-          },
+          where: whereClause,
           select: {
             featureId: true,
             eventType: true,

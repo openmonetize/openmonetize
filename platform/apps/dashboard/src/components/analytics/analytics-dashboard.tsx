@@ -117,6 +117,16 @@ export function AnalyticsDashboard() {
         params.set("featureId", filters.features.join(","));
       }
 
+      // Add provider filter for server-side filtering
+      if (filters.providers.length > 0) {
+        params.set("provider", filters.providers.join(","));
+      }
+
+      // Add model filter for server-side filtering
+      if (filters.models.length > 0) {
+        params.set("model", filters.models.join(","));
+      }
+
       // Fetch usage data
       const usageRes = await fetch(
         `${apiUrl}/v1/analytics/usage?${params.toString()}`,
@@ -156,6 +166,8 @@ export function AnalyticsDashboard() {
     filters.dateRange,
     filters.granularity,
     filters.features,
+    filters.providers,
+    filters.models,
   ]);
 
   useEffect(() => {

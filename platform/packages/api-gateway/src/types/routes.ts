@@ -39,7 +39,9 @@ export interface GetUsageAnalyticsRoute {
     customerId?: string;
     startDate?: string;
     endDate?: string;
-    groupBy?: 'day' | 'week' | 'month';
+    groupBy?: "day" | "week" | "month";
+    provider?: string; // Comma-separated list of providers
+    model?: string; // Comma-separated list of models
   };
 }
 
@@ -111,7 +113,7 @@ export interface RegisterCustomerRoute {
   Body: {
     name: string;
     email: string;
-    tier: 'STARTER' | 'GROWTH' | 'ENTERPRISE';
+    tier: "STARTER" | "GROWTH" | "ENTERPRISE";
   };
 }
 
@@ -126,9 +128,14 @@ export interface IngestEventsRoute {
       customer_id: string;
       user_id?: string;
       team_id?: string;
-      event_type: 'TOKEN_USAGE' | 'API_CALL' | 'FEATURE_ACCESS' | 'IMAGE_GENERATION' | 'CUSTOM';
+      event_type:
+        | "TOKEN_USAGE"
+        | "API_CALL"
+        | "FEATURE_ACCESS"
+        | "IMAGE_GENERATION"
+        | "CUSTOM";
       feature_id: string;
-      provider?: 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL';
+      provider?: "OPENAI" | "ANTHROPIC" | "GOOGLE" | "COHERE" | "MISTRAL";
       model?: string;
       input_tokens?: number;
       output_tokens?: number;
