@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Box, Settings, LogOut, Activity } from "lucide-react";
+import {
+  LayoutDashboard,
+  Box,
+  Settings,
+  LogOut,
+  Activity,
+  BarChart3,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSandboxAuth } from "@/hooks/useSandboxAuth";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Activity", href: "/activity", icon: Activity },
   { name: "Playground", href: "/playground", icon: Box },
   { name: "Settings", href: "/settings", icon: Settings },

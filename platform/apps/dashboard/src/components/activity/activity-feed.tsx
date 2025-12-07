@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { ActivityFilters } from "./activity-filters";
 import { ActivityTable } from "./activity-table";
@@ -32,6 +32,13 @@ export function ActivityFeed() {
     to: new Date(),
   });
   const [eventType, setEventType] = useState<string>("all");
+  const [featureId, setFeatureId] = useState<string>("all");
+
+  // Extract unique features from loaded events
+  const availableFeatures = useMemo(() => {
+    const features = new Set(events.map((e) => e.featureId).filter(Boolean));
+    return Array.from(features).sort();
+  }, [events]);
 
   const loadEvents = useCallback(async () => {
     if (status !== "authenticated" || !session?.user) return;
@@ -79,6 +86,11 @@ export function ActivityFeed() {
       return false;
     }
 
+    // Filter by Feature ID
+    if (featureId !== "all" && event.featureId !== featureId) {
+      return false;
+    }
+
     // Filter by Date Range
     if (dateRange?.from && dateRange?.to) {
       const eventDate = new Date(event.timestamp);
@@ -103,6 +115,9 @@ export function ActivityFeed() {
         setDateRange={setDateRange}
         eventType={eventType}
         setEventType={setEventType}
+        featureId={featureId}
+        setFeatureId={setFeatureId}
+        availableFeatures={availableFeatures}
       />
       <ActivityTable data={filteredEvents} loading={loading} />
     </div>

@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FeatureSelector } from "@/components/ui/feature-selector";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -22,6 +23,9 @@ interface ActivityFiltersProps {
   setDateRange: (range: DateRange | undefined) => void;
   eventType: string;
   setEventType: (type: string) => void;
+  featureId: string;
+  setFeatureId: (feature: string) => void;
+  availableFeatures: string[];
 }
 
 export function ActivityFilters({
@@ -29,10 +33,13 @@ export function ActivityFilters({
   setDateRange,
   eventType,
   setEventType,
+  featureId,
+  setFeatureId,
+  availableFeatures,
 }: ActivityFiltersProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-1 items-center gap-2">
+      <div className="flex flex-1 flex-wrap items-center gap-2">
         <div className="grid gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -82,6 +89,12 @@ export function ActivityFilters({
             <SelectItem value="embedding">Embedding</SelectItem>
           </SelectContent>
         </Select>
+        <FeatureSelector
+          value={featureId}
+          onChange={setFeatureId}
+          features={availableFeatures}
+          placeholder="Feature"
+        />
       </div>
     </div>
   );
