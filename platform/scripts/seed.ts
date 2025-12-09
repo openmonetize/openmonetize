@@ -20,6 +20,7 @@ import {
   LimitType,
   LimitPeriod
 } from '../packages/common/src/database';
+import { encryptApiKey } from '../packages/common/src/utils/crypto';
 
 const prisma = getPrismaClient();
 
@@ -580,6 +581,7 @@ async function main() {
       name: 'Acme AI Corp',
       email: 'dev@acme-ai.example.com',
       apiKeyHash: '74c5d88a6d2c201c5e004dadf414979a082209ea1e77fe985cac75283cf7ecdf', // Hash of 'om_dev_test_key'
+      apiKeyEncrypted: encryptApiKey('om_dev_test_key'), // Encrypted version for retrieval
       tier: CustomerTier.GROWTH,
       status: CustomerStatus.ACTIVE,
 

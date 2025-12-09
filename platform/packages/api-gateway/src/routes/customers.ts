@@ -21,6 +21,7 @@ import {
   getPrismaClient,
   generateApiKey,
   hashApiKey,
+  encryptApiKey,
 } from "@openmonetize/common";
 import { logger } from "../logger";
 import { z } from "zod";
@@ -84,6 +85,7 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
         // Generate API key
         const apiKey = generateApiKey("om_live");
         const apiKeyHash = hashApiKey(apiKey);
+        const apiKeyEncrypted = encryptApiKey(apiKey);
 
         // Create customer
         const customer = await db.customer.create({
@@ -92,6 +94,7 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
             email,
             tier: tier as any, // Cast to Prisma enum
             apiKeyHash,
+            apiKeyEncrypted,
             status: "ACTIVE" as any, // Cast to Prisma enum
           },
         });
@@ -235,11 +238,12 @@ export const customersRoutes: FastifyPluginAsyncZod = async (app) => {
         // Generate new key
         const apiKey = generateApiKey("om_live");
         const apiKeyHash = hashApiKey(apiKey);
+        const apiKeyEncrypted = encryptApiKey(apiKey);
 
         // Update customer
         await db.customer.update({
           where: { id: request.customer.id },
-          data: { apiKeyHash },
+          data: { apiKeyHash, apiKeyEncrypted },
         });
 
         logger.info({ customerId: request.customer.id }, "API Key rotated");
