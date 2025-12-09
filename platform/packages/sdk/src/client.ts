@@ -309,6 +309,11 @@ export class OpenMonetize {
       base.image_count = event.imageCount;
       if (event.imageSize) base.image_size = event.imageSize;
       if (event.quality) base.quality = event.quality;
+    } else if (event.eventType === "VIDEO_GENERATION") {
+      base.provider = event.provider;
+      base.model = event.model;
+      base.duration_seconds = event.durationSeconds;
+      if (event.resolution) base.resolution = event.resolution;
     } else if (event.eventType === "CUSTOM") {
       base.unit_type = event.unitType;
       base.quantity = event.quantity;
@@ -395,6 +400,36 @@ export class OpenMonetize {
       imageCount: params.imageCount,
       imageSize: params.imageSize,
       quality: params.quality,
+      timestamp: new Date().toISOString(),
+      metadata: params.metadata,
+    });
+  }
+
+  /**
+   * Track video generation usage
+   */
+  trackVideoGeneration(params: {
+    userId: string;
+    customerId: string;
+    featureId: string;
+    provider: string;
+    model: string;
+    durationSeconds: number;
+    resolution?: string;
+    metadata?: Record<string, unknown>;
+  }): void {
+    const eventId = uuidv4();
+
+    this.enqueueEvent({
+      eventId,
+      customerId: params.customerId,
+      userId: params.userId,
+      eventType: "VIDEO_GENERATION",
+      featureId: params.featureId,
+      provider: params.provider.toUpperCase() as any,
+      model: params.model,
+      durationSeconds: params.durationSeconds,
+      resolution: params.resolution,
       timestamp: new Date().toISOString(),
       metadata: params.metadata,
     });

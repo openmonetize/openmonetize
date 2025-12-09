@@ -53,6 +53,11 @@ export type Provider =
   | "GOOGLE"
   | "COHERE"
   | "MISTRAL"
+  | "STABILITY_AI"
+  | "RUNWAY"
+  | "REPLICATE"
+  | "AMAZON"
+  | "BLACK_FOREST_LABS"
   | "CUSTOM";
 
 /**
@@ -61,6 +66,7 @@ export type Provider =
 export type EventType =
   | "TOKEN_USAGE" // LLM token consumption
   | "IMAGE_GENERATION" // Image generation (DALL-E, Midjourney, etc.)
+  | "VIDEO_GENERATION" // Video generation (Sora, Veo, Runway, etc.)
   | "EMBEDDING_GENERATION" // Embedding generation
   | "AUDIO_TRANSCRIPTION" // Audio/video transcription
   | "CUSTOM"; // Custom event type
@@ -132,9 +138,32 @@ export interface CustomEvent {
 }
 
 /**
+ * Video Generation Event
+ */
+export interface VideoGenerationEvent {
+  eventId: string;
+  customerId: string;
+  userId: string;
+  eventType: "VIDEO_GENERATION";
+  featureId: string;
+  provider: Provider;
+  model: string;
+  /** Duration of video in seconds */
+  durationSeconds: number;
+  /** Video resolution (e.g., "1080p", "720p", "1920x1080") */
+  resolution?: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Union type for all event types
  */
-export type UsageEvent = TokenUsageEvent | ImageGenerationEvent | CustomEvent;
+export type UsageEvent =
+  | TokenUsageEvent
+  | ImageGenerationEvent
+  | VideoGenerationEvent
+  | CustomEvent;
 
 /**
  * Batch event ingestion request

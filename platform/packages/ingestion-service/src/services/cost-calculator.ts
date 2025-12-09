@@ -15,9 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { getPrismaClient } from '@openmonetize/common';
-import { logger } from '../logger';
-import { Decimal } from '@prisma/client/runtime/library';
+import { getPrismaClient } from "@openmonetize/common";
+import { logger } from "../logger";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const db = getPrismaClient();
 
@@ -35,14 +35,14 @@ interface CostResult {
 export async function calculateCost(event: any): Promise<CostResult> {
   try {
     // For token usage events with provider and model
-    if (event.event_type === 'TOKEN_USAGE' && event.provider && event.model) {
+    if (event.event_type === "TOKEN_USAGE" && event.provider && event.model) {
       const inputTokens = Number(event.input_tokens) || 0;
       const outputTokens = Number(event.output_tokens) || 0;
 
       if (inputTokens === 0 && outputTokens === 0) {
         return {
           credits: BigInt(0),
-          usd: new Decimal(0)
+          usd: new Decimal(0),
         };
       }
 
@@ -52,47 +52,47 @@ export async function calculateCost(event: any): Promise<CostResult> {
           where: {
             provider: event.provider,
             model: event.model,
-            costType: 'INPUT_TOKEN',
+            costType: "INPUT_TOKEN",
             validFrom: { lte: new Date() },
-            OR: [
-              { validUntil: null },
-              { validUntil: { gte: new Date() } }
-            ]
-          }
+            OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+          },
         }),
         db.providerCost.findFirst({
           where: {
             provider: event.provider,
             model: event.model,
-            costType: 'OUTPUT_TOKEN',
+            costType: "OUTPUT_TOKEN",
             validFrom: { lte: new Date() },
-            OR: [
-              { validUntil: null },
-              { validUntil: { gte: new Date() } }
-            ]
-          }
-        })
+            OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+          },
+        }),
       ]);
 
       if (!inputCost || !outputCost) {
-        logger.warn({
-          provider: event.provider,
-          model: event.model
-        }, 'Provider cost not found in database');
+        logger.warn(
+          {
+            provider: event.provider,
+            model: event.model,
+          },
+          "Provider cost not found in database",
+        );
 
-        logger.warn({
-          provider: event.provider,
-          model: event.model
-        }, 'Provider cost not found in database, using default fallback');
+        logger.warn(
+          {
+            provider: event.provider,
+            model: event.model,
+          },
+          "Provider cost not found in database, using default fallback",
+        );
 
         // Fallback: Use standard pricing based on model family
         // o1-preview: $15.00 / 1M input, $60.00 / 1M output
         // gpt-4o: $2.50 / 1M input, $10.00 / 1M output
-        
-        const isO1 = event.model?.includes('o1');
-        
-        const fallbackInputRate = isO1 ? 15.00 : 2.50;
-        const fallbackOutputRate = isO1 ? 60.00 : 10.00;
+
+        const isO1 = event.model?.includes("o1");
+
+        const fallbackInputRate = isO1 ? 15.0 : 2.5;
+        const fallbackOutputRate = isO1 ? 60.0 : 10.0;
         const unitSize = 1000000;
 
         const inputUsd = (inputTokens / unitSize) * fallbackInputRate;
@@ -109,15 +109,19 @@ export async function calculateCost(event: any): Promise<CostResult> {
             inputCost: inputUsd,
             outputCost: outputUsd,
             inputTokens,
-            outputTokens
-          }
+            outputTokens,
+          },
         };
       }
 
       // Calculate USD cost
       // Formula: (tokens / unitSize) * costPerUnit
-      const inputUsd = (inputTokens / Number(inputCost.unitSize)) * Number(inputCost.costPerUnit);
-      const outputUsd = (outputTokens / Number(outputCost.unitSize)) * Number(outputCost.costPerUnit);
+      const inputUsd =
+        (inputTokens / Number(inputCost.unitSize)) *
+        Number(inputCost.costPerUnit);
+      const outputUsd =
+        (outputTokens / Number(outputCost.unitSize)) *
+        Number(outputCost.costPerUnit);
       const totalUsd = inputUsd + outputUsd;
 
       // Get burn table for customer (if exists)
@@ -136,17 +140,20 @@ export async function calculateCost(event: any): Promise<CostResult> {
 
       const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
 
-      logger.debug({
-        eventId: event.event_id,
-        provider: event.provider,
-        model: event.model,
-        inputTokens,
-        outputTokens,
-        inputUsd,
-        outputUsd,
-        totalUsd,
-        credits: credits.toString()
-      }, 'Cost calculated');
+      logger.debug(
+        {
+          eventId: event.event_id,
+          provider: event.provider,
+          model: event.model,
+          inputTokens,
+          outputTokens,
+          inputUsd,
+          outputUsd,
+          totalUsd,
+          credits: credits.toString(),
+        },
+        "Cost calculated",
+      );
 
       return {
         credits,
@@ -155,34 +162,38 @@ export async function calculateCost(event: any): Promise<CostResult> {
           inputCost: inputUsd,
           outputCost: outputUsd,
           inputTokens,
-          outputTokens
-        }
+          outputTokens,
+        },
       };
     }
 
     // For IMAGE_GENERATION events
-    if (event.event_type === 'IMAGE_GENERATION' && event.provider && event.model) {
+    if (
+      event.event_type === "IMAGE_GENERATION" &&
+      event.provider &&
+      event.model
+    ) {
       // Fetch image generation cost from database
       const imageCost = await db.providerCost.findFirst({
         where: {
           provider: event.provider,
           model: event.model,
-          costType: 'IMAGE',
+          costType: "IMAGE",
           validFrom: { lte: new Date() },
-          OR: [
-            { validUntil: null },
-            { validUntil: { gte: new Date() } }
-          ]
-        }
+          OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+        },
       });
 
       if (!imageCost) {
-        logger.warn({
-          provider: event.provider,
-          model: event.model,
-          eventType: 'IMAGE_GENERATION'
-        }, 'Image generation cost not found, using default');
-        
+        logger.warn(
+          {
+            provider: event.provider,
+            model: event.model,
+            eventType: "IMAGE_GENERATION",
+          },
+          "Image generation cost not found, using default",
+        );
+
         // Default: $0.04 per image (DALL-E 3 standard pricing)
         const defaultImageCost = 0.04;
         const imageCount = Number(event.image_count) || 1;
@@ -192,32 +203,103 @@ export async function calculateCost(event: any): Promise<CostResult> {
 
         return {
           credits,
-          usd: new Decimal(totalUsd)
+          usd: new Decimal(totalUsd),
         };
       }
 
       const imageCount = Number(event.image_count) || 1;
-      const totalUsd = (imageCount / Number(imageCost.unitSize)) * Number(imageCost.costPerUnit);
+      const totalUsd =
+        (imageCount / Number(imageCost.unitSize)) *
+        Number(imageCost.costPerUnit);
       const creditsPerDollar = 1000;
       const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
 
-      logger.debug({
-        eventId: event.event_id,
-        provider: event.provider,
-        model: event.model,
-        imageCount,
-        totalUsd,
-        credits: credits.toString()
-      }, 'Image generation cost calculated');
+      logger.debug(
+        {
+          eventId: event.event_id,
+          provider: event.provider,
+          model: event.model,
+          imageCount,
+          totalUsd,
+          credits: credits.toString(),
+        },
+        "Image generation cost calculated",
+      );
 
       return {
         credits,
-        usd: new Decimal(totalUsd)
+        usd: new Decimal(totalUsd),
+      };
+    }
+
+    // For VIDEO_GENERATION events
+    if (
+      event.event_type === "VIDEO_GENERATION" &&
+      event.provider &&
+      event.model
+    ) {
+      // Fetch video generation cost from database
+      const videoCost = await db.providerCost.findFirst({
+        where: {
+          provider: event.provider,
+          model: event.model,
+          costType: "VIDEO",
+          validFrom: { lte: new Date() },
+          OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+        },
+      });
+
+      if (!videoCost) {
+        logger.warn(
+          {
+            provider: event.provider,
+            model: event.model,
+            eventType: "VIDEO_GENERATION",
+          },
+          "Video generation cost not found, using default",
+        );
+
+        // Default: $0.10 per second (Sora 2 standard pricing)
+        const defaultVideoCostPerSecond = 0.1;
+        const durationSeconds = Number(event.duration_seconds) || 1;
+        const totalUsd = defaultVideoCostPerSecond * durationSeconds;
+        const creditsPerDollar = 1000;
+        const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
+
+        return {
+          credits,
+          usd: new Decimal(totalUsd),
+        };
+      }
+
+      // costPerUnit is cost per second, unitSize is 1 for video (per-second pricing)
+      const durationSeconds = Number(event.duration_seconds) || 1;
+      const totalUsd =
+        (durationSeconds / Number(videoCost.unitSize)) *
+        Number(videoCost.costPerUnit);
+      const creditsPerDollar = 1000;
+      const credits = BigInt(Math.ceil(totalUsd * creditsPerDollar));
+
+      logger.debug(
+        {
+          eventId: event.event_id,
+          provider: event.provider,
+          model: event.model,
+          durationSeconds,
+          totalUsd,
+          credits: credits.toString(),
+        },
+        "Video generation cost calculated",
+      );
+
+      return {
+        credits,
+        usd: new Decimal(totalUsd),
       };
     }
 
     // For CUSTOM events with quantity-based pricing
-    if (event.event_type === 'CUSTOM' && event.unit_type && event.quantity) {
+    if (event.event_type === "CUSTOM" && event.unit_type && event.quantity) {
       // For custom events, use a simple per-unit pricing
       // Default: 1 credit per unit (e.g., 1 credit per page, per API call, etc.)
       const defaultCreditsPerUnit = 10; // 10 credits per unit (0.01 cents)
@@ -226,17 +308,20 @@ export async function calculateCost(event: any): Promise<CostResult> {
       const creditsPerDollar = 1000;
       const totalUsd = Number(credits) / creditsPerDollar;
 
-      logger.debug({
-        eventId: event.event_id,
-        unitType: event.unit_type,
-        quantity,
-        creditsPerUnit: defaultCreditsPerUnit,
-        credits: credits.toString()
-      }, 'Custom event cost calculated');
+      logger.debug(
+        {
+          eventId: event.event_id,
+          unitType: event.unit_type,
+          quantity,
+          creditsPerUnit: defaultCreditsPerUnit,
+          credits: credits.toString(),
+        },
+        "Custom event cost calculated",
+      );
 
       return {
         credits,
-        usd: new Decimal(totalUsd)
+        usd: new Decimal(totalUsd),
       };
     }
 
@@ -244,15 +329,14 @@ export async function calculateCost(event: any): Promise<CostResult> {
     // These might have fixed costs defined in entitlements
     return {
       credits: BigInt(0),
-      usd: new Decimal(0)
+      usd: new Decimal(0),
     };
-
   } catch (error) {
-    logger.error({ error, eventId: event.event_id }, 'Cost calculation failed');
+    logger.error({ error, eventId: event.event_id }, "Cost calculation failed");
     // Return zero cost on error to not block event processing
     return {
       credits: BigInt(0),
-      usd: new Decimal(0)
+      usd: new Decimal(0),
     };
   }
 }
