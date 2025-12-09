@@ -24,11 +24,13 @@ const {
   mockCustomerCreate,
   mockGenerateApiKey,
   mockHashApiKey,
+  mockEncryptApiKey,
 } = vi.hoisted(() => ({
   mockCustomerFindUnique: vi.fn(),
   mockCustomerCreate: vi.fn(),
   mockGenerateApiKey: vi.fn(),
   mockHashApiKey: vi.fn(),
+  mockEncryptApiKey: vi.fn(),
 }));
 
 // Mock dependencies
@@ -41,6 +43,7 @@ vi.mock("@openmonetize/common", () => ({
   }),
   generateApiKey: mockGenerateApiKey,
   hashApiKey: mockHashApiKey,
+  encryptApiKey: mockEncryptApiKey,
 }));
 
 vi.mock("../../logger", () => ({
@@ -101,6 +104,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null); // Email doesn't exist
         mockGenerateApiKey.mockReturnValue(mockApiKey);
         mockHashApiKey.mockReturnValue(mockApiKeyHash);
+        mockEncryptApiKey.mockReturnValue("encrypted_abc123xyz");
         mockCustomerCreate.mockResolvedValue(mockCustomer);
 
         const response = await app.inject({
@@ -130,6 +134,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue("om_live_enterprise");
         mockHashApiKey.mockReturnValue("hashed_enterprise");
+        mockEncryptApiKey.mockReturnValue("encrypted_enterprise");
         mockCustomerCreate.mockResolvedValue({
           id: "123e4567-e89b-12d3-a456-426614174001",
           name: "Enterprise Corp",
@@ -160,6 +165,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue("om_live_starter");
         mockHashApiKey.mockReturnValue("hashed_starter");
+        mockEncryptApiKey.mockReturnValue("encrypted_starter");
         mockCustomerCreate.mockResolvedValue({
           id: "123e4567-e89b-12d3-a456-426614174002",
           name: "Startup Inc",
@@ -190,6 +196,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue("om_live_generated123");
         mockHashApiKey.mockReturnValue("hashed_generated");
+        mockEncryptApiKey.mockReturnValue("encrypted_generated");
         mockCustomerCreate.mockResolvedValue({
           id: "123e4567-e89b-12d3-a456-426614174003",
           name: "Test Co",
@@ -361,6 +368,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue("om_live_test");
         mockHashApiKey.mockReturnValue("hashed_test");
+        mockEncryptApiKey.mockReturnValue("encrypted_test");
         mockCustomerCreate.mockRejectedValue(new Error("Database error"));
 
         const response = await app.inject({
@@ -405,6 +413,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue("om_live_correct");
         mockHashApiKey.mockReturnValue(expectedApiKeyHash);
+        mockEncryptApiKey.mockReturnValue("encrypted_correct");
         mockCustomerCreate.mockResolvedValue({
           id: "123e4567-e89b-12d3-a456-426614174004",
           name: "Test Co",
@@ -431,6 +440,7 @@ describe("Customer Registration", () => {
             email: "test@example.com",
             tier: "GROWTH",
             apiKeyHash: expectedApiKeyHash,
+            apiKeyEncrypted: "encrypted_correct",
             status: "ACTIVE",
           },
         });
@@ -443,6 +453,7 @@ describe("Customer Registration", () => {
         mockCustomerFindUnique.mockResolvedValue(null);
         mockGenerateApiKey.mockReturnValue(plainApiKey);
         mockHashApiKey.mockReturnValue(hashedApiKey);
+        mockEncryptApiKey.mockReturnValue("encrypted_plain123");
         mockCustomerCreate.mockResolvedValue({
           id: "123e4567-e89b-12d3-a456-426614174005",
           name: "Secure Co",
@@ -467,6 +478,7 @@ describe("Customer Registration", () => {
           expect.objectContaining({
             data: expect.objectContaining({
               apiKeyHash: hashedApiKey,
+              apiKeyEncrypted: "encrypted_plain123",
             }),
           }),
         );
