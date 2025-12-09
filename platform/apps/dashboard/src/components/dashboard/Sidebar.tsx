@@ -9,6 +9,7 @@ import {
   LogOut,
   Activity,
   BarChart3,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { useSandboxAuth } from "@/hooks/useSandboxAuth";
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Users", href: "/users", icon: Users },
   { name: "Activity", href: "/activity", icon: Activity },
   { name: "Playground", href: "/playground", icon: Box },
   { name: "Settings", href: "/settings", icon: Settings },

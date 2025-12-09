@@ -16,38 +16,42 @@
  */
 
 // API Gateway - Unified entry point for OpenMonetize Platform
-import Fastify from 'fastify';
-import cors from '@fastify/cors';
-import helmet from '@fastify/helmet';
-import rateLimit from '@fastify/rate-limit';
-import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import {
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
   ZodTypeProvider,
-} from 'fastify-type-provider-zod';
-import { config } from './config';
-import { logger } from './logger';
-import { getPrismaClient } from '@openmonetize/common';
-import Redis from 'ioredis';
-import { getSwaggerServers, getSwaggerDescription } from './utils/swagger-config';
-import { authenticate } from './middleware/auth';
-import fs from 'fs/promises';
-import path from 'path';
+} from "fastify-type-provider-zod";
+import { config } from "./config";
+import { logger } from "./logger";
+import { getPrismaClient } from "@openmonetize/common";
+import Redis from "ioredis";
+import {
+  getSwaggerServers,
+  getSwaggerDescription,
+} from "./utils/swagger-config";
+import { authenticate } from "./middleware/auth";
+import fs from "fs/promises";
+import path from "path";
 
 // Import routes
-import { healthRoutes } from './routes/health';
-import { customersRoutes } from './routes/customers';
-import { ingestionRoutes } from './routes/ingestion';
-import { ratingRoutes } from './routes/rating';
-import { creditsRoutes } from './routes/credits';
-import { entitlementsRoutes } from './routes/entitlements';
-import { analyticsRoutes } from './routes/analytics';
-import { sandboxRoutes } from './routes/apiconsole';
-import { authRoutes } from './routes/auth';
-import { eventsRoutes } from './routes/events';
+import { healthRoutes } from "./routes/health";
+import { customersRoutes } from "./routes/customers";
+import { ingestionRoutes } from "./routes/ingestion";
+import { ratingRoutes } from "./routes/rating";
+import { creditsRoutes } from "./routes/credits";
+import { entitlementsRoutes } from "./routes/entitlements";
+import { analyticsRoutes } from "./routes/analytics";
+import { sandboxRoutes } from "./routes/apiconsole";
+import { authRoutes } from "./routes/auth";
+import { eventsRoutes } from "./routes/events";
+import { usersRoutes } from "./routes/users";
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
@@ -55,11 +59,11 @@ const redis = new Redis(config.redis.url);
 export async function buildApp() {
   const app = Fastify({
     logger: {
-      level: 'info'
+      level: "info",
     },
-    requestIdLogLabel: 'reqId',
+    requestIdLogLabel: "reqId",
     disableRequestLogging: false,
-    requestIdHeader: 'x-request-id',
+    requestIdHeader: "x-request-id",
     bodyLimit: 10485760, // 10MB
   }).withTypeProvider<ZodTypeProvider>();
 
@@ -87,12 +91,12 @@ export async function buildApp() {
       // Rate limit by API key (customer ID)
       // Try Authorization: Bearer header first
       const authHeader = request.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
+      if (authHeader && authHeader.startsWith("Bearer ")) {
         return authHeader.substring(7);
       }
       // Try X-API-Key header
-      const apiKeyHeader = request.headers['x-api-key'];
-      if (typeof apiKeyHeader === 'string') {
+      const apiKeyHeader = request.headers["x-api-key"];
+      if (typeof apiKeyHeader === "string") {
         return apiKeyHeader;
       }
       // Fallback to IP address
@@ -101,56 +105,73 @@ export async function buildApp() {
   });
 
   // Register documentation routes (environment-based)
-  if (config.nodeEnv === 'production') {
+  if (config.nodeEnv === "production") {
     // Production: Serve internal Redoc docs with authentication
-    logger.info('Production mode: Redirecting /docs to public CDN, serving /docs/internal with auth');
+    logger.info(
+      "Production mode: Redirecting /docs to public CDN, serving /docs/internal with auth",
+    );
 
     // Redirect public docs to CDN
-    app.get('/docs', async (_request, reply) => {
-      const publicDocsUrl = process.env.PUBLIC_DOCS_URL || 'https://docs.openmonetize.io';
+    app.get("/docs", async (_request, reply) => {
+      const publicDocsUrl =
+        process.env.PUBLIC_DOCS_URL || "https://docs.openmonetize.io";
       return reply.redirect(publicDocsUrl, 301);
     });
 
     // Serve internal documentation (Redoc HTML) with authentication
-    app.get('/docs/internal', { preHandler: authenticate }, async (_request, reply) => {
-      try {
-        const html = await fs.readFile(
-          path.join(__dirname, 'docs', 'internal.html'),
-          'utf-8'
-        );
-        return reply.type('text/html').send(html);
-      } catch (error) {
-        logger.error({ err: error }, 'Failed to serve internal docs');
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Internal documentation not found. Run `pnpm build` to generate docs.',
-        });
-      }
-    });
+    app.get(
+      "/docs/internal",
+      { preHandler: authenticate },
+      async (_request, reply) => {
+        try {
+          const html = await fs.readFile(
+            path.join(__dirname, "docs", "internal.html"),
+            "utf-8",
+          );
+          return reply.type("text/html").send(html);
+        } catch (error) {
+          logger.error({ err: error }, "Failed to serve internal docs");
+          return reply.status(404).send({
+            error: "Not Found",
+            message:
+              "Internal documentation not found. Run `pnpm build` to generate docs.",
+          });
+        }
+      },
+    );
 
     // Serve internal OpenAPI spec JSON with authentication
-    app.get('/docs/internal/spec', { preHandler: authenticate }, async (_request, reply) => {
-      try {
-        const spec = await fs.readFile(
-          path.join(__dirname, 'docs', 'openapi-internal.json'),
-          'utf-8'
-        );
-        return reply.type('application/json').send(spec);
-      } catch (error) {
-        logger.error({ err: error }, 'Failed to serve internal spec');
-        return reply.status(404).send({
-          error: 'Not Found',
-          message: 'Internal API spec not found. Run `pnpm build` to generate docs.',
-        });
-      }
-    });
+    app.get(
+      "/docs/internal/spec",
+      { preHandler: authenticate },
+      async (_request, reply) => {
+        try {
+          const spec = await fs.readFile(
+            path.join(__dirname, "docs", "openapi-internal.json"),
+            "utf-8",
+          );
+          return reply.type("application/json").send(spec);
+        } catch (error) {
+          logger.error({ err: error }, "Failed to serve internal spec");
+          return reply.status(404).send({
+            error: "Not Found",
+            message:
+              "Internal API spec not found. Run `pnpm build` to generate docs.",
+          });
+        }
+      },
+    );
 
-    logger.info('Internal documentation available at /docs/internal (authenticated)');
+    logger.info(
+      "Internal documentation available at /docs/internal (authenticated)",
+    );
   } else {
     // Development: Keep Swagger UI for interactive testing
     if (config.swagger.enabled) {
       try {
-        logger.info('Development mode: Registering interactive Swagger UI at /docs');
+        logger.info(
+          "Development mode: Registering interactive Swagger UI at /docs",
+        );
 
         await app.register(swagger, {
           openapi: {
@@ -159,56 +180,68 @@ export async function buildApp() {
               description: getSwaggerDescription(),
               version: config.swagger.version,
               contact: {
-                name: 'OpenMonetize',
-                url: 'https://github.com/openmonetize/openmonetize',
+                name: "OpenMonetize",
+                url: "https://github.com/openmonetize/openmonetize",
               },
               license: {
-                name: 'AGPL-3.0',
-                url: 'https://www.gnu.org/licenses/agpl-3.0.html',
+                name: "AGPL-3.0",
+                url: "https://www.gnu.org/licenses/agpl-3.0.html",
               },
             },
             servers: getSwaggerServers(),
             tags: [
               {
-                name: 'Health',
-                description: 'System health and readiness checks',
+                name: "Health",
+                description: "System health and readiness checks",
               },
               {
-                name: 'Customers',
-                description: 'Customer account management and registration',
+                name: "Customers",
+                description: "Customer account management and registration",
               },
               {
-                name: 'Events',
-                description: 'Usage event ingestion and tracking. Ingests AI consumption events (token usage, API calls, etc.) for billing and analytics.',
+                name: "Events",
+                description:
+                  "Usage event ingestion and tracking. Ingests AI consumption events (token usage, API calls, etc.) for billing and analytics.",
               },
               {
-                name: 'Credits',
-                description: 'Credit wallet management. Purchase, grant, and track credit balances for consumption-based billing.',
+                name: "Credits",
+                description:
+                  "Credit wallet management. Purchase, grant, and track credit balances for consumption-based billing.",
               },
               {
-                name: 'Entitlements',
-                description: 'Feature access control and entitlement management. Gate features based on customer tier or credit balance.',
+                name: "Entitlements",
+                description:
+                  "Feature access control and entitlement management. Gate features based on customer tier or credit balance.",
               },
               {
-                name: 'Analytics',
-                description: 'Usage analytics and cost analysis. Track consumption patterns, burn rates, and cost breakdowns.',
+                name: "Analytics",
+                description:
+                  "Usage analytics and cost analysis. Track consumption patterns, burn rates, and cost breakdowns.",
               },
               {
-                name: 'Rating',
-                description: 'Cost calculation engine. Calculate credits and USD costs for AI operations based on pricing tables.',
+                name: "Rating",
+                description:
+                  "Cost calculation engine. Calculate credits and USD costs for AI operations based on pricing tables.",
               },
               {
-                name: 'Burn Tables',
-                description: 'Pricing configuration. Define credit costs per 1K tokens for different AI models and providers.',
+                name: "Burn Tables",
+                description:
+                  "Pricing configuration. Define credit costs per 1K tokens for different AI models and providers.",
+              },
+              {
+                name: "Users",
+                description:
+                  "User management. List, view, and create users for tracking usage and managing credits.",
               },
             ],
             components: {
               securitySchemes: {
                 bearerAuth: {
-                  type: 'http',
-                  scheme: 'bearer',
-                  bearerFormat: 'API Key',
-                  description: 'API key authentication (Format: Bearer <your-api-key>)',
+                  type: "http",
+                  scheme: "bearer",
+                  bearerFormat: "API Key",
+                  description:
+                    "API key authentication (Format: Bearer <your-api-key>)",
                 },
               },
             },
@@ -222,9 +255,9 @@ export async function buildApp() {
         });
 
         await app.register(swaggerUi, {
-          routePrefix: '/docs',
+          routePrefix: "/docs",
           uiConfig: {
-            docExpansion: 'list',
+            docExpansion: "list",
             deepLinking: true,
             persistAuthorization: true,
           },
@@ -232,12 +265,18 @@ export async function buildApp() {
           transformStaticCSP: (header) => header,
         });
 
-        logger.info({ url: `http://localhost:${config.port}/docs` }, 'Swagger UI available (development)');
+        logger.info(
+          { url: `http://localhost:${config.port}/docs` },
+          "Swagger UI available (development)",
+        );
       } catch (error) {
-        logger.error({ err: error }, 'Failed to register Swagger documentation');
+        logger.error(
+          { err: error },
+          "Failed to register Swagger documentation",
+        );
       }
     } else {
-      logger.info('Swagger documentation disabled');
+      logger.info("Swagger documentation disabled");
     }
   }
 
@@ -252,24 +291,25 @@ export async function buildApp() {
   await app.register(ratingRoutes); // Proxy routes (must be after direct routes)
   await app.register(sandboxRoutes); // Sandbox routes
   await app.register(eventsRoutes); // Events routes
+  await app.register(usersRoutes); // User management routes
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {
     const err = error as any;
-    logger.error({ err, reqId: request.id }, 'Request error');
+    logger.error({ err, reqId: request.id }, "Request error");
 
     // Handle rate limit errors
     if (err.statusCode === 429) {
       return reply.status(429).send({
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded. Please try again later.',
+        error: "Too Many Requests",
+        message: "Rate limit exceeded. Please try again later.",
       });
     }
 
     // Handle Fastify validation errors
     if (err.validation) {
       return reply.status(400).send({
-        error: 'Validation Error',
+        error: "Validation Error",
         message: err.message,
         details: err.validation,
       });
@@ -277,13 +317,13 @@ export async function buildApp() {
 
     // Generic error
     return reply.status(err.statusCode || 500).send({
-      error: err.name || 'Internal Server Error',
-      message: err.message || 'An unexpected error occurred',
+      error: err.name || "Internal Server Error",
+      message: err.message || "An unexpected error occurred",
     });
   });
 
   // Graceful shutdown
-  const signals = ['SIGINT', 'SIGTERM'];
+  const signals = ["SIGINT", "SIGTERM"];
   for (const signal of signals) {
     process.on(signal, async () => {
       logger.info(`Received ${signal}, shutting down gracefully...`);
@@ -303,11 +343,11 @@ async function start() {
 
     // Test database connection
     await db.$queryRaw`SELECT 1`;
-    logger.info('Database connection established');
+    logger.info("Database connection established");
 
     // Test Redis connection
     await redis.ping();
-    logger.info('Redis connection established');
+    logger.info("Redis connection established");
 
     // Start server
     await app.listen({
@@ -316,9 +356,11 @@ async function start() {
     });
 
     logger.info(`🚀 API Gateway running on ${config.host}:${config.port}`);
-    logger.info(`📖 API Documentation: http://${config.host}:${config.port}/docs`);
+    logger.info(
+      `📖 API Documentation: http://${config.host}:${config.port}/docs`,
+    );
   } catch (error) {
-    logger.error({ err: error }, 'Failed to start server');
+    logger.error({ err: error }, "Failed to start server");
     process.exit(1);
   }
 }
