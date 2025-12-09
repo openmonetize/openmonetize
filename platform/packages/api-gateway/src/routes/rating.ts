@@ -132,7 +132,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -173,7 +178,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -205,7 +215,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -244,7 +259,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -275,7 +295,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -310,7 +335,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -347,7 +377,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -381,7 +416,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -414,7 +454,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -452,7 +497,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -487,7 +537,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -526,7 +581,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
@@ -561,7 +621,12 @@ export const ratingRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(response.status).send(data);
       } catch (error) {
         logger.error({ err: error }, "Error proxying to rating service");
-        return reply.status(500).send({ error: "Internal Server Error" });
+        return reply
+          .status(500)
+          .send({
+            error: "Internal Server Error",
+            message: "Failed to proxy request to rating service",
+          });
       }
     },
   );
