@@ -29,14 +29,15 @@ enum CustomerStatus {
 }
 
 model Customer {
-  id           String         @id @default(uuid())
-  name         String
-  email        String         @unique
-  apiKeyHash   String         @map("api_key_hash")
-  tier         CustomerTier   @default(STARTER)
-  status       CustomerStatus @default(ACTIVE)
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  apiKeyHash       String         @map("api_key_hash")
+  apiKeyEncrypted  String?        @map("api_key_encrypted") // Encrypted (retrievable) version for login
+  tier             CustomerTier   @default(STARTER)
+  status           CustomerStatus @default(ACTIVE)
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   // Relations
   users            User[]

@@ -21,6 +21,8 @@ import {
   getPrismaClient,
   generateApiKey,
   hashApiKey,
+  encryptApiKey,
+  decryptApiKey,
 } from "@openmonetize/common";
 import { logger } from "../logger";
 import { z } from "zod";
@@ -44,7 +46,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ["Authentication"],
         "x-visibility": "public",
         description:
-          "Authenticate with Google. Creates or retrieves customer and returns a fresh API key. Note: Each login generates a new API key, invalidating the previous one.",
+          "Authenticate with Google. Creates or retrieves customer and returns their API key. For existing users, returns the same API key to preserve tracking data.",
         body: GoogleAuthSchema,
         response: withCommonResponses(
           {
@@ -54,7 +56,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
                 apiKey: z
                   .string()
                   .describe(
-                    "New API key - only shown once! Previous keys are invalidated.",
+                    "API key - same key is returned for existing users to preserve tracking data.",
                   ),
                 name: z.string(),
                 email: z.string(),
@@ -76,34 +78,71 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
           where: { email },
         });
 
-        // Generate a fresh API key for every login (both new and existing users)
-        // This ensures the session always has a valid key
-        const apiKey = generateApiKey("om_live");
-        const apiKeyHash = hashApiKey(apiKey);
+        let apiKey: string;
         let isNewUser = false;
 
         if (customer) {
-          // Update existing customer with new key
-          // This invalidates the old key - ensures session always has valid key
-          customer = await db.customer.update({
-            where: { id: customer.id },
-            data: {
-              apiKeyHash,
-            },
-          });
+          // Existing user - try to retrieve their existing API key
+          if (customer.apiKeyEncrypted) {
+            const decryptedKey = decryptApiKey(customer.apiKeyEncrypted);
+            if (decryptedKey) {
+              // Successfully retrieved existing key - no rotation needed
+              apiKey = decryptedKey;
+              logger.info(
+                { customerId: customer.id },
+                "Customer logged in via Google (existing API key preserved)",
+              );
+            } else {
+              // Decryption failed - generate new key (migration case or corruption)
+              apiKey = generateApiKey("om_live");
+              const apiKeyHash = hashApiKey(apiKey);
+              const apiKeyEncrypted = encryptApiKey(apiKey);
 
-          logger.info(
-            { customerId: customer.id },
-            "Customer logged in via Google (API Key rotated)",
-          );
+              customer = await db.customer.update({
+                where: { id: customer.id },
+                data: {
+                  apiKeyHash,
+                  apiKeyEncrypted,
+                },
+              });
+
+              logger.warn(
+                { customerId: customer.id },
+                "Customer API key regenerated (decryption failed)",
+              );
+            }
+          } else {
+            // No encrypted key stored (legacy users) - generate and store new key
+            apiKey = generateApiKey("om_live");
+            const apiKeyHash = hashApiKey(apiKey);
+            const apiKeyEncrypted = encryptApiKey(apiKey);
+
+            customer = await db.customer.update({
+              where: { id: customer.id },
+              data: {
+                apiKeyHash,
+                apiKeyEncrypted,
+              },
+            });
+
+            logger.info(
+              { customerId: customer.id },
+              "Customer logged in via Google (API key migrated to encrypted storage)",
+            );
+          }
         } else {
-          // Create new customer
+          // Create new customer with both hashed and encrypted keys
           isNewUser = true;
+          apiKey = generateApiKey("om_live");
+          const apiKeyHash = hashApiKey(apiKey);
+          const apiKeyEncrypted = encryptApiKey(apiKey);
+
           customer = await db.customer.create({
             data: {
               name,
               email,
               apiKeyHash,
+              apiKeyEncrypted,
               tier: "STARTER",
               status: "ACTIVE",
             },
