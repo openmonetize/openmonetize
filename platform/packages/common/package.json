@@ -5,9 +5,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "npx prisma generate || true",
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc && cp -R src/generated dist/",
+    "build": "npx prisma generate && tsc && cp -R src/generated dist/",
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "db:generate": "dotenv -e ../../.env -- prisma generate",
