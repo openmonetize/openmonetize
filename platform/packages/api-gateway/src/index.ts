@@ -16,6 +16,11 @@
  */
 
 // API Gateway - Unified entry point for OpenMonetize Platform
+import dns from "node:dns";
+// Set default result order to ipv4first to avoid connection timeouts in Node 17+
+// This is critical for Railway internal networking
+dns.setDefaultResultOrder("ipv4first");
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
