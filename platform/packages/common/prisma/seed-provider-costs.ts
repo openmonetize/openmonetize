@@ -173,6 +173,46 @@ const providerCosts = [
     costPerUnit: 0.15,
     unitSize: 1,
   },
+  // Veo 3.1 (Preview - pricing aligned with Veo 3)
+  {
+    provider: "GOOGLE",
+    model: "veo-3.1-generate-preview",
+    costType: "VIDEO",
+    costPerUnit: 0.2,
+    unitSize: 1,
+  },
+  {
+    provider: "GOOGLE",
+    model: "veo-3.1-generate-preview-audio",
+    costType: "VIDEO",
+    costPerUnit: 0.4,
+    unitSize: 1,
+  },
+
+  // ============================================
+  // GOOGLE - Imagen 4
+  // ============================================
+  {
+    provider: "GOOGLE",
+    model: "imagen-4-fast",
+    costType: "IMAGE",
+    costPerUnit: 0.02,
+    unitSize: 1,
+  },
+  {
+    provider: "GOOGLE",
+    model: "imagen-4",
+    costType: "IMAGE",
+    costPerUnit: 0.04,
+    unitSize: 1,
+  },
+  {
+    provider: "GOOGLE",
+    model: "imagen-4-ultra",
+    costType: "IMAGE",
+    costPerUnit: 0.06,
+    unitSize: 1,
+  },
 
   // ============================================
   // STABILITY_AI - Stable Diffusion
@@ -316,6 +356,113 @@ const providerCosts = [
   {
     provider: "REPLICATE",
     model: "haiper-video-2",
+    costType: "VIDEO",
+    costPerUnit: 0.05,
+    unitSize: 1,
+  },
+
+  // ============================================
+  // Kling AI 2.0 - Video Generation
+  // ============================================
+  {
+    provider: "REPLICATE",
+    model: "kling-v2.0-standard",
+    costType: "VIDEO",
+    costPerUnit: 0.056,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "kling-v2.0-pro",
+    costType: "VIDEO",
+    costPerUnit: 0.115,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "kling-v2.0-master",
+    costType: "VIDEO",
+    costPerUnit: 0.28,
+    unitSize: 1,
+  },
+
+  // ============================================
+  // RUNWAY - Gen-4 Video Generation
+  // ============================================
+  {
+    provider: "RUNWAY",
+    model: "gen-4",
+    costType: "VIDEO",
+    costPerUnit: 0.12,
+    unitSize: 1,
+  },
+  {
+    provider: "RUNWAY",
+    model: "gen-4-turbo",
+    costType: "VIDEO",
+    costPerUnit: 0.05,
+    unitSize: 1,
+  },
+  {
+    provider: "RUNWAY",
+    model: "gen-4-aleph",
+    costType: "VIDEO",
+    costPerUnit: 0.15,
+    unitSize: 1,
+  },
+
+  // ============================================
+  // LUMA AI - Ray Video Generation
+  // ============================================
+  {
+    provider: "REPLICATE",
+    model: "luma-ray2-1080p",
+    costType: "VIDEO",
+    costPerUnit: 0.11,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "luma-ray2-flash",
+    costType: "VIDEO",
+    costPerUnit: 0.04,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "luma-ray3-draft",
+    costType: "VIDEO",
+    costPerUnit: 0.04,
+    unitSize: 1,
+  },
+
+  // ============================================
+  // MINIMAX - Hailuo Video Generation
+  // ============================================
+  {
+    provider: "REPLICATE",
+    model: "hailuo-02-pro",
+    costType: "VIDEO",
+    costPerUnit: 0.08,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "hailuo-02-standard",
+    costType: "VIDEO",
+    costPerUnit: 0.045,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "hailuo-2.3",
+    costType: "VIDEO",
+    costPerUnit: 0.09,
+    unitSize: 1,
+  },
+  {
+    provider: "REPLICATE",
+    model: "hailuo-2.3-fast",
     costType: "VIDEO",
     costPerUnit: 0.05,
     unitSize: 1,
