@@ -199,16 +199,66 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         const available =
           Number(wallet.balance) - Number(wallet.reservedBalance);
 
-        // 6. Apply limit type logic
+        // 6. Check usage limit
+        let usageAllowed = true;
+        let usageReason: string | null = null;
+        let currentUsage = 0;
+
+        if (
+          entitlement.limitType !== "NONE" &&
+          entitlement.limitValue !== null
+        ) {
+          const whereQuery: any = {
+            customerId,
+            featureId,
+          };
+
+          if (entitlement.userId) {
+            whereQuery.userId = entitlement.userId;
+          }
+
+          if (entitlement.period === "DAILY") {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            whereQuery.timestamp = { gte: startOfDay };
+          } else if (entitlement.period === "MONTHLY") {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            whereQuery.timestamp = { gte: startOfMonth };
+          }
+
+          currentUsage = await db.usageEvent.count({ where: whereQuery });
+          const limit = Number(entitlement.limitValue);
+
+          if (currentUsage >= limit) {
+            if (entitlement.limitType === "HARD") {
+              usageAllowed = false;
+              usageReason = `Usage limit of ${limit} reached`;
+            } else if (entitlement.limitType === "SOFT") {
+              usageReason = `Usage limit of ${limit} reached (soft limit)`;
+            }
+          }
+        }
+
+        // 7. Apply limit type logic (combined with credit check)
         let allowed = true;
         let reason = null;
         const actions: Array<{ type: string; label: string; url: string }> = [];
 
-        if (
+        if (!usageAllowed) {
+          allowed = false;
+          reason = usageReason;
+          actions.push({
+            type: "upgrade",
+            label: "Increase Limit",
+            url: "/upgrade",
+          });
+        } else if (
           entitlement.limitType === "HARD" &&
           entitlement.limitValue !== null
         ) {
-          // Hard limit - strictly enforce
+          // Hard limit - strictly enforce credits too
           if (available < estimatedCostCredits) {
             allowed = false;
             reason = "Insufficient credits";
@@ -222,7 +272,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           entitlement.limitType === "SOFT" &&
           entitlement.limitValue !== null
         ) {
-          // Soft limit - warn but allow
+          // Soft limit - check credits but allow
           if (available < estimatedCostCredits) {
             allowed = true;
             reason = "Low credits - consider purchasing more";
@@ -231,6 +281,9 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
               label: "Purchase Credits",
               url: "/credits/purchase",
             });
+          }
+          if (usageReason) {
+            reason = usageReason; // Warn about usage limit if set
           }
         } else if (entitlement.limitType === "NONE") {
           // No limit - always allow (postpaid)
@@ -511,11 +564,14 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             200: z.object({
               data: z.array(
                 z.object({
+                  id: z.string(),
+                  userId: z.string().nullable(),
                   featureId: z.string(),
                   limitType: z.string(),
                   limitValue: z.number().nullable(), // Converted from BigInt
                   period: z.string().nullable(),
                   metadata: z.any().nullable(),
+                  currentUsage: z.number().optional(),
                 }),
               ),
             }),
@@ -533,6 +589,8 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             customerId,
           },
           select: {
+            id: true,
+            userId: true,
             featureId: true,
             limitType: true,
             limitValue: true,
@@ -541,11 +599,53 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
 
+        // Calculate usage for each entitlement
+        const results = await Promise.all(
+          entitlements.map(async (e) => {
+            let currentUsage = 0;
+
+            if (e.limitType !== "NONE") {
+              const whereQuery: any = {
+                customerId,
+                featureId: e.featureId,
+              };
+
+              // Filter by user if specified
+              if (e.userId) {
+                whereQuery.userId = e.userId;
+              }
+
+              // Filter by period
+              if (e.period === "DAILY") {
+                const startOfDay = new Date();
+                startOfDay.setHours(0, 0, 0, 0);
+                whereQuery.timestamp = {
+                  gte: startOfDay,
+                };
+              } else if (e.period === "MONTHLY") {
+                const startOfMonth = new Date();
+                startOfMonth.setDate(1);
+                startOfMonth.setHours(0, 0, 0, 0);
+                whereQuery.timestamp = {
+                  gte: startOfMonth,
+                };
+              }
+
+              currentUsage = await db.usageEvent.count({
+                where: whereQuery,
+              });
+            }
+
+            return {
+              ...e,
+              limitValue: e.limitValue ? Number(e.limitValue) : null,
+              currentUsage,
+            };
+          }),
+        );
+
         return reply.send({
-          data: entitlements.map((e: (typeof entitlements)[number]) => ({
-            ...e,
-            limitValue: e.limitValue ? Number(e.limitValue) : null,
-          })),
+          data: results,
         });
       } catch (error) {
         logger.error({ err: error }, "Error fetching entitlements");
