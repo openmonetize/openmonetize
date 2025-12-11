@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GrantCreditsModal } from "@/components/users/GrantCreditsModal";
 
 interface UserWithApiKey {
   apiKey?: string;
@@ -66,6 +67,7 @@ export default function UserDetailPage() {
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
 
   const userId = params.id as string;
 
@@ -143,6 +145,13 @@ export default function UserDetailPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
+      <GrantCreditsModal
+        userId={user.externalUserId}
+        isOpen={isGrantModalOpen}
+        onClose={() => setIsGrantModalOpen(false)}
+        onSuccess={loadUser}
+      />
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
@@ -160,14 +169,27 @@ export default function UserDetailPage() {
           </h2>
           <p className="text-slate-400 text-sm mt-1">User Details</p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={loadUser}
-          className="border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsGrantModalOpen(true)}
+            className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 gap-2"
+          >
+            <Coins className="h-4 w-4" />
+            Grant Credits
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={loadUser}
+            className="border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
