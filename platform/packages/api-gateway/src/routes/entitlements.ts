@@ -22,6 +22,7 @@ import { authenticate } from "../middleware/auth";
 import { logger } from "../logger";
 import { z } from "zod";
 import { withCommonResponses } from "../types/schemas";
+import { AlertService } from "../services/alerts";
 
 const db = getPrismaClient();
 
@@ -81,7 +82,7 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         >;
         const customerId = request.customer!.id;
 
-        // 1. Check if feature is enabled for customer
+        // 1. Check if feature is enabled for customer (or use default NONE limit)
         const entitlement = await db.entitlement.findFirst({
           where: {
             customerId,
@@ -89,22 +90,14 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           },
         });
 
-        if (!entitlement) {
-          return reply.send({
-            allowed: false,
-            reason: "Feature not enabled for this customer",
-            estimatedCostCredits: null,
-            estimatedCostUsd: null,
-            currentBalance: null,
-            actions: [
-              {
-                type: "upgrade",
-                label: "Upgrade Plan",
-                url: "/upgrade",
-              },
-            ],
-          });
-        }
+        // If no explicit entitlement exists, use a virtual entitlement with NONE limit
+        // This allows credit-only gating by default (no need to create entitlements for each feature)
+        const effectiveEntitlement = entitlement || {
+          limitType: "NONE" as const,
+          limitValue: null,
+          period: null,
+          userId: null,
+        };
 
         // 2. Get credit wallet
         const wallet = await db.creditWallet.findFirst({
@@ -205,23 +198,23 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
         let currentUsage = 0;
 
         if (
-          entitlement.limitType !== "NONE" &&
-          entitlement.limitValue !== null
+          effectiveEntitlement.limitType !== "NONE" &&
+          effectiveEntitlement.limitValue !== null
         ) {
           const whereQuery: any = {
             customerId,
             featureId,
           };
 
-          if (entitlement.userId) {
-            whereQuery.userId = entitlement.userId;
+          if (effectiveEntitlement.userId) {
+            whereQuery.userId = effectiveEntitlement.userId;
           }
 
-          if (entitlement.period === "DAILY") {
+          if (effectiveEntitlement.period === "DAILY") {
             const startOfDay = new Date();
             startOfDay.setHours(0, 0, 0, 0);
             whereQuery.timestamp = { gte: startOfDay };
-          } else if (entitlement.period === "MONTHLY") {
+          } else if (effectiveEntitlement.period === "MONTHLY") {
             const startOfMonth = new Date();
             startOfMonth.setDate(1);
             startOfMonth.setHours(0, 0, 0, 0);
@@ -229,13 +222,13 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           }
 
           currentUsage = await db.usageEvent.count({ where: whereQuery });
-          const limit = Number(entitlement.limitValue);
+          const limit = Number(effectiveEntitlement.limitValue);
 
           if (currentUsage >= limit) {
-            if (entitlement.limitType === "HARD") {
+            if (effectiveEntitlement.limitType === "HARD") {
               usageAllowed = false;
               usageReason = `Usage limit of ${limit} reached`;
-            } else if (entitlement.limitType === "SOFT") {
+            } else if (effectiveEntitlement.limitType === "SOFT") {
               usageReason = `Usage limit of ${limit} reached (soft limit)`;
             }
           }
@@ -255,13 +248,28 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             url: "/upgrade",
           });
         } else if (
-          entitlement.limitType === "HARD" &&
-          entitlement.limitValue !== null
+          effectiveEntitlement.limitType === "HARD" &&
+          effectiveEntitlement.limitValue !== null
         ) {
           // Hard limit - strictly enforce credits too
           if (available < estimatedCostCredits) {
             allowed = false;
             reason = "Insufficient credits";
+
+            // Trigger alert for insufficient credits
+            await AlertService.trigger(
+              customerId,
+              "INSUFFICIENT_CREDITS",
+              `User ${userId} attempted ${action.type} (feature: ${featureId}) but failed due to insufficient credits. Required: ${estimatedCostCredits}, Available: ${available}`,
+              {
+                userId,
+                featureId,
+                action,
+                required: estimatedCostCredits,
+                available,
+              },
+            );
+
             actions.push({
               type: "purchase",
               label: "Purchase Credits",
@@ -269,8 +277,8 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             });
           }
         } else if (
-          entitlement.limitType === "SOFT" &&
-          entitlement.limitValue !== null
+          effectiveEntitlement.limitType === "SOFT" &&
+          effectiveEntitlement.limitValue !== null
         ) {
           // Soft limit - check credits but allow
           if (available < estimatedCostCredits) {
@@ -285,9 +293,32 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
           if (usageReason) {
             reason = usageReason; // Warn about usage limit if set
           }
-        } else if (entitlement.limitType === "NONE") {
-          // No limit - always allow (postpaid)
-          allowed = true;
+        } else if (effectiveEntitlement.limitType === "NONE") {
+          // No usage limit, but still enforce credits (credit-only gating)
+          if (available < estimatedCostCredits) {
+            allowed = false;
+            reason = "Insufficient credits";
+
+            // Trigger alert for insufficient credits
+            await AlertService.trigger(
+              customerId,
+              "INSUFFICIENT_CREDITS",
+              `User ${userId} attempted ${action.type} (feature: ${featureId}) but failed due to insufficient credits. Required: ${estimatedCostCredits}, Available: ${available}`,
+              {
+                userId,
+                featureId,
+                action,
+                required: estimatedCostCredits,
+                available,
+              },
+            );
+
+            actions.push({
+              type: "purchase",
+              label: "Purchase Credits",
+              url: "/credits/purchase",
+            });
+          }
         }
 
         const duration = Date.now() - startTime;

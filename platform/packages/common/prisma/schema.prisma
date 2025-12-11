@@ -49,6 +49,7 @@ model Customer {
   burnTables       BurnTable[]
   entitlements     Entitlement[]
   auditLogs        AuditLog[]
+  alerts           Alert[]
 
   @@index([email])
   @@index([status])
@@ -406,4 +407,26 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// ALERTS
+// ============================================================================
+
+model Alert {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  type       String   // e.g., "INSUFFICIENT_CREDITS"
+  message    String
+  metadata   Json?
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([type])
+  @@index([readAt])
+  @@map("alerts")
 }
