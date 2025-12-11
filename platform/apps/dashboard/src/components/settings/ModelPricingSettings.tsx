@@ -47,29 +47,67 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
+  Image,
+  Video,
+  MessageSquare,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+
+type ModelType = "llm" | "image" | "video";
+
+interface PricingInfo {
+  costPerUnit: number;
+  unitSize: number;
+  currency: string;
+}
 
 interface PricingModel {
   provider: string;
   model: string;
   pricing: {
-    input_token?: {
-      costPerUnit: number;
-      unitSize: number;
-      currency: string;
-    };
-    output_token?: {
-      costPerUnit: number;
-      unitSize: number;
-      currency: string;
-    };
+    input_token?: PricingInfo;
+    output_token?: PricingInfo;
+    image?: PricingInfo;
+    video?: PricingInfo;
   };
 }
 
+// Helper to determine model type
+function getModelType(pricing: PricingModel["pricing"]): ModelType {
+  if (pricing.image) return "image";
+  if (pricing.video) return "video";
+  return "llm";
+}
+
+// Helper to get model type icon
+function getModelTypeIcon(type: ModelType) {
+  switch (type) {
+    case "image":
+      return <Image className="h-4 w-4" />;
+    case "video":
+      return <Video className="h-4 w-4" />;
+    default:
+      return <MessageSquare className="h-4 w-4" />;
+  }
+}
+
+// Helper to get model type badge color
+function getModelTypeBadgeClass(type: ModelType) {
+  switch (type) {
+    case "image":
+      return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300";
+    case "video":
+      return "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300";
+    default:
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300";
+  }
+}
+
 interface BurnTableRule {
-  inputTokens: number;
-  outputTokens: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  imageCost?: number;
+  videoCost?: number;
   perUnit: number;
 }
 
@@ -85,8 +123,10 @@ interface BurnTable {
 interface EditingModel {
   provider: string;
   model: string;
+  modelType: ModelType;
   inputCost: string;
   outputCost: string;
+  flatCost: string; // For image/video models
   perUnit: number;
 }
 
@@ -157,15 +197,16 @@ export function ModelPricingSettings() {
     // Check custom rules first
     if (customRules[modelKey]) {
       return type === "input"
-        ? customRules[modelKey].inputTokens
-        : customRules[modelKey].outputTokens;
+        ? (customRules[modelKey].inputTokens ?? 0)
+        : (customRules[modelKey].outputTokens ?? 0);
     }
 
     // Use active burn table rules if available
     if (activeBurnTable?.rules?.[modelKey]) {
       return type === "input"
-        ? (activeBurnTable.rules[modelKey] as BurnTableRule).inputTokens
-        : (activeBurnTable.rules[modelKey] as BurnTableRule).outputTokens;
+        ? ((activeBurnTable.rules[modelKey] as BurnTableRule).inputTokens ?? 0)
+        : ((activeBurnTable.rules[modelKey] as BurnTableRule).outputTokens ??
+            0);
     }
 
     // Fall back to default provider pricing
@@ -177,6 +218,36 @@ export function ModelPricingSettings() {
         type === "input"
           ? model.pricing.input_token?.costPerUnit
           : model.pricing.output_token?.costPerUnit;
+      return cost ?? 0;
+    }
+
+    return 0;
+  };
+
+  // Get flat cost for image/video models
+  const getFlatCost = (modelKey: string, type: "image" | "video"): number => {
+    // Check custom rules first
+    if (customRules[modelKey]) {
+      return type === "image"
+        ? (customRules[modelKey].imageCost ?? 0)
+        : (customRules[modelKey].videoCost ?? 0);
+    }
+
+    // Use active burn table rules if available
+    if (activeBurnTable?.rules?.[modelKey]) {
+      const rule = activeBurnTable.rules[modelKey] as BurnTableRule;
+      return type === "image" ? (rule.imageCost ?? 0) : (rule.videoCost ?? 0);
+    }
+
+    // Fall back to default provider pricing
+    const model = defaultPricing.find(
+      (p) => `${p.provider}/${p.model}` === modelKey || p.model === modelKey,
+    );
+    if (model?.pricing) {
+      const cost =
+        type === "image"
+          ? model.pricing.image?.costPerUnit
+          : model.pricing.video?.costPerUnit;
       return cost ?? 0;
     }
 
@@ -204,13 +275,26 @@ export function ModelPricingSettings() {
     );
   };
 
-  const handleEditModel = (provider: string, model: string) => {
+  const handleEditModel = (
+    provider: string,
+    model: string,
+    pricing: PricingModel["pricing"],
+  ) => {
     const modelKey = model;
+    const modelType = getModelType(pricing);
+
     setEditingModel({
       provider,
       model,
+      modelType,
       inputCost: getModelCost(modelKey, "input").toString(),
       outputCost: getModelCost(modelKey, "output").toString(),
+      flatCost:
+        modelType === "image"
+          ? getFlatCost(modelKey, "image").toString()
+          : modelType === "video"
+            ? getFlatCost(modelKey, "video").toString()
+            : "0",
       perUnit: getPerUnit(modelKey),
     });
   };
@@ -219,17 +303,32 @@ export function ModelPricingSettings() {
     if (!editingModel) return;
 
     const modelKey = editingModel.model;
-    const inputCost = parseFloat(editingModel.inputCost) || 0;
-    const outputCost = parseFloat(editingModel.outputCost) || 0;
 
-    setCustomRules((prev) => ({
-      ...prev,
-      [modelKey]: {
-        inputTokens: inputCost,
-        outputTokens: outputCost,
-        perUnit: editingModel.perUnit,
-      },
-    }));
+    if (editingModel.modelType === "llm") {
+      const inputCost = parseFloat(editingModel.inputCost) || 0;
+      const outputCost = parseFloat(editingModel.outputCost) || 0;
+
+      setCustomRules((prev) => ({
+        ...prev,
+        [modelKey]: {
+          inputTokens: inputCost,
+          outputTokens: outputCost,
+          perUnit: editingModel.perUnit,
+        },
+      }));
+    } else {
+      const flatCost = parseFloat(editingModel.flatCost) || 0;
+
+      setCustomRules((prev) => ({
+        ...prev,
+        [modelKey]: {
+          ...(editingModel.modelType === "image"
+            ? { imageCost: flatCost }
+            : { videoCost: flatCost }),
+          perUnit: 1, // Per image or per second
+        },
+      }));
+    }
 
     setHasChanges(true);
     setEditingModel(null);
@@ -436,10 +535,10 @@ export function ModelPricingSettings() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Type</TableHead>
                 <TableHead>Provider</TableHead>
                 <TableHead>Model</TableHead>
-                <TableHead className="text-right">Input Cost</TableHead>
-                <TableHead className="text-right">Output Cost</TableHead>
+                <TableHead className="text-right">Cost</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -448,9 +547,19 @@ export function ModelPricingSettings() {
                 const modelKey = pricing.model;
                 const isCustom = isModelCustomized(modelKey);
                 const perUnit = getPerUnit(modelKey);
+                const modelType = getModelType(pricing.pricing);
 
                 return (
                   <TableRow key={`${pricing.provider}-${pricing.model}`}>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={`gap-1 ${getModelTypeBadgeClass(modelType)}`}
+                      >
+                        {getModelTypeIcon(modelType)}
+                        {modelType.toUpperCase()}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-mono">
                         {pricing.provider}
@@ -468,17 +577,43 @@ export function ModelPricingSettings() {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {formatCost(getModelCost(modelKey, "input"), perUnit)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCost(getModelCost(modelKey, "output"), perUnit)}
+                      {modelType === "llm" ? (
+                        <div className="space-y-1">
+                          <div className="text-sm">
+                            <span className="text-slate-500 mr-1">In:</span>
+                            {formatCost(
+                              getModelCost(modelKey, "input"),
+                              perUnit,
+                            )}
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-500 mr-1">Out:</span>
+                            {formatCost(
+                              getModelCost(modelKey, "output"),
+                              perUnit,
+                            )}
+                          </div>
+                        </div>
+                      ) : modelType === "image" ? (
+                        <span>
+                          ${getFlatCost(modelKey, "image").toFixed(4)}/image
+                        </span>
+                      ) : (
+                        <span>
+                          ${getFlatCost(modelKey, "video").toFixed(2)}/sec
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleEditModel(pricing.provider, pricing.model)
+                          handleEditModel(
+                            pricing.provider,
+                            pricing.model,
+                            pricing.pricing,
+                          )
                         }
                       >
                         <Edit2 className="h-4 w-4" />
@@ -521,73 +656,132 @@ export function ModelPricingSettings() {
 
           {editingModel && (
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="inputCost">
-                  Input Token Cost (per{" "}
-                  {editingModel.perUnit === 1000 ? "1K" : "1M"} tokens)
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                    $
-                  </span>
-                  <Input
-                    id="inputCost"
-                    type="number"
-                    step="0.0001"
-                    min="0"
-                    className="pl-7"
-                    value={editingModel.inputCost}
-                    onChange={(e) =>
-                      setEditingModel({
-                        ...editingModel,
-                        inputCost: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
+              {editingModel.modelType === "llm" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="inputCost">
+                      Input Token Cost (per{" "}
+                      {editingModel.perUnit === 1000 ? "1K" : "1M"} tokens)
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="inputCost"
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        className="pl-7"
+                        value={editingModel.inputCost}
+                        onChange={(e) =>
+                          setEditingModel({
+                            ...editingModel,
+                            inputCost: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="outputCost">
-                  Output Token Cost (per{" "}
-                  {editingModel.perUnit === 1000 ? "1K" : "1M"} tokens)
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                    $
-                  </span>
-                  <Input
-                    id="outputCost"
-                    type="number"
-                    step="0.0001"
-                    min="0"
-                    className="pl-7"
-                    value={editingModel.outputCost}
-                    onChange={(e) =>
-                      setEditingModel({
-                        ...editingModel,
-                        outputCost: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="outputCost">
+                      Output Token Cost (per{" "}
+                      {editingModel.perUnit === 1000 ? "1K" : "1M"} tokens)
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="outputCost"
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        className="pl-7"
+                        value={editingModel.outputCost}
+                        onChange={(e) =>
+                          setEditingModel({
+                            ...editingModel,
+                            outputCost: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Example: Processing 1,000 input tokens and 500 output tokens
-                  would cost{" "}
-                  <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
-                    $
-                    {(
-                      (parseFloat(editingModel.inputCost) || 0) *
-                        (1000 / editingModel.perUnit) +
-                      (parseFloat(editingModel.outputCost) || 0) *
-                        (500 / editingModel.perUnit)
-                    ).toFixed(6)}
-                  </span>
-                </p>
-              </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Example: Processing 1,000 input tokens and 500 output
+                      tokens would cost{" "}
+                      <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                        $
+                        {(
+                          (parseFloat(editingModel.inputCost) || 0) *
+                            (1000 / editingModel.perUnit) +
+                          (parseFloat(editingModel.outputCost) || 0) *
+                            (500 / editingModel.perUnit)
+                        ).toFixed(6)}
+                      </span>
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="flatCost">
+                      {editingModel.modelType === "image"
+                        ? "Cost per Image"
+                        : "Cost per Second"}
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        $
+                      </span>
+                      <Input
+                        id="flatCost"
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        className="pl-7"
+                        value={editingModel.flatCost}
+                        onChange={(e) =>
+                          setEditingModel({
+                            ...editingModel,
+                            flatCost: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {editingModel.modelType === "image" ? (
+                        <>
+                          Generating 5 images would cost{" "}
+                          <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                            $
+                            {(
+                              (parseFloat(editingModel.flatCost) || 0) * 5
+                            ).toFixed(4)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          A 10-second video would cost{" "}
+                          <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                            $
+                            {(
+                              (parseFloat(editingModel.flatCost) || 0) * 10
+                            ).toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
