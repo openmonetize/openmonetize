@@ -16,9 +16,9 @@
  */
 
 // Authentication middleware for API Gateway
-import { FastifyRequest, FastifyReply } from 'fastify';
-import { getPrismaClient, hashApiKey, rlsContext } from '@openmonetize/common';
-import { logger } from '../logger';
+import { FastifyRequest, FastifyReply } from "fastify";
+import { getPrismaClient, hashApiKey, rlsContext } from "@openmonetize/common";
+import { logger } from "../logger";
 
 const db = getPrismaClient();
 
@@ -32,7 +32,7 @@ export interface AuthenticatedRequest extends FastifyRequest {
 
 export async function authenticate(
   request: AuthenticatedRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
   try {
     // Extract API key from Authorization header or X-API-Key header
@@ -40,22 +40,23 @@ export async function authenticate(
 
     // Try Authorization: Bearer header first
     const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       apiKey = authHeader.substring(7); // Remove 'Bearer ' prefix
     }
 
     // Fall back to X-API-Key header
     if (!apiKey) {
-      const apiKeyHeader = request.headers['x-api-key'];
-      if (typeof apiKeyHeader === 'string') {
+      const apiKeyHeader = request.headers["x-api-key"];
+      if (typeof apiKeyHeader === "string") {
         apiKey = apiKeyHeader;
       }
     }
 
     if (!apiKey) {
       return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Missing API key. Provide via Authorization: Bearer or X-API-Key header',
+        error: "Unauthorized",
+        message:
+          "Missing API key. Provide via Authorization: Bearer or X-API-Key header",
       });
     }
 
@@ -65,7 +66,7 @@ export async function authenticate(
     const customer = await db.customer.findFirst({
       where: {
         apiKeyHash,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
       select: {
         id: true,
@@ -75,10 +76,13 @@ export async function authenticate(
     });
 
     if (!customer) {
-      logger.warn({ apiKeyHash }, 'Invalid API key attempted');
+      logger.warn(
+        { apiKeyHashPrefix: apiKeyHash.substring(0, 12) },
+        "Invalid API key attempted (no matching active customer)",
+      );
       return reply.status(401).send({
-        error: 'Unauthorized',
-        message: 'Invalid or missing API key',
+        error: "Unauthorized",
+        message: "Invalid or missing API key",
       });
     }
 
@@ -89,12 +93,12 @@ export async function authenticate(
     // This ensures all subsequent database queries in this async scope use the correct tenant ID
     rlsContext.enterWith(customer.id);
 
-    logger.debug({ customerId: customer.id }, 'Request authenticated');
+    logger.debug({ customerId: customer.id }, "Request authenticated");
   } catch (error) {
-    logger.error({ err: error }, 'Authentication error');
+    logger.error({ err: error }, "Authentication error");
     return reply.status(500).send({
-      error: 'Internal Server Error',
-      message: 'Authentication failed',
+      error: "Internal Server Error",
+      message: "Authentication failed",
     });
   }
 }

@@ -36,6 +36,8 @@ export const authOptions: NextAuthOptions = {
         const API_URL =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+        console.log("[NextAuth] signIn: Calling backend at", API_URL);
+
         // Call backend to sync user and get API key
         const res = await fetch(`${API_URL}/v1/auth/google`, {
           method: "POST",
@@ -48,22 +50,33 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!res.ok) {
-          console.error("Failed to sync user with backend", await res.text());
+          const errorText = await res.text();
+          console.error(
+            "[NextAuth] signIn: Failed to sync user with backend",
+            res.status,
+            errorText,
+          );
           return false;
         }
 
         const data = await res.json();
+        console.log(
+          "[NextAuth] signIn: Backend response received, apiKey present:",
+          !!data.data?.apiKey,
+        );
 
         // Attach the API key to the user object temporarily so it can be passed to the token
         if (data.data && data.data.apiKey) {
           const extUser = user as ExtendedUser;
           extUser.apiKey = data.data.apiKey;
           extUser.customerId = data.data.customerId;
+        } else {
+          console.warn("[NextAuth] signIn: No apiKey in backend response!");
         }
 
         return true;
       } catch (error) {
-        console.error("Error in signIn callback:", error);
+        console.error("[NextAuth] signIn: Error in signIn callback:", error);
         return false;
       }
     },
