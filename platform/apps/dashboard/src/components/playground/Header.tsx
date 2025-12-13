@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Terminal, LogOut, User, BookOpen, Wallet } from "lucide-react";
+import { Terminal, LogOut, BookOpen, Wallet } from "lucide-react";
 
 interface HeaderProps {
   apiKey: string | null;
