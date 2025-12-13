@@ -22,8 +22,7 @@ export default function PlaygroundPage() {
 
   // Custom hooks
   const { logs, addLog, clearLogs, logEndRef } = useSandboxLogs();
-  const { apiKey, customerName, authChecked, handleLogout } =
-    useSandboxAuth(addLog);
+  const { apiKey, authChecked, handleLogout } = useSandboxAuth(addLog);
   const { balance, fetchBalance, handleTopUp } = useSandboxBalance(
     apiKey,
     addLog,
@@ -137,7 +136,6 @@ export default function PlaygroundPage() {
       {/* Header Section (Compact) */}
       <div className="px-4 md:px-8 relative z-10">
         <Header
-          customerName={customerName}
           apiKey={apiKey}
           balance={balance}
           onLogout={handleLogout}
