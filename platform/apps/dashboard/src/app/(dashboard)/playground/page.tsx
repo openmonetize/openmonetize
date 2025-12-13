@@ -46,10 +46,9 @@ export default function PlaygroundPage() {
     try {
       // 1. APP: User initiates action
       await simulateFlow("app", 500);
-      addLog(
-        "APP",
-        `User requested ${type === "text" ? "GPT-4" : "DALL-E 3"} generation...`,
-      );
+      const modelName =
+        requestData?.model || (type === "text" ? "o1-preview" : "dall-e-3");
+      addLog("APP", `User requested ${modelName} generation...`);
 
       // 2. GATEWAY: Request hits API
       await simulateFlow("gateway", 400);
