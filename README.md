@@ -10,6 +10,8 @@ Open Source Pricing & Billing Infrastructure to track tokens, manage credits, an
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-red)](https://redis.io/)
 
+![OpenMonetize Demo](https://i.imgur.com/TGCHeNa.gif)
+
 ---
 
 ## ⚡ The 30-Second Demo
@@ -21,7 +23,7 @@ Don't just read about it. Here is how you integrate OpenMonetize into your AI ap
 You wrap your LLM calls (OpenAI, Anthropic, Google Gemini, etc.) with our lightweight SDK.
 
 ```typescript
-import { OpenMonetize } from '@openmonetize/sdk';
+import { OpenMonetize } from "@openmonetize/sdk";
 
 const om = new OpenMonetize({ apiKey: process.env.OM_API_KEY });
 ```
@@ -43,8 +45,8 @@ await om.track({
   feature: "gpt-4-completion", // Maps to your burn table (e.g., $0.03/1k tokens)
   usage: {
     inputTokens: response.usage.prompt_tokens,
-    outputTokens: response.usage.completion_tokens
-  }
+    outputTokens: response.usage.completion_tokens,
+  },
 });
 ```
 
@@ -61,7 +63,7 @@ The user's wallet is instantly updated. You can query this to gate features or s
   "currency": "CREDITS",
   "status": "ACTIVE",
   "lastTransaction": {
-    "amount": -1.50,
+    "amount": -1.5,
     "reason": "gpt-4-completion",
     "timestamp": "2025-11-19T10:00:00Z"
   }
@@ -107,12 +109,12 @@ OpenMonetize sits between your **Application** and your **Database**, acting as 
 ```mermaid
 graph LR
     User((User)) --> App[Your AI App]
-    
+
     subgraph "Your Infrastructure"
     App --> |1. Request| OpenAI[OpenAI/LLM]
     App --> |2. Track Usage| Ingest[OM Ingestion]
     end
-    
+
     subgraph "OpenMonetize Platform"
     Ingest --> Queue[Event Queue]
     Queue --> Rating[Rating Engine]
@@ -130,12 +132,12 @@ graph LR
 
 Building billing for AI is harder than standard SaaS because costs are **variable** (tokens), not **fixed** (seats).
 
-| Feature | Standard Stripe/Billing | OpenMonetize |
-|---------|------------------------|--------------|
-| **Unit of Measure** | Monthly Seats | Tokens, Seconds, API Calls |
-| **Latency** | Slow (Webhooks) | Real-time (<50ms) |
-| **Pre-paid Credits** | Hard to implement | Native Support |
-| **Cost Control** | N/A | Auto-stop when balance is 0 |
+| Feature              | Standard Stripe/Billing | OpenMonetize                |
+| -------------------- | ----------------------- | --------------------------- |
+| **Unit of Measure**  | Monthly Seats           | Tokens, Seconds, API Calls  |
+| **Latency**          | Slow (Webhooks)         | Real-time (<50ms)           |
+| **Pre-paid Credits** | Hard to implement       | Native Support              |
+| **Cost Control**     | N/A                     | Auto-stop when balance is 0 |
 
 ---
 
@@ -152,12 +154,12 @@ Building billing for AI is harder than standard SaaS because costs are **variabl
 
 We use a **Monorepo** structure managed by Turborepo.
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `ingestion-service` | 8081 | High-throughput event receiver (Fastify) |
-| `rating-engine` | 3001 | Calculates costs & updates balances |
-| `api-gateway` | 3000 | Auth & Management APIs |
-| `sdk` | N/A | The TypeScript client you use in your app |
+| Service             | Port | Description                               |
+| ------------------- | ---- | ----------------------------------------- |
+| `ingestion-service` | 8081 | High-throughput event receiver (Fastify)  |
+| `rating-engine`     | 3001 | Calculates costs & updates balances       |
+| `api-gateway`       | 3000 | Auth & Management APIs                    |
+| `sdk`               | N/A  | The TypeScript client you use in your app |
 
 ```bash
 # Run the full dev environment
