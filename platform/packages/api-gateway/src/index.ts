@@ -57,6 +57,7 @@ import { sandboxRoutes } from "./routes/apiconsole";
 import { authRoutes } from "./routes/auth";
 import { eventsRoutes } from "./routes/events";
 import { usersRoutes } from "./routes/users";
+import { superAdminRoutes } from "./routes/super-admin";
 
 const db = getPrismaClient();
 const redis = new Redis(config.redis.url);
@@ -238,6 +239,11 @@ export async function buildApp() {
                 description:
                   "User management. List, view, and create users for tracking usage and managing credits.",
               },
+              {
+                name: "Super Admin",
+                description:
+                  "Super admin endpoints for platform-wide management. Requires SUPER_ADMIN_EMAILS configuration.",
+              },
             ],
             components: {
               securitySchemes: {
@@ -297,6 +303,7 @@ export async function buildApp() {
   await app.register(sandboxRoutes); // Sandbox routes
   await app.register(eventsRoutes); // Events routes
   await app.register(usersRoutes); // User management routes
+  await app.register(superAdminRoutes); // Super admin routes
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {

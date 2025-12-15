@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Box,
@@ -11,10 +13,15 @@ import {
   BarChart3,
   Users,
   Shield,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSandboxAuth } from "@/hooks/useSandboxAuth";
+
+interface UserWithApiKey {
+  apiKey?: string;
+}
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
@@ -28,7 +35,44 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { customerName, handleLogout } = useSandboxAuth(() => {}); // Dummy log function
+  const { data: session } = useSession();
+  const { customerName, handleLogout } = useSandboxAuth(() => {});
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  // Check if user is super admin
+  useEffect(() => {
+    async function checkSuperAdmin() {
+      if (!session?.user) return;
+
+      try {
+        const apiKey = (session.user as UserWithApiKey).apiKey;
+        if (!apiKey) return;
+
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const response = await fetch(`${apiUrl}/v1/admin/me`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsSuperAdmin(data.data?.isSuperAdmin || false);
+        }
+      } catch {
+        // Not a super admin or API error - just ignore
+        setIsSuperAdmin(false);
+      }
+    }
+
+    checkSuperAdmin();
+  }, [session]);
+
+  const allNavigation = isSuperAdmin
+    ? [...navigation, { name: "Admin", href: "/admin", icon: Crown }]
+    : navigation;
 
   return (
     <div className="flex h-full w-64 flex-col bg-slate-900 text-white border-r border-slate-800">
@@ -40,8 +84,10 @@ export function Sidebar() {
 
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
+          {allNavigation.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/admin" && pathname.startsWith("/admin"));
             return (
               <Link
                 key={item.name}
@@ -51,6 +97,8 @@ export function Sidebar() {
                   isActive
                     ? "bg-slate-800 text-white"
                     : "text-slate-400 hover:bg-slate-800 hover:text-white",
+                  item.name === "Admin" &&
+                    "text-yellow-400 hover:text-yellow-300",
                 )}
               >
                 <item.icon
@@ -59,6 +107,8 @@ export function Sidebar() {
                     isActive
                       ? "text-white"
                       : "text-slate-400 group-hover:text-white",
+                    item.name === "Admin" &&
+                      "text-yellow-400 group-hover:text-yellow-300",
                   )}
                 />
                 {item.name}
@@ -70,14 +120,21 @@ export function Sidebar() {
 
       <div className="border-t border-slate-800 p-4">
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
+          <div
+            className={cn(
+              "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold",
+              isSuperAdmin ? "bg-yellow-500" : "bg-indigo-500",
+            )}
+          >
             {customerName ? customerName.substring(0, 2).toUpperCase() : "US"}
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-medium text-white">
               {customerName || "User"}
             </p>
-            <p className="truncate text-xs text-slate-400">Free Plan</p>
+            <p className="truncate text-xs text-slate-400">
+              {isSuperAdmin ? "Super Admin" : "Free Plan"}
+            </p>
           </div>
         </div>
         <Button
