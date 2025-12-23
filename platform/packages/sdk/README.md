@@ -380,7 +380,58 @@ if (await confirmWithUser(cost.credits)) {
 }
 ```
 
-### 13. Transaction History
+### 13. Get Model Pricing
+
+```typescript
+// Get all available model pricing
+const pricing = await client.getPricing();
+
+pricing.data.forEach((item) => {
+  console.log(`${item.provider} - ${item.model}:`);
+  if (item.pricing.input_token) {
+    console.log(
+      `  Input: $${item.pricing.input_token.costPerUnit} per ${item.pricing.input_token.unitSize} tokens`,
+    );
+  }
+  if (item.pricing.output_token) {
+    console.log(
+      `  Output: $${item.pricing.output_token.costPerUnit} per ${item.pricing.output_token.unitSize} tokens`,
+    );
+  }
+  if (item.pricing.video) {
+    console.log(
+      `  Video: $${item.pricing.video.costPerUnit} per ${item.pricing.video.unitSize} seconds`,
+    );
+  }
+});
+```
+
+### 14. Calculate Video/Image Cost
+
+```typescript
+// Calculate cost for video generation (no tokens needed!)
+const videoCost = await client.calculateCost({
+  provider: "GOOGLE",
+  model: "veo-3.0",
+  type: "video",
+  count: 1, // Number of videos
+});
+
+console.log(`Video generation will cost ${videoCost.credits} credits`);
+console.log(`Provider cost: $${videoCost.providerCostUsd}`);
+
+// Calculate cost for image generation
+const imageCost = await client.calculateCost({
+  provider: "OPENAI",
+  model: "dall-e-3",
+  type: "image",
+  count: 4, // Number of images
+});
+
+console.log(`4 images will cost ${imageCost.credits} credits`);
+```
+
+### 15. Transaction History
 
 ```typescript
 const history = await client.getTransactionHistory("user-123", {
@@ -395,6 +446,54 @@ history.data.forEach((tx) => {
 });
 
 console.log(`Total transactions: ${history.pagination.total}`);
+```
+
+### 16. Complete Pre-Action Credit Check Flow
+
+```typescript
+// Full example: Check cost, verify balance, and execute action
+async function generateVideoWithCreditCheck(userId: string) {
+  const client = new OpenMonetize({
+    apiKey: process.env.OPENMONETIZE_API_KEY!,
+  });
+
+  // Step 1: Calculate the cost for this action
+  const cost = await client.calculateCost({
+    provider: "GOOGLE",
+    model: "veo-3.0",
+    type: "video",
+    count: 1,
+  });
+
+  console.log(`This action will cost ${cost.credits} credits`);
+
+  // Step 2: Check if user has enough credits
+  const balance = await client.getCreditBalance(userId);
+
+  if (balance.available < cost.credits) {
+    return {
+      success: false,
+      error: "Insufficient credits",
+      required: cost.credits,
+      available: balance.available,
+    };
+  }
+
+  // Step 3: Execute the action (your AI provider call)
+  const video = await generateVideo({ model: "veo-3.0", prompt: "..." });
+
+  // Step 4: Track the usage (auto-batched)
+  client.trackVideoGeneration({
+    userId,
+    customerId: "your-customer-id",
+    featureId: "video-generation",
+    provider: "GOOGLE",
+    model: "veo-3.0",
+    durationSeconds: 10,
+  });
+
+  return { success: true, video };
+}
 ```
 
 ## Configuration
