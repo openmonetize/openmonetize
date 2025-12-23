@@ -328,8 +328,10 @@ export interface EntitlementCheckResponse {
 export interface CalculateCostRequest {
   provider: Provider;
   model: string;
-  inputTokens: number;
-  outputTokens: number;
+  type?: "text" | "image" | "video";
+  inputTokens?: number;
+  outputTokens?: number;
+  count?: number;
 }
 
 /**
@@ -389,6 +391,32 @@ export interface UsageAnalyticsResponse {
       percentage: number;
     }
   >;
+}
+
+/**
+ * Pricing information
+ */
+export interface PricingInfo {
+  costPerUnit: number;
+  unitSize: number;
+  currency: string;
+}
+
+/**
+ * Grouped pricing data
+ */
+export interface Pricing {
+  provider: string;
+  model: string;
+  pricing: Record<string, PricingInfo>;
+}
+
+/**
+ * Pricing response
+ */
+export interface PricingResponse {
+  data: Pricing[];
+  total: number;
 }
 
 /**

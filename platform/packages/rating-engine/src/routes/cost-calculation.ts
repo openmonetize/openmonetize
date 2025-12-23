@@ -30,8 +30,10 @@ const calculateCostSchema = z.object({
   customerId: z.string().min(1),
   provider: z.nativeEnum(ProviderName),
   model: z.string().min(1),
-  inputTokens: z.number().int().nonnegative(),
-  outputTokens: z.number().int().nonnegative(),
+  inputTokens: z.number().int().nonnegative().optional(),
+  outputTokens: z.number().int().nonnegative().optional(),
+  type: z.enum(["text", "image", "video"]).optional().default("text"),
+  count: z.number().int().positive().optional().default(1),
 });
 
 const bulkCalculateSchema = z.object({
@@ -57,8 +59,10 @@ export const costCalculationRoutes: FastifyPluginAsync = async (app) => {
         customerId: string;
         provider: ProviderName;
         model: string;
-        inputTokens: number;
-        outputTokens: number;
+        inputTokens?: number;
+        outputTokens?: number;
+        type?: "text" | "image" | "video";
+        count?: number;
       };
 
       const result = await pricingService.calculateCost(body);

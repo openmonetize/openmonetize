@@ -40,6 +40,7 @@ import type {
   ApiErrorResponse,
   UsageEvent,
   Provider,
+  PricingResponse,
 } from "./types";
 import { OpenMonetizeError } from "./types";
 import { v4 as uuidv4 } from "uuid";
@@ -558,7 +559,16 @@ export class OpenMonetize {
       model: request.model,
       inputTokens: request.inputTokens,
       outputTokens: request.outputTokens,
+      type: request.type,
+      count: request.count,
     });
+  }
+
+  /**
+   * Get all provider pricing
+   */
+  async getPricing(): Promise<PricingResponse> {
+    return this.request<PricingResponse>("GET", "/v1/rating/pricing");
   }
 
   /**
