@@ -173,19 +173,44 @@ const providerCosts = [
     costPerUnit: 0.15,
     unitSize: 1,
   },
-  // Veo 3.1 (Preview - pricing aligned with Veo 3)
+  // Veo 3.1 (Preview)
   {
     provider: "GOOGLE",
     model: "veo-3.1-generate-preview",
     costType: "VIDEO",
-    costPerUnit: 0.2,
+    costPerUnit: 0.4,
     unitSize: 1,
   },
   {
     provider: "GOOGLE",
-    model: "veo-3.1-generate-preview-audio",
+    model: "veo-3.1-fast-generate-preview",
+    costType: "VIDEO",
+    costPerUnit: 0.15,
+    unitSize: 1,
+  },
+
+  // Veo 3.0 (Stable)
+  {
+    provider: "GOOGLE",
+    model: "veo-3.0-generate-001",
     costType: "VIDEO",
     costPerUnit: 0.4,
+    unitSize: 1,
+  },
+  {
+    provider: "GOOGLE",
+    model: "veo-3.0-fast-generate-001",
+    costType: "VIDEO",
+    costPerUnit: 0.15,
+    unitSize: 1,
+  },
+
+  // Veo 2.0 (Stable)
+  {
+    provider: "GOOGLE",
+    model: "veo-2.0-generate-001",
+    costType: "VIDEO",
+    costPerUnit: 0.5,
     unitSize: 1,
   },
 
