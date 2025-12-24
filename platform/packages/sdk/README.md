@@ -283,6 +283,57 @@ if (!entitlement.allowed) {
 await openai.chat.completions.create({...});
 ```
 
+### 7b. Video Generation Entitlement Check
+
+```typescript
+// Check if user can generate a video BEFORE executing it
+const entitlement = await client.checkEntitlement({
+  userId: "user-123",
+  featureId: "video-generation",
+  action: {
+    type: "video_generation",
+    provider: "GOOGLE",
+    model: "veo-3.1-generate-video",
+    estimatedDurationSeconds: 8,
+  },
+});
+
+if (!entitlement.allowed) {
+  console.log(`Access denied: ${entitlement.reason}`);
+  console.log(`Estimated cost: ${entitlement.estimatedCostCredits} credits`);
+  return;
+}
+
+// User has sufficient credits, proceed with video generation
+await generateVideo({ model: "veo-3.1-generate-video", duration: 8 });
+```
+
+### 7c. Image Generation Entitlement Check
+
+```typescript
+// Check if user can generate images BEFORE executing it
+const entitlement = await client.checkEntitlement({
+  userId: 'user-123',
+  featureId: 'image-generation',
+  action: {
+    type: 'image_generation',
+    provider: 'OPENAI',
+    model: 'dall-e-3',
+    estimatedCount: 4,
+    imageSize: '1024x1024',
+    quality: 'hd',
+  }
+});
+
+if (!entitlement.allowed) {
+  console.log(`Access denied: ${entitlement.reason}`);
+  return;
+}
+
+// Proceed with image generation
+await openai.images.generate({ model: 'dall-e-3', n: 4, ... });
+```
+
 ### 8. Batch Event Tracking
 
 > **Note:** All tracking methods (`trackTokenUsage`, `trackImageGeneration`, etc.) are automatically batched by default to optimize performance. You only need to use `BatchTracker` if you want manual control over the batching process.

@@ -31,11 +31,21 @@ const EntitlementCheckSchema = z.object({
   userId: z.string().min(1),
   featureId: z.string(),
   action: z.object({
-    type: z.enum(["token_usage", "image_generation", "api_call", "custom"]),
+    type: z.enum([
+      "token_usage",
+      "image_generation",
+      "video_generation",
+      "api_call",
+      "custom",
+    ]),
     provider: z.string().optional(),
     model: z.string().optional(),
     estimated_input_tokens: z.number().optional(),
     estimated_output_tokens: z.number().optional(),
+    estimated_duration_seconds: z.number().optional(),
+    estimated_count: z.number().optional(),
+    image_size: z.string().optional(),
+    quality: z.string().optional(),
   }),
 });
 
@@ -184,6 +194,54 @@ export const entitlementsRoutes: FastifyPluginAsyncZod = async (app) => {
             estimatedCostUsd = inputCostUsd + outputCostUsd;
 
             // Apply burn table markup (default: 1000 credits per USD)
+            estimatedCostCredits = Math.ceil(estimatedCostUsd * 1000);
+          }
+        } else if (
+          action.type === "video_generation" &&
+          action.provider &&
+          action.model
+        ) {
+          // Get provider cost for video seconds
+          const videoCost = await db.providerCost.findFirst({
+            where: {
+              provider: action.provider as any,
+              model: action.model,
+              costType: "VIDEO",
+              validFrom: { lte: new Date() },
+              OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+            },
+            orderBy: { validFrom: "desc" },
+          });
+
+          if (videoCost) {
+            const durationSeconds = action.estimated_duration_seconds || 1;
+            estimatedCostUsd =
+              (durationSeconds / Number(videoCost.unitSize)) *
+              Number(videoCost.costPerUnit);
+            estimatedCostCredits = Math.ceil(estimatedCostUsd * 1000);
+          }
+        } else if (
+          action.type === "image_generation" &&
+          action.provider &&
+          action.model
+        ) {
+          // Get provider cost for images
+          const imageCost = await db.providerCost.findFirst({
+            where: {
+              provider: action.provider as any,
+              model: action.model,
+              costType: "IMAGE",
+              validFrom: { lte: new Date() },
+              OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+            },
+            orderBy: { validFrom: "desc" },
+          });
+
+          if (imageCost) {
+            const count = action.estimated_count || 1;
+            estimatedCostUsd =
+              (count / Number(imageCost.unitSize)) *
+              Number(imageCost.costPerUnit);
             estimatedCostCredits = Math.ceil(estimatedCostUsd * 1000);
           }
         }

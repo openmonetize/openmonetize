@@ -292,11 +292,24 @@ export interface EntitlementCheckRequest {
   featureId: string;
   /** Action to perform */
   action: {
-    type: "token_usage" | "image_generation" | "api_call" | "custom";
+    type:
+      | "token_usage"
+      | "image_generation"
+      | "video_generation"
+      | "api_call"
+      | "custom";
     provider?: string;
     model?: string;
     estimatedInputTokens?: number;
     estimatedOutputTokens?: number;
+    /** Duration in seconds for video generation */
+    estimatedDurationSeconds?: number;
+    /** Number of images/videos to generate */
+    estimatedCount?: number;
+    /** Image size for image generation (e.g., "1024x1024") */
+    imageSize?: string;
+    /** Image quality (e.g., "standard", "hd") */
+    quality?: string;
   };
 }
 
