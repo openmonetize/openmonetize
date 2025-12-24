@@ -345,6 +345,7 @@ export interface CalculateCostRequest {
   inputTokens?: number;
   outputTokens?: number;
   count?: number;
+  durationSeconds?: number;
 }
 
 /**

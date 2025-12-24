@@ -561,6 +561,7 @@ export class OpenMonetize {
       outputTokens: request.outputTokens,
       type: request.type,
       count: request.count,
+      durationSeconds: request.durationSeconds,
     });
   }
 

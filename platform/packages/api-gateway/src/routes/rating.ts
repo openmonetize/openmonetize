@@ -39,6 +39,7 @@ const CalculateCostSchema = z.object({
   outputTokens: z.number().int().nonnegative().optional(),
   type: z.enum(["text", "image", "video"]).optional().default("text"),
   count: z.number().int().positive().optional().default(1),
+  durationSeconds: z.number().positive().optional(),
 });
 
 const BulkCalculateSchema = z.object({
